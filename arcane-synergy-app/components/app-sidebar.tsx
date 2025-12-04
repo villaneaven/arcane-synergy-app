@@ -1,5 +1,3 @@
-"use client";
-
 import { LayoutDashboard, Form, ClipboardCheck } from "lucide-react"
 
 import {
@@ -7,7 +5,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
