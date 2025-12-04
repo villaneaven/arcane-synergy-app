@@ -15,17 +15,17 @@ import {
 const items = [
   {
     title: "Dashboard",
-    url: "#",
+    url: "/",
     icon: LayoutDashboard,
   },
   {
     title: "Forms",
-    url: "#",
+    url: "/forms",
     icon: Form,
   },
   {
     title: "Reports",
-    url: "#",
+    url: "/reports",
     icon: ClipboardCheck,
   },
 ]
