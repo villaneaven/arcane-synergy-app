@@ -1,3 +1,5 @@
+"use client";
+
 import { LayoutDashboard, Form, ClipboardCheck } from "lucide-react"
 
 import {
