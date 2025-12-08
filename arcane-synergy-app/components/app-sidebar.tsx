@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react"
 import { LayoutDashboard, Form, ClipboardCheck, ChevronDown, ChevronUp } from "lucide-react"
 
 import {
@@ -13,6 +12,7 @@ import {
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 import {
@@ -23,7 +23,7 @@ import {
 
 
 export function AppSidebar() {
-  const [isOpen, setIsOpen] = React.useState(false)
+  const { collapsibleOpen, setCollapsibleOpen } = useSidebar()
 
   return (
     <Sidebar collapsible="icon">
@@ -40,16 +40,17 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <Collapsible 
+                defaultOpen
                 className="group/collapsible"
-                open={isOpen}
-                onOpenChange={setIsOpen}
+                open={collapsibleOpen}
+                onOpenChange={setCollapsibleOpen}
               >
                 <SidebarMenuItem key={"Forms"}>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton className="cursor-pointer">
                       <Form />
                       <span>{"Forms"}</span>
-                      {isOpen ? <ChevronUp /> : <ChevronDown />}
+                      {collapsibleOpen ? <ChevronUp /> : <ChevronDown />}
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
