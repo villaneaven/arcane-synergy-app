@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -41,7 +41,7 @@ export default function RootLayout({
           <SidebarProvider>
             <div className="flex min-h-screen w-full">
               <AppSidebar />
-              <main className="flex-1 p-6 overflow-auto">
+              <main className="flex-1 overflow-auto">
                 <SidebarTrigger />
                 {children}
               </main>
