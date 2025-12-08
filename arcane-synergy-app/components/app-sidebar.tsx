@@ -1,4 +1,7 @@
-import { LayoutDashboard, Form, ClipboardCheck } from "lucide-react"
+"use client";
+
+import * as React from "react"
+import { LayoutDashboard, Form, ClipboardCheck, ChevronDown, ChevronUp } from "lucide-react"
 
 import {
   Sidebar,
@@ -20,6 +23,8 @@ import {
 
 
 export function AppSidebar() {
+  const [isOpen, setIsOpen] = React.useState(false)
+
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
@@ -34,12 +39,17 @@ export function AppSidebar() {
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <Collapsible defaultOpen className="group/collapsible">
+              <Collapsible 
+                className="group/collapsible"
+                open={isOpen}
+                onOpenChange={setIsOpen}
+              >
                 <SidebarMenuItem key={"Forms"}>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton className="cursor-pointer">
                       <Form />
                       <span>{"Forms"}</span>
+                      {isOpen ? <ChevronUp /> : <ChevronDown />}
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
@@ -60,7 +70,7 @@ export function AppSidebar() {
               <SidebarMenuItem key={"Reports"}>
                   <SidebarMenuButton asChild>
                     <a href={"/reports"}>
-                      <LayoutDashboard />
+                      <ClipboardCheck />
                       <span>{"Reports"}</span>
                     </a>
                   </SidebarMenuButton>
