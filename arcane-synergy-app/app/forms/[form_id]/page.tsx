@@ -2,12 +2,12 @@ import { columns, Payment } from "./columns"
 import { DataTable } from "./data-table"
 
 
-export default async function Forms({params}: {params: Promise<{slug: string}>}) {
-  const {slug} = await params
+export default async function Forms({params}: {params: Promise<{form_id: string}>}) {
+  const {form_id} = await params
 
   let data: Payment[] = []
 
-  if (slug === '1') {
+  if (form_id === '1') {
     data = [
       {
         id: "728ed52f",
@@ -28,7 +28,7 @@ export default async function Forms({params}: {params: Promise<{slug: string}>})
         email: "o@example.com",
       },
     ]
-  } else if (slug === '2') {
+  } else if (form_id === '2') {
     data = [
       {
         id: "031ed55i",
