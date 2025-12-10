@@ -32,6 +32,7 @@ export const columns: ColumnDef<Payment>[] = [
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="cursor-pointer"
         >
           Email
           <ArrowUpDown className="ml-2 h-4 w-4" />
