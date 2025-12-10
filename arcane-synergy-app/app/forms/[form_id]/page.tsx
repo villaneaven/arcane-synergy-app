@@ -41,7 +41,7 @@ export default async function Forms({params}: {params: Promise<{form_id: string}
 
   return (
     <div className="block px-8 py-4 min-h-screen justify-center bg-background font-sans dark:bg-black">
-      <DataTable columns={columns} data={data} />
+      <DataTable columns={columns} data={data} form_id={form_id} />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 
 import {
   ColumnDef,
@@ -34,13 +35,15 @@ import {
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
-  data: TData[]
+  data: TData[],
+  form_id: string
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-}: DataTableProps<TData, TValue>) {
+  form_id,
+}: DataTableProps<TData, TValue>){
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -65,6 +68,8 @@ export function DataTable<TData, TValue>({
       columnVisibility,
     },
   })
+
+  const router = useRouter();
 
   return (
     <div>
@@ -132,6 +137,10 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  onClick={() => {
+                    router.push(`/forms/${form_id}/admissions/${(row.original as unknown as {id: string}).id}`)
+                  }}
+                  className="cursor-pointer"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
