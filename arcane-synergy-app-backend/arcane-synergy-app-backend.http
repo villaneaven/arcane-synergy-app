@@ -1,0 +1,6 @@
+@arcane_synergy_app_backend_HostAddress = http://localhost:5201
+
+GET {{arcane_synergy_app_backend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
