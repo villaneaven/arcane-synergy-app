@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeProvider } from "@/components/theme-provider"
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -40,15 +38,7 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-            <SidebarProvider>
-              <div className="flex min-h-screen w-full bg-background dark:bg-black">
-                <AppSidebar/>
-                <main className="flex-1 overflow-auto">
-                  <SidebarTrigger />
-                  {children}
-                </main>
-              </div>
-            </SidebarProvider>
+            {children}
           </ThemeProvider>
         </NextAuthSessionProvider>
       </body>
