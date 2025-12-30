@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeProvider } from "@/components/theme-provider"
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import NextAuthSessionProvider from "@/components/NextAuthSessionProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,22 +33,24 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-          <SidebarProvider>
-            <div className="flex min-h-screen w-full bg-background dark:bg-black">
-              <AppSidebar/>
-              <main className="flex-1 overflow-auto">
-                <SidebarTrigger />
-                {children}
-              </main>
-            </div>
-          </SidebarProvider>
-        </ThemeProvider>
+        <NextAuthSessionProvider>
+          <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+            <SidebarProvider>
+              <div className="flex min-h-screen w-full bg-background dark:bg-black">
+                <AppSidebar/>
+                <main className="flex-1 overflow-auto">
+                  <SidebarTrigger />
+                  {children}
+                </main>
+              </div>
+            </SidebarProvider>
+          </ThemeProvider>
+        </NextAuthSessionProvider>
       </body>
     </html>
   );
