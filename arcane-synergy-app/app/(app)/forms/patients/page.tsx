@@ -2,7 +2,7 @@ import { columns, Patient } from "./columns"
 import { DataTable } from "./data-table"
 
 
-export default async function Forms() {
+export default async function Patients() {
   const res = await fetch('http://localhost:5201/api/patients', {
     cache: 'no-store'
   })
