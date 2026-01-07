@@ -73,6 +73,13 @@ export function AppSidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
+                      <SidebarMenuSubItem
+                          key={`Patients`}
+                        >
+                          <a href={`/forms/patients`} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 outline-hidden focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50">
+                            <span>{`Patients`}</span>
+                          </a>
+                        </SidebarMenuSubItem>
                       {[1, 2, 3].map((formNumber) => (
                         <SidebarMenuSubItem
                           key={`Form ${formNumber}`}
