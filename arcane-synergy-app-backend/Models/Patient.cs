@@ -1,8 +1,13 @@
-﻿namespace arcane_synergy_app_backend.Models
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace arcane_synergy_app_backend.Models
 {
     public class Patient
     {
-        public required string PatientID {  get; set; }
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int PatientID {  get; set; }
         public required string FirstName { get; set; }
         public required string LastName { get; set; }
         public required DateTime DOB {  get; set; }
@@ -13,10 +18,18 @@
         public string? Clinic { get; set; }
 
         // Calculated
-        public required string FullName { get; set; }
-        public required DateTime Version { get; set; } = DateTime.UtcNow;
+        public string? FullName { get; set; }
+        public DateTime Version { get; set; }
 
         public ICollection<Admission>? Admissions { get; set; }
+
+
+        // Calculations
+        public void UpdateCalculatedFields()
+        {
+            FullName = $"{LastName}, {FirstName}";
+            Version = DateTime.UtcNow;
+        }
 
     }
 }

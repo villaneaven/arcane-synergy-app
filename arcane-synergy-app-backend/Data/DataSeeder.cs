@@ -9,7 +9,6 @@ public static class DataSeeder
         {
             new Patient
             {
-                PatientID = "01",
                 FirstName = "John",
                 LastName = "Doe",
                 DOB = new DateTime(1985, 4, 12),
@@ -18,12 +17,9 @@ public static class DataSeeder
                 Insurance = "United Health",
                 PCP = "Dr. Smith",
                 Clinic = "Sunrise Medical Clinic",
-                FullName = "John Doe",
-                Version = DateTime.UtcNow
             },
             new Patient
             {
-                PatientID = "02",
                 FirstName = "Emily",
                 LastName = "Johnson",
                 DOB = new DateTime(1993, 11, 2),
@@ -32,21 +28,25 @@ public static class DataSeeder
                 Insurance = "Blue Cross Blue Shield",
                 PCP = "Dr. Martinez",
                 Clinic = "Valley Health Center",
-                FullName = "Emily Johnson",
-                Version = DateTime.UtcNow
             }
         };
 
-        foreach (var p in patients)
+        foreach (var patient in patients)
         {
-            bool exists = context.Patients.Any(x => x.PatientID == p.PatientID);
+            bool exists = context.Patients.Any(p => p.MRN == patient.MRN);
             if (!exists)
-                context.Patients.Add(p);
+            {
+                patient.UpdateCalculatedFields(); 
+                context.Patients.Add(patient);
+            }
         }
 
         context.SaveChanges();
 
-        var dbPatients = context.Patients.OrderBy(x => x.PatientID).ToList();
+        var dbPatients = context.Patients
+            .OrderBy(p => p.PatientID)
+            .ToList();
+
         foreach (var p in dbPatients)
             Console.WriteLine($"Seeded/Present: {p.PatientID} - {p.FullName}");
     }

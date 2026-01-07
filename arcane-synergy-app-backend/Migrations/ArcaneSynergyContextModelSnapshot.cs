@@ -75,8 +75,8 @@ namespace arcane_synergy_app_backend.Migrations
                     b.Property<int>("PatientEngagement")
                         .HasColumnType("int");
 
-                    b.Property<string>("PatientID")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("PatientID")
+                        .HasColumnType("int");
 
                     b.Property<bool>("ReadmissionFlag")
                         .HasColumnType("bit");
@@ -112,8 +112,11 @@ namespace arcane_synergy_app_backend.Migrations
 
             modelBuilder.Entity("arcane_synergy_app_backend.Models.Patient", b =>
                 {
-                    b.Property<string>("PatientID")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("PatientID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PatientID"));
 
                     b.Property<string>("Clinic")
                         .HasColumnType("nvarchar(max)");
@@ -126,7 +129,6 @@ namespace arcane_synergy_app_backend.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FullName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Group")
@@ -211,7 +213,9 @@ namespace arcane_synergy_app_backend.Migrations
                 {
                     b.HasOne("arcane_synergy_app_backend.Models.Patient", "Patient")
                         .WithMany("Admissions")
-                        .HasForeignKey("PatientID");
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Patient");
                 });
