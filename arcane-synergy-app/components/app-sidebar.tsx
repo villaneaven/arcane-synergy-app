@@ -1,6 +1,7 @@
 "use client";
 
-import { LayoutDashboard, Form, ClipboardCheck, ChevronDown, ChevronUp, Moon, Sun } from "lucide-react"
+import { signOut } from "next-auth/react";
+import { LayoutDashboard, Form, ClipboardCheck, ChevronDown, ChevronUp, Moon, Sun, User } from "lucide-react"
 import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,13 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 
+const handleLogOutClick = async () => {
+  try {
+    signOut();
+  } catch (error) {
+    console.error(error);
+  }
+};
 
 export function AppSidebar() {
   const { setTheme } = useTheme()
@@ -92,7 +100,7 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
           <SidebarMenu>
-            <SidebarMenuItem>
+            <SidebarMenuItem className="flex justify-between">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon">
@@ -110,6 +118,19 @@ export function AppSidebar() {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setTheme("system")}>
                     System
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <User />
+                    <span className="sr-only">User menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleLogOutClick}>
+                    Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
