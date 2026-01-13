@@ -116,7 +116,7 @@ export function NewPatientDialog() {
       </DialogTrigger>
       <DialogContent className="sm:max-w-106">
         <form onSubmit={handleSubmit}>
-          <DialogHeader>
+          <DialogHeader className="pb-6">
             <DialogTitle>Add Patient</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4">
@@ -231,7 +231,7 @@ export function NewPatientDialog() {
               </Select>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="pt-6">
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>
