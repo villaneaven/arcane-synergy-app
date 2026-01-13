@@ -66,9 +66,6 @@ export function NewPatientDialog() {
         <DialogContent className="sm:max-w-106">
           <DialogHeader>
             <DialogTitle>Add Patient</DialogTitle>
-            <DialogDescription>
-              Click save when you&apos;re done.
-            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
             <div className="grid gap-3">
@@ -166,19 +163,17 @@ export function NewPatientDialog() {
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Clinics</SelectLabel>
-                    <SelectItem value="emc">EMC</SelectItem>
-                    <SelectItem value="vfc">VFC</SelectItem>
-                    <SelectItem value="rgvaims-wes">RGVAIMS-WES</SelectItem>
-                    <SelectItem value="dmc">DMC</SelectItem>
-                    <SelectItem value="rgvaims-mer">RGVAIMS-MER</SelectItem>
-                    <SelectItem value="mvfpa">MVFPA</SelectItem>
-                    <SelectItem value="dmc">DMC</SelectItem>
-                    <SelectItem value="mcacc">MCACC</SelectItem>
-                    <SelectItem value="wmc">WMC</SelectItem>
-                    <SelectItem value="kcp-har">KCP-HAR</SelectItem>
-                    <SelectItem value="mmc">MMC</SelectItem>
-                    <SelectItem value="vfc">VFC</SelectItem>
-                    <SelectItem value="ddnc">DDNC</SelectItem>
+                    <SelectItem value="EM">EMC</SelectItem>
+                    <SelectItem value="VFC">VFC</SelectItem>
+                    <SelectItem value="RGVAIMS-WES">RGVAIMS-WES</SelectItem>
+                    <SelectItem value="DMC">DMC</SelectItem>
+                    <SelectItem value="RGVAIMS-MER">RGVAIMS-MER</SelectItem>
+                    <SelectItem value="MVFPA">MVFPA</SelectItem>
+                    <SelectItem value="MCACC">MCACC</SelectItem>
+                    <SelectItem value="WMC">WMC</SelectItem>
+                    <SelectItem value="KCP-HAR">KCP-HAR</SelectItem>
+                    <SelectItem value="MMC">MMC</SelectItem>
+                    <SelectItem value="DDNC">DDNC</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
