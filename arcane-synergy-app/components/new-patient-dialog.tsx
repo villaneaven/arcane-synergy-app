@@ -64,7 +64,10 @@ export function NewPatientDialog({ onPatientAdded }: { onPatientAdded?: () => vo
         <DialogHeader className="pb-6">
           <DialogTitle>Add Patient</DialogTitle>
         </DialogHeader>
-        <PatientForm onSubmit={handleSubmit} />
+        <PatientForm
+          onSubmit={handleSubmit}
+          onCancel={() => setDialogOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   )
