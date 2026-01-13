@@ -35,12 +35,14 @@ import {
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
-  data: TData[],
+  data: TData[]
+  onPatientAdded?: () => void
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  onPatientAdded,
 }: DataTableProps<TData, TValue>){
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -82,7 +84,7 @@ export function DataTable<TData, TValue>({
           className="max-w-sm"
         />
         <div className="flex justify-end space-x-2 ml-auto">
-          <NewPatientDialog />
+          <NewPatientDialog onPatientAdded={onPatientAdded} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="ml-auto">

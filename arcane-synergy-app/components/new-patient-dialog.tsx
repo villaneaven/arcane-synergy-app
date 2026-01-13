@@ -9,7 +9,6 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -49,7 +48,7 @@ function isValidDate(date: Date | undefined) {
   return !isNaN(date.getTime())
 }
 
-export function NewPatientDialog() {
+export function NewPatientDialog({ onPatientAdded }: { onPatientAdded?: () => void }) {
   const [open, setOpen] = React.useState(false)
   const [date, setDate] = React.useState<Date | undefined>(
     new Date("1990-01-01T00:00:00"),
@@ -101,6 +100,9 @@ export function NewPatientDialog() {
       setDate(new Date("1990-01-01T00:00:00"))
       setValue(formatDate(new Date("1990-01-01T00:00:00")))
       setClinic("")
+      
+      // Call the callback to refresh the data table
+      onPatientAdded?.()
     } catch (error) {
       console.error("Error creating patient:", error)
       alert("Failed to create patient. Please try again.")

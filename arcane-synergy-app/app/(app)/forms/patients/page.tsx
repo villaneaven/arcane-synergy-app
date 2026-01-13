@@ -1,5 +1,5 @@
 import { columns, Patient } from "./columns"
-import { DataTable } from "./data-table"
+import { PatientsTableWrapper } from "./patients-table-wrapper"
 
 
 export default async function Patients() {
@@ -15,7 +15,7 @@ export default async function Patients() {
 
   return (
     <div className="block px-8 py-4 min-h-screen justify-center bg-background font-sans dark:bg-black">
-      <DataTable columns={columns} data={data} />
+      <PatientsTableWrapper columns={columns} initialData={data} />
     </div>
   )
 }
