@@ -89,8 +89,17 @@ export function PatientForm({
     setIsSubmitting(true)
 
     const formData = new FormData(e.currentTarget)
-    const patientData = {
-      patientID: initialValues?.patientID ?? "",
+    const patientData: {
+      firstName: string
+      lastName: string
+      dob: string | undefined
+      mrn: string
+      group: string
+      insurance: string
+      pcp: string
+      clinic: string
+      patientID?: string
+    } = {
       firstName: formData.get("first-name") as string,
       lastName: formData.get("last-name") as string,
       dob: date?.toISOString(),
@@ -99,6 +108,10 @@ export function PatientForm({
       insurance: formData.get("insurance") as string,
       pcp: formData.get("pcp") as string,
       clinic: clinic,
+    }
+
+    if (initialValues?.patientID) {
+      patientData.patientID = initialValues.patientID
     }
 
     try {

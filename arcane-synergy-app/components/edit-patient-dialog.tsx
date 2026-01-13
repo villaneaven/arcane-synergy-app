@@ -59,8 +59,6 @@ export function EditPatientDialog({
         throw new Error("Failed to edit patient")
       }
 
-      const result = response.status === 204 ? null : await response.json()
-      console.log("Patient edited:", result)
       // Close dialog on success
       setDialogOpen(false)
 
