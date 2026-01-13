@@ -56,14 +56,66 @@ export function NewPatientDialog() {
   )
   const [month, setMonth] = React.useState<Date | undefined>(date)
   const [value, setValue] = React.useState(formatDate(date))
+  const [clinic, setClinic] = React.useState<string>("")
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [dialogOpen, setDialogOpen] = React.useState(false)
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    const formData = new FormData(e.currentTarget)
+    const patientData = {
+      firstName: formData.get("first-name") as string,
+      lastName: formData.get("last-name") as string,
+      dob: date?.toISOString(),
+      mrn: formData.get("mrn") as string,
+      group: formData.get("group") as string,
+      insurance: formData.get("insurance") as string,
+      pcp: formData.get("pcp") as string,
+      clinic: clinic,
+    }
+
+    console.log("Submitting patient data:", patientData)
+
+    try {
+      const response = await fetch("http://localhost:5201/api/patients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(patientData),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to create patient")
+      }
+
+      const result = await response.json()
+      console.log("Patient created:", result)
+      
+      // Close dialog on success
+      setDialogOpen(false)
+      
+      // Reset form state
+      setDate(new Date("1990-01-01T00:00:00"))
+      setValue(formatDate(new Date("1990-01-01T00:00:00")))
+      setClinic("")
+    } catch (error) {
+      console.error("Error creating patient:", error)
+      alert("Failed to create patient. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
-    <Dialog>
-      <form>
-        <DialogTrigger asChild>
-          <Button>Add Patient</Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-106">
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <DialogTrigger asChild>
+        <Button>Add Patient</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-106">
+        <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Add Patient</DialogTitle>
           </DialogHeader>
@@ -156,7 +208,7 @@ export function NewPatientDialog() {
             </div>
             <div className="grid gap-3">
               <Label htmlFor="clinic-1">Clinic</Label>
-              <Select>
+              <Select value={clinic} onValueChange={setClinic}>
                 <SelectTrigger className="w-45">
                   <SelectValue placeholder="Select a clinic" />
                 </SelectTrigger>
@@ -183,10 +235,12 @@ export function NewPatientDialog() {
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>
-            <Button type="submit">Save changes</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : "Save changes"}
+            </Button>
           </DialogFooter>
-        </DialogContent>
-      </form>
+        </form>
+      </DialogContent>
     </Dialog>
   )
 }
