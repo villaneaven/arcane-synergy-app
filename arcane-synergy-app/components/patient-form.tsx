@@ -42,6 +42,8 @@ function isValidDate(date: Date | undefined) {
 
 export function PatientForm({
   onSubmit,
+  onCancel,
+  initialValues,
 }: {
   onSubmit: (formData: {
     firstName: string
@@ -53,15 +55,34 @@ export function PatientForm({
     pcp: string
     clinic: string
   }) => Promise<void>
+  onCancel?: () => void
+  initialValues?: {
+    firstName?: string
+    lastName?: string
+    dob?: string
+    mrn?: string
+    group?: string
+    insurance?: string
+    pcp?: string
+    clinic?: string
+  }
 }) {
   const [open, setOpen] = React.useState(false)
-  const [date, setDate] = React.useState<Date | undefined>(
-    new Date("1990-01-01T00:00:00"),
+  const [date, setDate] = React.useState<Date | undefined>(() =>
+    initialValues?.dob ? new Date(initialValues.dob) : new Date("1990-01-01T00:00:00"),
   )
   const [month, setMonth] = React.useState<Date | undefined>(date)
   const [value, setValue] = React.useState(formatDate(date))
-  const [clinic, setClinic] = React.useState<string>("")
+  const [clinic, setClinic] = React.useState<string>(initialValues?.clinic ?? "")
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+
+  React.useEffect(() => {
+    const nextDate = initialValues?.dob ? new Date(initialValues.dob) : new Date("1990-01-01T00:00:00")
+    setDate(nextDate)
+    setMonth(nextDate)
+    setValue(formatDate(nextDate))
+    setClinic(initialValues?.clinic ?? "")
+  }, [initialValues])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -69,6 +90,7 @@ export function PatientForm({
 
     const formData = new FormData(e.currentTarget)
     const patientData = {
+      patientID: initialValues?.patientID ?? "",
       firstName: formData.get("first-name") as string,
       lastName: formData.get("last-name") as string,
       dob: date?.toISOString(),
@@ -98,11 +120,21 @@ export function PatientForm({
       <div className="grid gap-4">
         <div className="grid gap-3">
           <Label htmlFor="first-name-1">First Name</Label>
-          <Input id="first-name-1" name="first-name" placeholder="John" />
+          <Input
+            id="first-name-1"
+            name="first-name"
+            placeholder="John"
+            defaultValue={initialValues?.firstName ?? ""}
+          />
         </div>
         <div className="grid gap-3">
           <Label htmlFor="last-name-1">Last Name</Label>
-          <Input id="last-name-1" name="last-name" placeholder="Doe" />
+          <Input
+            id="last-name-1"
+            name="last-name"
+            placeholder="Doe"
+            defaultValue={initialValues?.lastName ?? ""}
+          />
         </div>
         <div className="grid gap-3">
           <Label htmlFor="date-of-birth-1">Date of Birth</Label>
@@ -168,19 +200,23 @@ export function PatientForm({
         </div>
         <div className="grid gap-3">
           <Label htmlFor="mrn-1">MRN</Label>
-          <Input id="mrn-1" name="mrn" />
+          <Input id="mrn-1" name="mrn" defaultValue={initialValues?.mrn ?? ""} />
         </div>
         <div className="grid gap-3">
           <Label htmlFor="group-1">Group</Label>
-          <Input id="group-1" name="group" />
+          <Input id="group-1" name="group" defaultValue={initialValues?.group ?? ""} />
         </div>
         <div className="grid gap-3">
           <Label htmlFor="insurance-1">Insurance</Label>
-          <Input id="insurance-1" name="insurance" />
+          <Input
+            id="insurance-1"
+            name="insurance"
+            defaultValue={initialValues?.insurance ?? ""}
+          />
         </div>
         <div className="grid gap-3">
           <Label htmlFor="pcp-1">PCP</Label>
-          <Input id="pcp-1" name="pcp" />
+          <Input id="pcp-1" name="pcp" defaultValue={initialValues?.pcp ?? ""} />
         </div>
         <div className="grid gap-3">
           <Label htmlFor="clinic-1">Clinic</Label>
@@ -208,7 +244,12 @@ export function PatientForm({
         </div>
       </div>
       <div className="flex gap-3 pt-6 justify-end">
-        <Button type="button" variant="outline" disabled={isSubmitting}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isSubmitting}
+          onClick={onCancel}
+        >
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>
