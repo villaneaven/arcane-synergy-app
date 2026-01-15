@@ -15,7 +15,8 @@ namespace arcane_synergy_app_backend.Migrations
                 name: "Patients",
                 columns: table => new
                 {
-                    PatientID = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    PatientID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     FirstName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     LastName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     DOB = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -24,7 +25,7 @@ namespace arcane_synergy_app_backend.Migrations
                     Insurance = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PCP = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Clinic = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    FullName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    FullName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Version = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -38,6 +39,7 @@ namespace arcane_synergy_app_backend.Migrations
                 {
                     AdmissionId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    PatientID = table.Column<int>(type: "int", nullable: false),
                     FacilityType = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Facility = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Type = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -50,7 +52,6 @@ namespace arcane_synergy_app_backend.Migrations
                     DischargeTo = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     DateSeen = table.Column<DateTime>(type: "datetime2", nullable: true),
                     SeenBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PatientID = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     TotalERVisits = table.Column<int>(type: "int", nullable: false),
                     TotalADMVisits = table.Column<int>(type: "int", nullable: false),
                     DayOfWeekAdmitted = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -70,7 +71,8 @@ namespace arcane_synergy_app_backend.Migrations
                         name: "FK_Admissions_Patients_PatientID",
                         column: x => x.PatientID,
                         principalTable: "Patients",
-                        principalColumn: "PatientID");
+                        principalColumn: "PatientID",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(

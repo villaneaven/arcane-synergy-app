@@ -18,7 +18,6 @@
         public string? SeenBy { get; set; } 
         
         //these will be calculated
-        public string? PatientID { get; set; } 
         public int TotalERVisits { get; set; } 
         public int TotalADMVisits { get; set; } 
         public string? DayOfWeekAdmitted { get; set; } 
