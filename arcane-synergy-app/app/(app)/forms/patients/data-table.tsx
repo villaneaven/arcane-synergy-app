@@ -93,9 +93,6 @@ export function DataTable<TData, TValue>({
           className="max-w-sm"
         />
         <div className="flex justify-end space-x-2 ml-auto">
-          <Button variant="destructive" disabled={table.getFilteredSelectedRowModel().rows.length === 0}>
-              Delete
-            </Button>
           <NewPatientDialog onPatientAdded={onPatientAdded} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
