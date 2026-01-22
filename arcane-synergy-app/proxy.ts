@@ -12,7 +12,7 @@ export default async function proxy(req: NextRequest) {
   // 3. Get token and session information
   const token = await getToken({
     req,
-    secret: process.env.AZURE_AD_CLIENT_SECRET,
+    secret: process.env.NEXTAUTH_SECRET,
   });
   const isAuthenticated = !!token;
 
