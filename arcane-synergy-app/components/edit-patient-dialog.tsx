@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-
+import { useSession } from "next-auth/react"
 import {DropdownMenuItem} from "@/components/ui/dropdown-menu"
 import {
   Dialog,
@@ -32,6 +32,7 @@ export function EditPatientDialog({
   onPatientUpdated?: () => void
 }) {
   const [dialogOpen, setDialogOpen] = React.useState(false)
+  const { data: session } = useSession()
 
   const handleSubmit = async (formData: {
     patientID: string
@@ -46,11 +47,14 @@ export function EditPatientDialog({
   }) => {
     console.log("Submitting patient data:", formData)
 
+    const accessToken = (session as { access_token?: string })?.access_token;
+
     try {
       const response = await fetch(`http://localhost:5201/api/patients/${patient.patientID}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
         },
         body: JSON.stringify(formData),
       })

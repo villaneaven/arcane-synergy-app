@@ -1,10 +1,15 @@
 import { Patient } from "./columns"
 import { PatientsTableWrapper } from "./patients-table-wrapper"
-
+import { getAccessToken } from "@/lib/auth"
 
 export default async function Patients() {
+  const accessToken = await getAccessToken()
+  
   const res = await fetch('http://localhost:5201/api/patients', {
-    cache: 'no-store'
+    cache: 'no-store',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
   })
   
   if (!res.ok) {

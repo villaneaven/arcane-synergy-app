@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-
+import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -14,6 +14,7 @@ import { PatientForm } from "@/components/patient-form"
 
 export function NewPatientDialog({ onPatientAdded }: { onPatientAdded?: () => void }) {
   const [dialogOpen, setDialogOpen] = React.useState(false)
+  const { data: session } = useSession()
 
   const handleSubmit = async (formData: {
     firstName: string
@@ -27,11 +28,14 @@ export function NewPatientDialog({ onPatientAdded }: { onPatientAdded?: () => vo
   }) => {
     console.log("Submitting patient data:", formData)
 
+    const accessToken = (session as { access_token?: string })?.access_token;
+
     try {
       const response = await fetch("http://localhost:5201/api/patients", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
         },
         body: JSON.stringify(formData),
       })
