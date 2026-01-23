@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-
+import { useSession } from "next-auth/react"
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -45,6 +45,7 @@ export function DataTable<TData, TValue>({
   data,
   onPatientAdded,
 }: DataTableProps<TData, TValue>){
+  const { data: session } = useSession()
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -85,12 +86,16 @@ export function DataTable<TData, TValue>({
 
   const handleDelete = async () => {
     const selectedRowIds = table.getSelectedRowModel().rows.map(row => row.original.patientID);
+    const accessToken = (session as { access_token?: string })?.access_token;
 
     setIsDeleting(true);
     try {
       for (const patientId of selectedRowIds) {
         const response = await fetch(`http://localhost:5201/api/patients/${patientId}`, {
           method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
         });
 
         if (!response.ok) {
