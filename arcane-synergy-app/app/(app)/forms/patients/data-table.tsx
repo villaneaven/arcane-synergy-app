@@ -15,6 +15,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 
+import { ButtonLoading } from "@/components/button-loading"
 import { NewPatientDialog } from "@/components/new-patient-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -48,6 +49,7 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   )
+  const [isDeleting, setIsDeleting] = React.useState(false)
 
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
@@ -81,6 +83,33 @@ export function DataTable<TData, TValue>({
     },
   })
 
+  const handleDelete = async () => {
+    const selectedRowIds = table.getSelectedRowModel().rows.map(row => row.original.patientID);
+
+    setIsDeleting(true);
+    try {
+      for (const patientId of selectedRowIds) {
+        const response = await fetch(`http://localhost:5201/api/patients/${patientId}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to delete patient ${patientId}`);
+        }
+      }
+
+      setRowSelection({});
+
+      if (onPatientAdded) {
+        onPatientAdded();
+      }
+    } catch (error) {
+      console.error("Error deleting patients:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center py-4">
@@ -93,9 +122,13 @@ export function DataTable<TData, TValue>({
           className="max-w-sm"
         />
         <div className="flex justify-end space-x-2 ml-auto">
-          <Button variant="destructive" disabled={table.getFilteredSelectedRowModel().rows.length === 0}>
-            Delete
-          </Button>
+          {isDeleting ? (
+            <ButtonLoading />
+          ) : (
+            <Button variant="destructive" disabled={table.getFilteredSelectedRowModel().rows.length === 0 || isDeleting} onClick={handleDelete}>
+              Delete
+            </Button>
+          )}
           <NewPatientDialog onPatientAdded={onPatientAdded} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
