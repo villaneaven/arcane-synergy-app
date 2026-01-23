@@ -55,9 +55,15 @@ export function DataTable<TData, TValue>({
       lastName: false,
     })
 
+  // Pass the onPatientAdded callback to columns so they can refresh data
+  const columnsWithCallbacks = React.useMemo(
+    () => (typeof columns === 'function' ? columns(onPatientAdded) : columns),
+    [columns, onPatientAdded]
+  )
+
   const table = useReactTable({
     data,
-    columns,
+    columns: columnsWithCallbacks,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,

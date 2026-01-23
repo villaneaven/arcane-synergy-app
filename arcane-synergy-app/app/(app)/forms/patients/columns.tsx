@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { EditPatientDialog } from "@/components/edit-patient-dialog"
 
 export type Patient = {
   patientID: string
@@ -27,7 +28,7 @@ export type Patient = {
   version: string
 }
 
-export const columns: ColumnDef<Patient>[] = [
+export const createColumns = (onDataChange?: () => void): ColumnDef<Patient>[] => [
   {
     accessorKey: "firstName",
     header: "First Name",
@@ -104,6 +105,7 @@ export const columns: ColumnDef<Patient>[] = [
               Copy patient ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            <EditPatientDialog patient={patient} onPatientUpdated={onDataChange} />
             <DropdownMenuItem>View patient</DropdownMenuItem>
             <DropdownMenuItem>View admissions</DropdownMenuItem>
           </DropdownMenuContent>

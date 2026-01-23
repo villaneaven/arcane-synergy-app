@@ -1,4 +1,4 @@
-import { columns, Patient } from "./columns"
+import { Patient } from "./columns"
 import { PatientsTableWrapper } from "./patients-table-wrapper"
 
 
@@ -15,7 +15,7 @@ export default async function Patients() {
 
   return (
     <div className="block px-8 py-4 min-h-screen justify-center bg-background font-sans dark:bg-black">
-      <PatientsTableWrapper columns={columns} initialData={data} />
+      <PatientsTableWrapper initialData={data} />
     </div>
   )
 }

@@ -1,17 +1,14 @@
 "use client"
 
-import React, { useState, useCallback } from "react"
-import { ColumnDef } from "@tanstack/react-table"
+import React, { useState, useCallback, useMemo } from "react"
 import { DataTable } from "./data-table"
-import { Patient } from "./columns"
+import { Patient, createColumns } from "./columns"
 
 interface PatientsTableWrapperProps {
-  columns: ColumnDef<Patient>[]
   initialData: Patient[]
 }
 
 export function PatientsTableWrapper({
-  columns,
   initialData,
 }: PatientsTableWrapperProps) {
   const [data, setData] = useState<Patient[]>(initialData)
@@ -32,6 +29,8 @@ export function PatientsTableWrapper({
       console.error("Error refreshing patients:", error)
     }
   }, [])
+
+  const columns = useMemo(() => createColumns(handlePatientAdded), [handlePatientAdded])
 
   return (
     <DataTable
