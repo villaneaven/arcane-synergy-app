@@ -8,6 +8,7 @@ namespace arcane_synergy_app_backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class PatientsController : ControllerBase
 {
     private readonly ArcaneSynergyContext _context;
