@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace arcane_synergy_app_backend.Models
 {
@@ -21,6 +22,7 @@ namespace arcane_synergy_app_backend.Models
         public string? FullName { get; set; }
         public DateTime Version { get; set; }
 
+        [JsonIgnore]
         public ICollection<Admission>? Admissions { get; set; }
 
 

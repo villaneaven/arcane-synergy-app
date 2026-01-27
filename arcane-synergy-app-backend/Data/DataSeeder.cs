@@ -47,7 +47,98 @@ public static class DataSeeder
             .OrderBy(p => p.PatientID)
             .ToList();
 
+        var patientLookup = dbPatients
+            .Where(p => !string.IsNullOrWhiteSpace(p.MRN))
+            .ToDictionary(p => p.MRN!, p => p.PatientID);
+
+        var admissions = new List<Admission>
+        {
+            new Admission
+            {
+                PatientID = patientLookup.GetValueOrDefault("MRN10001"),
+                FacilityType = "Hospital",
+                Facility = "DMC Main Campus",
+                Type = "Emergency",
+                TimeOfAdmission = new DateTime(2025, 12, 5, 9, 30, 0, DateTimeKind.Utc),
+                DX = "Chest pain",
+                NotificationSource = "ER Nurse",
+                DateNotified = new DateTime(2025, 12, 5, 10, 0, 0, DateTimeKind.Utc),
+                AdmissionDate = new DateTime(2025, 12, 5, 9, 30, 0, DateTimeKind.Utc),
+                DischargeDate = new DateTime(2025, 12, 8, 15, 0, 0, DateTimeKind.Utc),
+                DischargeTo = "Home",
+                DateSeen = new DateTime(2025, 12, 6, 14, 0, 0, DateTimeKind.Utc),
+                SeenBy = "TCM Team",
+                NextAdmissionDate = new DateTime(2026, 1, 10, 8, 0, 0, DateTimeKind.Utc),
+                FinalDischargeDate = new DateTime(2025, 12, 8, 15, 0, 0, DateTimeKind.Utc),
+                CountOfTransfers = 1,
+                Status = "Done"
+            },
+            new Admission
+            {
+                PatientID = patientLookup.GetValueOrDefault("MRN10002"),
+                FacilityType = "SNF",
+                Facility = "Valley Recovery Center",
+                Type = "Post-Acute",
+                TimeOfAdmission = new DateTime(2025, 11, 20, 16, 0, 0, DateTimeKind.Utc),
+                DX = "Knee replacement rehab",
+                NotificationSource = "Facility Fax",
+                DateNotified = new DateTime(2025, 11, 20, 16, 30, 0, DateTimeKind.Utc),
+                AdmissionDate = new DateTime(2025, 11, 20, 16, 0, 0, DateTimeKind.Utc),
+                DischargeDate = new DateTime(2025, 12, 3, 10, 0, 0, DateTimeKind.Utc),
+                DischargeTo = "Home with HH",
+                DateSeen = new DateTime(2025, 11, 22, 11, 0, 0, DateTimeKind.Utc),
+                SeenBy = "Care Coordinator",
+                FinalDischargeDate = new DateTime(2025, 12, 3, 10, 0, 0, DateTimeKind.Utc),
+                CountOfTransfers = 0,
+                Status = "To Be Seen"
+            },
+            new Admission
+            {
+                PatientID = patientLookup.GetValueOrDefault("MRN10001"),
+                FacilityType = "Hospital",
+                Facility = "DMC Main Campus",
+                Type = "Readmission",
+                TimeOfAdmission = new DateTime(2026, 1, 10, 8, 0, 0, DateTimeKind.Utc),
+                DX = "Shortness of breath",
+                NotificationSource = "CareLink",
+                DateNotified = new DateTime(2026, 1, 10, 8, 30, 0, DateTimeKind.Utc),
+                AdmissionDate = new DateTime(2026, 1, 10, 8, 0, 0, DateTimeKind.Utc),
+                DischargeTo = "SNF",
+                DateSeen = new DateTime(2026, 1, 11, 9, 0, 0, DateTimeKind.Utc),
+                SeenBy = "Hospitalist",
+                FinalDischargeDate = null,
+                CountOfTransfers = 0,
+                Status = "In Progress"
+            }
+        };
+
+        foreach (var admission in admissions)
+        {
+            if (admission.PatientID == 0)
+                continue;
+
+            bool exists = context.Admissions.Any(a =>
+                a.PatientID == admission.PatientID &&
+                a.AdmissionDate == admission.AdmissionDate &&
+                a.Type == admission.Type);
+
+            if (!exists)
+            {
+                admission.UpdateCalculatedFields();
+                context.Admissions.Add(admission);
+            }
+        }
+
+        context.SaveChanges();
+
         foreach (var p in dbPatients)
             Console.WriteLine($"Seeded/Present: {p.PatientID} - {p.FullName}");
+
+        var dbAdmissions = context.Admissions
+            .OrderBy(a => a.AdmissionId)
+            .ToList();
+
+        foreach (var a in dbAdmissions)
+            Console.WriteLine($"Seeded/Present Admission: {a.AdmissionId} - Patient {a.PatientID} - {a.Type} on {a.AdmissionDate:yyyy-MM-dd}");
     }
 }
