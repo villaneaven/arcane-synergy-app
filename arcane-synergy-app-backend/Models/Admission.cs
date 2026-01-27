@@ -1,9 +1,15 @@
-﻿namespace arcane_synergy_app_backend.Models
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace arcane_synergy_app_backend.Models
 {
     public class Admission
     {
-        public Patient Patient { get; set; } = null!;
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int AdmissionId { get; set; }
+        public int PatientID { get; set; }
+        public Patient Patient { get; set; } = null!;
         public string? FacilityType { get; set; }
         public string? Facility { get; set; }
         public required string Type { get; set; }
@@ -15,23 +21,21 @@
         public DateTime? DischargeDate { get; set; }
         public string? DischargeTo { get; set; }
         public DateTime? DateSeen { get; set; }
-        public string? SeenBy { get; set; } 
-        
+        public string? SeenBy { get; set; }
+
         //these will be calculated
-        public int TotalERVisits { get; set; } 
-        public int TotalADMVisits { get; set; } 
-        public string? DayOfWeekAdmitted { get; set; } 
-        public string? MonthAdmitted { get; set; } 
-        public DateTime? TCMDueDate { get; set; } 
+        public int TotalERVisits { get; set; }
+        public int TotalADMVisits { get; set; }
+        public string? DayOfWeekAdmitted { get; set; }
+        public string? MonthAdmitted { get; set; }
+        public DateTime? TCMDueDate { get; set; }
         public int PatientEngagement { get; set; }
         public bool ReadmissionFlag { get; set; }
         // This will get the next initial admission date
         public DateTime? NextAdmissionDate { get; set; }
         // This will get the Final Discharge Date from Transfer class where the final discharge flag is 1
-        public DateTime? FinalDischargeDate { get; set; } 
+        public DateTime? FinalDischargeDate { get; set; }
         public int CountOfTransfers { get; set; }
-
-
 
         // Status will mark Done if the patient's transfers have been finalized and discharged and patient has been seen. 
         // In Transfer if Patient is not discharged from a transfer. 
@@ -39,9 +43,21 @@
         // Expired if passed away. 
         // To Be Seen if patient is pending being seen after discharge when transfers are finalized and done.
         // SNF if patient is in an SNF
-        public string? Status { get; set; } 
-        
+        public string? Status { get; set; }
+
         //references
-        public ICollection<Transfer>? Transfers { get; set; } 
+        public ICollection<Transfer>? Transfers { get; set; }
+
+        // temp calculations
+        public void UpdateCalculatedFields()
+        {
+            DayOfWeekAdmitted = AdmissionDate.DayOfWeek.ToString();
+            MonthAdmitted = AdmissionDate.ToString("MMMM");
+            if (NextAdmissionDate.HasValue && FinalDischargeDate.HasValue)
+            {
+                ReadmissionFlag = (NextAdmissionDate.Value - FinalDischargeDate.Value).TotalDays <= 30;
+            }
+
+        }
     }
 }
