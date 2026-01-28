@@ -35,7 +35,9 @@ import {
 import { ButtonLoading } from "@/components/button-loading";
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+  columns:
+    | ColumnDef<TData, TValue>[]
+    | ((onAdmissionAdded?: () => void) => ColumnDef<TData, TValue>[]);
   data: TData[];
   onAdmissionAdded?: () => void;
 }
