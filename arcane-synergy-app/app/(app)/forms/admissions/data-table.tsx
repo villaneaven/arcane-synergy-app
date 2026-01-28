@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
+
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -30,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ButtonLoading } from "@/components/button-loading";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -49,8 +52,18 @@ export function DataTable<TData, TValue>({
 
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
-      firstName: false,
-      lastName: false,
+      totalERVisits: false,
+      totalADMVisits: false,
+      dayOfWeekAdmitted: false,
+      monthAdmitted: false,
+      tcmDueDate: false,
+      patientEngagement: false,
+      readmissionFlag: false,
+      nextAdmissionDate: false,
+      finalDischargeDate: false,
+      countOfTransfers: false,
+      status: false,
+      transfers: false,
     });
   const [rowSelection, setRowSelection] = React.useState({});
 
@@ -79,6 +92,9 @@ export function DataTable<TData, TValue>({
     },
   });
 
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
   return (
     <div>
       <div className="flex items-center py-4">
@@ -96,6 +112,20 @@ export function DataTable<TData, TValue>({
           className="max-w-sm"
         />
         <div className="flex justify-end space-x-2 ml-auto">
+          {isDeleting ? (
+            <ButtonLoading />
+          ) : (
+            <Button
+              variant="destructive"
+              disabled={
+                table.getFilteredSelectedRowModel().rows.length === 0 ||
+                isDeleting
+              }
+              onClick={() => {}}
+            >
+              Delete
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="ml-auto">
@@ -115,6 +145,7 @@ export function DataTable<TData, TValue>({
                       onCheckedChange={(value) =>
                         column.toggleVisibility(!!value)
                       }
+                      onSelect={(e) => e.preventDefault()}
                     >
                       {column.id}
                     </DropdownMenuCheckboxItem>
@@ -150,6 +181,12 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  onClick={() => {
+                    // router.push(
+                    //   `/`,
+                    // );
+                  }}
+                  className="cursor-pointer"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
