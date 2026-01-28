@@ -19,18 +19,30 @@ export type Admission = {
   admissionId: string;
   patientID: string;
   patient: Patient;
-  facilityType: string;
-  facility: string;
+  facilityType: string | null;
+  facility: string | null;
   type: string;
-  timeOfAdmission: string;
-  dx: string;
-  notificationSource: string;
+  timeOfAdmission: string | null;
+  dx: string | null;
+  notificationSource: string | null;
   dateNotified: string;
   admissionDate: string;
   dischargeDate: string | null;
-  dischargeTo: string;
-  dateSeen: string;
-  seenBy: string;
+  dischargeTo: string | null;
+  dateSeen: string | null;
+  seenBy: string | null;
+  totalERVisits: number;
+  totalADMVisits: number;
+  dayOfWeekAdmitted: string | null;
+  monthAdmitted: string | null;
+  tcmDueDate: string | null;
+  patientEngagement: number;
+  readmissionFlag: boolean;
+  nextAdmissionDate: string | null;
+  finalDischargeDate: string | null;
+  countOfTransfers: number;
+  status: string | null;
+  transfers: string | null;
 };
 
 export const createColumns = (): ColumnDef<Admission>[] => [
@@ -77,7 +89,7 @@ export const createColumns = (): ColumnDef<Admission>[] => [
     accessorFn: (row) => row.patient?.dob ?? "",
     header: "DOB",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("dateNotified"));
+      const date = new Date(row.getValue("patientDOB"));
       return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "2-digit",
@@ -88,10 +100,20 @@ export const createColumns = (): ColumnDef<Admission>[] => [
   {
     accessorKey: "facilityType",
     header: "Facility Type",
+    cell: ({ row }) => {
+      const facilityType = row.getValue("facilityType");
+      if (!facilityType) return "N/A";
+      return facilityType;
+    },
   },
   {
     accessorKey: "facility",
     header: "Facility",
+    cell: ({ row }) => {
+      const facility = row.getValue("facility");
+      if (!facility) return "N/A";
+      return facility;
+    },
   },
   {
     accessorKey: "type",
@@ -101,7 +123,9 @@ export const createColumns = (): ColumnDef<Admission>[] => [
     accessorKey: "timeOfAdmission",
     header: "Time of Admission",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("dateNotified"));
+      const timeOfAdmission = row.getValue("timeOfAdmission");
+      if (!timeOfAdmission) return "N/A";
+      const date = new Date(row.getValue("timeOfAdmission"));
       return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "2-digit",
@@ -112,10 +136,20 @@ export const createColumns = (): ColumnDef<Admission>[] => [
   {
     accessorKey: "dx",
     header: "DX",
+    cell: ({ row }) => {
+      const dx = row.getValue("dx");
+      if (!dx) return "N/A";
+      return dx;
+    },
   },
   {
     accessorKey: "notificationSource",
     header: "Notification Source",
+    cell: ({ row }) => {
+      const notificationSource = row.getValue("notificationSource");
+      if (!notificationSource) return "N/A";
+      return notificationSource;
+    },
   },
   {
     accessorKey: "dateNotified",
@@ -158,12 +192,19 @@ export const createColumns = (): ColumnDef<Admission>[] => [
   {
     accessorKey: "dischargeTo",
     header: "Discharge To",
+    cell: ({ row }) => {
+      const dischargeTo = row.getValue("dischargeTo");
+      if (!dischargeTo) return "N/A";
+      return dischargeTo;
+    },
   },
   {
     accessorKey: "dateSeen",
     header: "Date Seen",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("dateSeen"));
+      const dateSeen = row.getValue("dateSeen");
+      if (!dateSeen) return "N/A";
+      const date = new Date(dateSeen as string);
       return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "2-digit",
@@ -174,6 +215,101 @@ export const createColumns = (): ColumnDef<Admission>[] => [
   {
     accessorKey: "seenBy",
     header: "Seen By",
+    cell: ({ row }) => {
+      const seenBy = row.getValue("seenBy");
+      if (!seenBy) return "N/A";
+      return seenBy;
+    },
+  },
+  {
+    accessorKey: "totalERVisits",
+    header: "Total ER Visits",
+  },
+  {
+    accessorKey: "totalADMVisits",
+    header: "Total ADM Visits",
+  },
+  {
+    accessorKey: "dayOfWeekAdmitted",
+    header: "Day of Week Admitted",
+    cell: ({ row }) => {
+      const dayOfWeekAdmitted = row.getValue("dayOfWeekAdmitted");
+      if (!dayOfWeekAdmitted) return "N/A";
+      return dayOfWeekAdmitted;
+    },
+  },
+  {
+    accessorKey: "monthAdmitted",
+    header: "Month Admitted",
+    cell: ({ row }) => {
+      const monthAdmitted = row.getValue("monthAdmitted");
+      if (!monthAdmitted) return "N/A";
+      return monthAdmitted;
+    },
+  },
+  {
+    accessorKey: "tcmDueDate",
+    header: "TCM Due Date",
+    cell: ({ row }) => {
+      const date = new Date(row.getValue("dateSeen"));
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+    },
+  },
+  {
+    accessorKey: "patientEngagement",
+    header: "Patient Engagement",
+  },
+  {
+    accessorKey: "readmissionFlag",
+    header: "Readmission Flag",
+    cell: ({ row }) => {
+      return row.getValue("readmissionFlag") ? "Yes" : "No";
+    },
+  },
+  {
+    accessorKey: "nextAdmissionDate",
+    header: "Next Admission Date",
+    cell: ({ row }) => {
+      const nextAdmissionDate = row.getValue("nextAdmissionDate");
+      if (!nextAdmissionDate) return "N/A";
+      const date = new Date(nextAdmissionDate as string);
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+    },
+  },
+  {
+    accessorKey: "finalDischargeDate",
+    header: "Final Discharge Date",
+    cell: ({ row }) => {
+      const finalDischargeDate = row.getValue("finalDischargeDate");
+      if (!finalDischargeDate) return "N/A";
+      const date = new Date(finalDischargeDate as string);
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+    },
+  },
+  {
+    accessorKey: "countOfTransfers",
+    header: "Count of Transfers",
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status");
+      if (!status) return "N/A";
+      return status;
+    },
   },
   {
     id: "actions",
