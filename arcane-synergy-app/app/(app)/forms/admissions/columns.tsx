@@ -14,38 +14,40 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Patient } from "../patients/columns";
+import { EditAdmissionDialog } from "@/components/edit-admission-dialog";
 
 export type Admission = {
   admissionId: string;
   patientID: string;
   patient: Patient;
-  facilityType: string | null;
-  facility: string | null;
+  facilityType: string | undefined;
+  facility: string | undefined;
   type: string;
-  timeOfAdmission: string | null;
-  dx: string | null;
-  notificationSource: string | null;
+  dx: string | undefined;
+  notificationSource: string | undefined;
   dateNotified: string;
   admissionDate: string;
-  dischargeDate: string | null;
-  dischargeTo: string | null;
-  dateSeen: string | null;
-  seenBy: string | null;
+  dischargeDate: string | undefined;
+  dischargeTo: string | undefined;
+  dateSeen: string | undefined;
+  seenBy: string | undefined;
   totalERVisits: number;
   totalADMVisits: number;
-  dayOfWeekAdmitted: string | null;
-  monthAdmitted: string | null;
-  tcmDueDate: string | null;
+  dayOfWeekAdmitted: string | undefined;
+  monthAdmitted: string | undefined;
+  tcmDueDate: string | undefined;
   patientEngagement: number;
   readmissionFlag: boolean;
-  nextAdmissionDate: string | null;
-  finalDischargeDate: string | null;
+  nextAdmissionDate: string | undefined;
+  finalDischargeDate: string | undefined;
   countOfTransfers: number;
-  status: string | null;
-  transfers: string | null;
+  status: string | undefined;
+  transfers: string | undefined;
 };
 
-export const createColumns = (): ColumnDef<Admission>[] => [
+export const createColumns = (
+  onDataChange?: () => void,
+): ColumnDef<Admission>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -120,16 +122,27 @@ export const createColumns = (): ColumnDef<Admission>[] => [
     header: "Type",
   },
   {
-    accessorKey: "timeOfAdmission",
-    header: "Time of Admission",
+    accessorKey: "admissionDate",
+    header: "Admission Date",
     cell: ({ row }) => {
-      const timeOfAdmission = row.getValue("timeOfAdmission");
-      if (!timeOfAdmission) return "N/A";
-      const date = new Date(row.getValue("timeOfAdmission"));
+      const date = new Date(row.getValue("admissionDate"));
       return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
+      });
+    },
+  },
+  {
+    accessorKey: "timeOfAdmission",
+    header: "Time of Admission",
+    cell: ({ row }) => {
+      const admissionDate = row.getValue("admissionDate");
+      if (!admissionDate) return "N/A";
+      const date = new Date(admissionDate as string);
+      return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
       });
     },
   },
@@ -156,18 +169,6 @@ export const createColumns = (): ColumnDef<Admission>[] => [
     header: "Date Notified",
     cell: ({ row }) => {
       const date = new Date(row.getValue("dateNotified"));
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      });
-    },
-  },
-  {
-    accessorKey: "admissionDate",
-    header: "Admission Date",
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("admissionDate"));
       return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "2-digit",
@@ -334,6 +335,10 @@ export const createColumns = (): ColumnDef<Admission>[] => [
               Copy admission ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            <EditAdmissionDialog
+              admission={admission}
+              onAdmissionUpdated={onDataChange}
+            />
             <DropdownMenuItem>View patient</DropdownMenuItem>
             <DropdownMenuItem>View admissions</DropdownMenuItem>
           </DropdownMenuContent>
