@@ -26,6 +26,22 @@ export function DatePickerTimeInput({
 }: DatePickerInputProps) {
   const [date, setDate] = React.useState<Date | undefined>(value);
 
+  const formatTime = (date: Date | undefined) => {
+    if (!date) return "";
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+  };
+
+  const [time, setTime] = React.useState(formatTime(value));
+
+  React.useEffect(() => {
+    if (value) {
+      setDate(value);
+      setTime(formatTime(value));
+    }
+  }, [value]);
+
   return (
     <FieldGroup className="mx-auto flex-row">
       <Field>
@@ -53,6 +69,8 @@ export function DatePickerTimeInput({
         <Input
           type="time"
           id={id ? `${id}-time` : "time-picker-optional"}
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
           className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
           required={timeRequired}
         />
