@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ButtonLoading } from "@/components/button-loading";
+import { NewAdmissionDialog } from "@/components/new-admission-dialog";
 
 interface DataTableProps<TData, TValue> {
   columns:
@@ -128,6 +129,7 @@ export function DataTable<TData, TValue>({
               Delete
             </Button>
           )}
+          <NewAdmissionDialog onAdmissionAdded={onAdmissionAdded} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="ml-auto">
