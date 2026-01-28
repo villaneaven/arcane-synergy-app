@@ -48,6 +48,7 @@ public class PatientsController : ControllerBase
             .Where(p =>
                 p.FirstName.Contains(query) ||
                 p.LastName.Contains(query) ||
+                (p.FullName != null && p.FullName.Contains(query)) ||
                 (p.MRN != null && p.MRN.Contains(query))
             )
             .OrderBy(p => p.LastName)
@@ -56,7 +57,7 @@ public class PatientsController : ControllerBase
             .Select(p => new
             {
                 p.PatientID,
-                FullName = p.LastName + ", " + p.FirstName,
+                p.FullName,
                 p.DOB,
                 p.MRN
             })
@@ -64,6 +65,7 @@ public class PatientsController : ControllerBase
 
         return Ok(patients);
     }
+
 
     [HttpPost]
     public async Task<IActionResult> AddPatient([FromBody] Patient patient)
