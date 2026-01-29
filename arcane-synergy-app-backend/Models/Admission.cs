@@ -9,7 +9,7 @@ namespace arcane_synergy_app_backend.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int AdmissionId { get; set; }
         public int PatientID { get; set; }
-        public Patient Patient { get; set; } = null!;
+        public Patient? Patient { get; set; }
         public string? FacilityType { get; set; }
         public string? Facility { get; set; }
         public required string Type { get; set; }
