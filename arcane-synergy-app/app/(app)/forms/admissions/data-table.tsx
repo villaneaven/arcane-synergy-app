@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 import {
   ColumnDef,
@@ -35,7 +36,7 @@ import {
 import { ButtonLoading } from "@/components/button-loading";
 import { NewAdmissionDialog } from "@/components/new-admission-dialog";
 
-interface DataTableProps<TData, TValue> {
+interface DataTableProps<TData extends { admissionId: string }, TValue> {
   columns:
     | ColumnDef<TData, TValue>[]
     | ((onAdmissionAdded?: () => void) => ColumnDef<TData, TValue>[]);
@@ -43,15 +44,18 @@ interface DataTableProps<TData, TValue> {
   onAdmissionAdded?: () => void;
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends { admissionId: string }, TValue>({
   columns,
   data,
   onAdmissionAdded,
 }: DataTableProps<TData, TValue>) {
+  const { data: session } = useSession();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
@@ -95,8 +99,41 @@ export function DataTable<TData, TValue>({
     },
   });
 
-  const router = useRouter();
-  const [isDeleting, setIsDeleting] = React.useState(false);
+  const handleDelete = async () => {
+    const selectedRowIds = table
+      .getSelectedRowModel()
+      .rows.map((row) => row.original.admissionId);
+    const accessToken = (session as { access_token?: string })?.access_token;
+
+    setIsDeleting(true);
+    try {
+      for (const admissionId of selectedRowIds) {
+        const response = await fetch(
+          `http://localhost:5201/api/admissions/${admissionId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to delete admission ${admissionId}`);
+        }
+      }
+
+      setRowSelection({});
+
+      if (onAdmissionAdded) {
+        onAdmissionAdded();
+      }
+    } catch (error) {
+      console.error("Error deleting admissions:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div>
@@ -124,7 +161,7 @@ export function DataTable<TData, TValue>({
                 table.getFilteredSelectedRowModel().rows.length === 0 ||
                 isDeleting
               }
-              onClick={() => {}}
+              onClick={handleDelete}
             >
               Delete
             </Button>
