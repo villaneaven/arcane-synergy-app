@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,6 +18,7 @@ export function NewAdmissionDialog({
   onAdmissionAdded?: () => void;
 }) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const { data: session } = useSession();
 
   const handleSubmit = async (formData: {
     patientID: string;
@@ -33,6 +35,35 @@ export function NewAdmissionDialog({
     seenBy?: string;
   }) => {
     console.log("Submitting admission data:", formData);
+
+    const accessToken = (session as { access_token?: string })?.access_token;
+
+    try {
+      const response = await fetch("http://localhost:5201/api/admissions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create admission");
+      }
+
+      const result = await response.json();
+      console.log("Admission created:", result);
+      // Close dialog on success
+      setDialogOpen(false);
+
+      // Call the callback to refresh the data table
+      onAdmissionAdded?.();
+    } catch (error) {
+      console.error("Error creating admission:", error);
+      alert("Failed to create admission. Please try again.");
+      throw error;
+    }
   };
 
   return (
