@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { DatePickerInput } from "@/components/date-picker-input";
 import { DatePickerTimeInput } from "@/components/date-picker-time-input";
+import { PatientSearchInput } from "@/components/patient-search-input";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,11 @@ export function AdmissionForm({
   };
 }) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [patientID, setPatientID] = React.useState<number | undefined>(
+    initialValues?.patientID
+      ? parseInt(initialValues.patientID, 10)
+      : undefined,
+  );
   const [admissionDate, setAdmissionDate] = React.useState<Date | undefined>(
     () =>
       initialValues?.admissionDate
@@ -95,7 +101,7 @@ export function AdmissionForm({
       dateSeen?: string | undefined;
       seenBy?: string;
     } = {
-      patientID: formData.get("patient") as string,
+      patientID: patientID?.toString() || "",
       facilityType: formData.get("facility-type") as string,
       facility: formData.get("facility") as string,
       type: formData.get("type") as string,
@@ -113,6 +119,7 @@ export function AdmissionForm({
       await onSubmit(admissionData);
 
       // Reset form state
+      setPatientID(undefined);
       setAdmissionDate(undefined);
       setNotificationDate(undefined);
       setDischargeDate(undefined);
@@ -129,10 +136,11 @@ export function AdmissionForm({
       <div className="grid gap-4">
         <div className="grid gap-3">
           <RequiredLabel>Patient</RequiredLabel>
-          <Input
+          <PatientSearchInput
             id="patient"
             name="patient"
-            defaultValue={initialValues?.patientID ?? ""}
+            value={patientID}
+            onChange={setPatientID}
             required
           />
         </div>
