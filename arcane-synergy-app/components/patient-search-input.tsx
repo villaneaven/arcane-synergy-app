@@ -44,6 +44,33 @@ export function PatientSearchInput({
   const [selectedPatient, setSelectedPatient] =
     React.useState<PatientSearchResult | null>(null);
 
+  React.useEffect(() => {
+    if (value && !selectedPatient) {
+      const fetchPatient = async () => {
+        try {
+          const accessToken = (session as { access_token?: string })
+            ?.access_token;
+          const response = await fetch(
+            `http://localhost:5201/api/Patients/${value}`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            },
+          );
+          if (response.ok) {
+            const patient: PatientSearchResult = await response.json();
+            setSelectedPatient(patient);
+            setSearchQuery(patient.fullName);
+          }
+        } catch (error) {
+          console.error("Failed to fetch patient:", error);
+        }
+      };
+      fetchPatient();
+    }
+  }, [value, session, selectedPatient]);
+
   const searchPatients = React.useCallback(
     async (query: string) => {
       if (!query.trim()) {

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSession } from "next-auth/react";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
@@ -12,6 +13,7 @@ import {
 import { AdmissionForm } from "@/components/admission-form";
 
 type Admission = {
+  admissionId: string;
   patientID: string;
   facilityType?: string;
   facility?: string;
@@ -34,6 +36,7 @@ export function EditAdmissionDialog({
   onAdmissionUpdated?: () => void;
 }) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const { data: session } = useSession();
 
   const handleSubmit = async (formData: {
     patientID: string;
@@ -49,8 +52,31 @@ export function EditAdmissionDialog({
     dateSeen?: string | undefined;
     seenBy?: string;
   }) => {
+    const admissionData = {
+      ...formData,
+      admissionId: admission.admissionId,
+    };
+
+    console.log("Submitting admission data:", admissionData);
+
+    const accessToken = (session as { access_token?: string })?.access_token;
+
     try {
-      console.log("Submitting admission data:", formData);
+      const response = await fetch(
+        `http://localhost:5201/api/admissions/${admission.admissionId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(admissionData),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to edit admission");
+      }
 
       // Close dialog on success
       setDialogOpen(false);
@@ -83,6 +109,7 @@ export function EditAdmissionDialog({
           onSubmit={handleSubmit}
           onCancel={() => setDialogOpen(false)}
           initialValues={{
+            admissionId: admission.admissionId,
             patientID: admission.patientID,
             facilityType: admission.facilityType ?? undefined,
             facility: admission.facility ?? undefined,
