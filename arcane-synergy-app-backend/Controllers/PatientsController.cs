@@ -35,6 +35,38 @@ public class PatientsController : ControllerBase
         return patient == null ? NotFound() : Ok(patient);
     }
 
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchPatients([FromQuery] string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return Ok(Array.Empty<object>());
+
+        query = query.Trim();
+
+        var patients = await _context.Patients
+            .AsNoTracking()
+            .Where(p =>
+                p.FirstName.Contains(query) ||
+                p.LastName.Contains(query) ||
+                (p.FullName != null && p.FullName.Contains(query)) ||
+                (p.MRN != null && p.MRN.Contains(query))
+            )
+            .OrderBy(p => p.LastName)
+            .ThenBy(p => p.FirstName)
+            .Take(10)
+            .Select(p => new
+            {
+                p.PatientID,
+                p.FullName,
+                p.DOB,
+                p.MRN
+            })
+            .ToListAsync();
+
+        return Ok(patients);
+    }
+
+
     [HttpPost]
     public async Task<IActionResult> AddPatient([FromBody] Patient patient)
     {
