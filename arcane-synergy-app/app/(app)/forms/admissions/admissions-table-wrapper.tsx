@@ -37,7 +37,10 @@ export function AdmissionsTableWrapper({
     }
   }, [session]);
 
-  const columns = useMemo(() => createColumns(), []);
+  const columns = useMemo(
+    () => createColumns(handleAdmissionAdded),
+    [handleAdmissionAdded],
+  );
 
   return (
     <DataTable
