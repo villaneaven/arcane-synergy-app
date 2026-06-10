@@ -1,9 +1,12 @@
-﻿namespace arcane_synergy_app_backend.Models
+﻿using System.Text.Json.Serialization;
+
+namespace arcane_synergy_app_backend.Models
 {
     public class Transfer
     {
         public int TransferId { get; set; }
         public int AdmissionId { get; set; }
+        [JsonIgnore]
         public Admission Admission { get; set; } = null!;
         public DateTime AdmissionDate { get; set; }
         public DateTime? DischargeDate { get; set; }
