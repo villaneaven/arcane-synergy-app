@@ -1,10 +1,11 @@
-"use client"
+"use client";
 
-import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal, ArrowUpDown } from "lucide-react"
+import { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
+import { MoreHorizontal, ArrowUpDown } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,25 +13,27 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { EditPatientDialog } from "@/components/edit-patient-dialog"
+} from "@/components/ui/dropdown-menu";
+import { EditPatientDialog } from "@/components/edit-patient-dialog";
 
 export type Patient = {
-  patientID: string
-  firstName: string
-  lastName: string
-  dob: string
-  mrn: string
-  group: string
-  insurance: string
-  pcp: string
-  clinic: string
-  fullName: string
-  version: string
-}
+  patientID: string;
+  firstName: string;
+  lastName: string;
+  dob: string;
+  mrn: string;
+  group: string;
+  insurance: string;
+  pcp: string;
+  clinic: string;
+  fullName: string;
+  version: string;
+};
 
-export const createColumns = (onDataChange?: () => void): ColumnDef<Patient>[] => [
-    {
+export const createColumns = (
+  onDataChange?: () => void,
+): ColumnDef<Patient>[] => [
+  {
     id: "select",
     header: ({ table }) => (
       <Checkbox
@@ -72,20 +75,20 @@ export const createColumns = (onDataChange?: () => void): ColumnDef<Patient>[] =
           Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      )
+      );
     },
   },
   {
     accessorKey: "dob",
     header: "DOB",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("dob"))
-      return date.toLocaleDateString("en-US", { 
-        year: "numeric", 
-        month: "2-digit", 
-        day: "2-digit" 
-      })
-    }
+      const date = new Date(row.getValue("dob"));
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+    },
   },
   {
     accessorKey: "mrn",
@@ -110,8 +113,8 @@ export const createColumns = (onDataChange?: () => void): ColumnDef<Patient>[] =
   {
     id: "actions",
     cell: ({ row }) => {
-      const patient = row.original
- 
+      const patient = row.original;
+
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -128,12 +131,19 @@ export const createColumns = (onDataChange?: () => void): ColumnDef<Patient>[] =
               Copy patient ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <EditPatientDialog patient={patient} onPatientUpdated={onDataChange} />
-            <DropdownMenuItem>View patient</DropdownMenuItem>
+            <EditPatientDialog
+              patient={patient}
+              onPatientUpdated={onDataChange}
+            />
+            <DropdownMenuItem asChild>
+              <Link href={`/forms/patients/${patient.patientID}`}>
+                View patient
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem>View admissions</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      )
+      );
     },
   },
-]
+];
