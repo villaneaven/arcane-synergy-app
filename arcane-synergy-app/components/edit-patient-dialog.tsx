@@ -1,87 +1,91 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useSession } from "next-auth/react"
-import {DropdownMenuItem} from "@/components/ui/dropdown-menu"
+import * as React from "react";
+import { useSession } from "next-auth/react";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { PatientForm } from "@/components/patient-form"
+} from "@/components/ui/dialog";
+import { PatientForm } from "@/components/patient-form";
 
 type Patient = {
-  patientID: string
-  firstName: string
-  lastName: string
-  dob: string
-  mrn: string
-  group: string
-  insurance: string
-  pcp: string
-  clinic: string
-}
+  patientID: string;
+  firstName: string;
+  lastName: string;
+  dob: string;
+  mrn: string;
+  group: string;
+  insurance: string;
+  pcp: string;
+  clinic: string;
+};
 
 export function EditPatientDialog({
   patient,
   onPatientUpdated,
 }: {
-  patient: Patient
-  onPatientUpdated?: () => void
+  patient: Patient;
+  onPatientUpdated?: () => void;
 }) {
-  const [dialogOpen, setDialogOpen] = React.useState(false)
-  const { data: session } = useSession()
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const { data: session } = useSession();
 
   const handleSubmit = async (formData: {
-    patientID: string
-    firstName: string
-    lastName: string
-    dob: string | undefined
-    mrn: string
-    group: string
-    insurance: string
-    pcp: string
-    clinic: string
+    patientID: string;
+    firstName: string;
+    lastName: string;
+    dob: string | undefined;
+    mrn: string;
+    group: string;
+    insurance: string;
+    pcp: string;
+    clinic: string;
   }) => {
-    console.log("Submitting patient data:", formData)
+    console.log("Submitting patient data:", formData);
 
     const accessToken = (session as { access_token?: string })?.access_token;
 
     try {
-      const response = await fetch(`http://localhost:5201/api/patients/${patient.patientID}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
+      const response = await fetch(
+        `http://localhost:5201/api/patients/${patient.patientID}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(formData),
         },
-        body: JSON.stringify(formData),
-      })
+      );
 
       if (!response.ok) {
-        throw new Error("Failed to edit patient")
+        throw new Error("Failed to edit patient");
       }
 
       // Close dialog on success
-      setDialogOpen(false)
+      setDialogOpen(false);
 
       // Call the callback to refresh the data table
-      onPatientUpdated?.()
+      onPatientUpdated?.();
     } catch (error) {
-      console.error("Error editing patient:", error)
-      alert("Failed to edit patient. Please try again.")
-      throw error
+      console.error("Error editing patient:", error);
+      alert("Failed to edit patient. Please try again.");
+      throw error;
     }
-  }
+  };
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
         <DropdownMenuItem
           onSelect={(event) => {
-            event.preventDefault()
+            event.preventDefault();
           }}
+          className="cursor-pointer"
         >
           Edit Patient
         </DropdownMenuItem>
@@ -107,5 +111,5 @@ export function EditPatientDialog({
         />
       </DialogContent>
     </Dialog>
-  )
+  );
 }

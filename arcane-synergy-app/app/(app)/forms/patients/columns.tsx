@@ -118,7 +118,7 @@ export const createColumns = (
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
+            <Button variant="ghost" className="h-8 w-8 p-0 cursor-pointer">
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
@@ -127,6 +127,7 @@ export const createColumns = (
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(patient.patientID)}
+              className="cursor-pointer"
             >
               Copy patient ID
             </DropdownMenuItem>
@@ -135,12 +136,14 @@ export const createColumns = (
               patient={patient}
               onPatientUpdated={onDataChange}
             />
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className="cursor-pointer">
               <Link href={`/forms/patients/${patient.patientID}`}>
                 View patient
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>View admissions</DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer">
+              View admissions
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       );
