@@ -8,6 +8,7 @@ namespace arcane_synergy_app_backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class TransfersController : ControllerBase
 {
     private readonly ArcaneSynergyContext _context;
@@ -34,6 +35,15 @@ public class TransfersController : ControllerBase
 			return NotFound();
 		}
 		return Ok(transfer);
+	}
+
+	[HttpGet("admission/{admissionId}")]
+	public async Task<IActionResult> GetTransfersByAdmissionId(int admissionId)
+	{
+		var transfers = await _context.Transfers
+			.Where(t => t.AdmissionId == admissionId)
+			.ToListAsync();
+		return Ok(transfers);
 	}
 
 	[HttpPost]
