@@ -223,9 +223,9 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
                   onClick={() => {
-                    // router.push(
-                    //   `/`,
-                    // );
+                    router.push(
+                      `/forms/admissions/${row.original.admissionId}`,
+                    );
                   }}
                   className="cursor-pointer"
                 >
