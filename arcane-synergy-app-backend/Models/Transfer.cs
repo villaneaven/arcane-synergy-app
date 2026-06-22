@@ -7,7 +7,7 @@ namespace arcane_synergy_app_backend.Models
         public int TransferId { get; set; }
         public int AdmissionId { get; set; }
         [JsonIgnore]
-        public Admission Admission { get; set; } = null!;
+        public Admission? Admission { get; set; } = null!;
         public DateTime AdmissionDate { get; set; }
         public DateTime? DischargeDate { get; set; }
         public bool IsFinalDischarge { get; set; }
