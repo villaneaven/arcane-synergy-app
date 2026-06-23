@@ -222,7 +222,15 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  onClick={() => {
+                  onClick={(e: React.MouseEvent) => {
+                    const target = e.target as HTMLElement | null;
+                    if (
+                      target &&
+                      target.closest("button, a, [role=menuitem], input, label")
+                    ) {
+                      return;
+                    }
+
                     router.push(
                       `/forms/admissions/${row.original.admissionId}`,
                     );
