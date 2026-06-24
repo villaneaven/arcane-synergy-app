@@ -47,5 +47,12 @@ export function TransferTableWrapper({
     [handleTransferAdded],
   );
 
-  return <SubDataTable columns={columns} data={data} />;
+  return (
+    <SubDataTable
+      columns={columns}
+      data={data}
+      admissionId={admissionId}
+      onTransferAdded={handleTransferAdded}
+    />
+  );
 }
