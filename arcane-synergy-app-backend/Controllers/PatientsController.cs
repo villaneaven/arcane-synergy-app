@@ -72,6 +72,16 @@ public class PatientsController : ControllerBase
     {
         patient.UpdateCalculatedFields();
 
+        if (!string.IsNullOrWhiteSpace(patient.MRN))
+        {
+            var mrn = patient.MRN.Trim();
+            var group = (patient.Group ?? string.Empty).Trim();
+            bool duplicate = await _context.Patients
+                .AnyAsync(p => p.MRN == mrn && (p.Group ?? string.Empty) == group);
+            if (duplicate)
+                return Conflict("A patient with the same MRN already exists in this group.");
+        }
+
         _context.Patients.Add(patient);
         await _context.SaveChangesAsync();
 
@@ -87,6 +97,16 @@ public class PatientsController : ControllerBase
 
         var existing = await _context.Patients.FindAsync(id);
         if (existing == null) return NotFound();
+
+        if (!string.IsNullOrWhiteSpace(patient.MRN))
+        {
+            var mrn = patient.MRN.Trim();
+            var group = (patient.Group ?? string.Empty).Trim();
+            bool duplicate = await _context.Patients
+                .AnyAsync(p => p.PatientID != id && p.MRN == mrn && (p.Group ?? string.Empty) == group);
+            if (duplicate)
+                return Conflict("Another patient in the same group has the same MRN.");
+        }
 
         existing.FirstName = patient.FirstName;
         existing.LastName = patient.LastName;
