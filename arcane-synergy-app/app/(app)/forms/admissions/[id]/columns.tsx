@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Admission } from "../columns";
+import { EditTransferDialog } from "@/components/edit-transfer-dialog";
 
 export type Transfer = {
   transferId: string;
@@ -158,7 +159,7 @@ export const createColumns = (
   {
     id: "actions",
     cell: ({ row }) => {
-      const admission = row.original;
+      const transfer = row.original;
 
       return (
         <DropdownMenu>
@@ -171,14 +172,15 @@ export const createColumns = (
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() =>
-                navigator.clipboard.writeText(admission.admissionId)
-              }
+              onClick={() => navigator.clipboard.writeText(transfer.transferId)}
             >
-              Copy admission ID
+              Copy transfer ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>View transfer</DropdownMenuItem>
+            <EditTransferDialog
+              transfer={transfer}
+              onTransferUpdated={onDataChange}
+            />
           </DropdownMenuContent>
         </DropdownMenu>
       );
