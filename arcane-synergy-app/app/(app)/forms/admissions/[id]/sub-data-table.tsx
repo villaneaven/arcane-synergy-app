@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSession } from "next-auth/react";
 
 import {
   ColumnDef,
@@ -30,10 +31,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ButtonLoading } from "@/components/button-loading";
 import { NewTransferDialog } from "@/components/new-transfer-dialog";
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+  columns:
+    | ColumnDef<TData, TValue>[]
+    | ((onTransferAdded?: () => void) => ColumnDef<TData, TValue>[]);
   data: TData[];
   onTransferAdded?: () => void;
   admissionId: string;
@@ -45,17 +49,25 @@ export function SubDataTable<TData, TValue>({
   onTransferAdded,
   admissionId,
 }: DataTableProps<TData, TValue>) {
+  const { data: session } = useSession();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
+
+  const columnsWithCallbacks = React.useMemo(
+    () => (typeof columns === "function" ? columns(onTransferAdded) : columns),
+    [columns, onTransferAdded],
+  );
 
   const table = useReactTable({
     data,
-    columns,
+    columns: columnsWithCallbacks,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
@@ -63,17 +75,69 @@ export function SubDataTable<TData, TValue>({
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
+      rowSelection,
     },
   });
+
+  const handleDelete = async () => {
+    const selectedRowIds = table
+      .getSelectedRowModel()
+      .rows.map((row) => (row.original as { transferId: string }).transferId);
+    const accessToken = (session as { access_token?: string })?.access_token;
+
+    setIsDeleting(true);
+    try {
+      for (const transferId of selectedRowIds) {
+        const response = await fetch(
+          `http://localhost:5201/api/transfers/${transferId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to delete transfer ${transferId}`);
+        }
+      }
+
+      setRowSelection({});
+
+      if (onTransferAdded) {
+        onTransferAdded();
+      }
+    } catch (error) {
+      console.error("Error deleting transfers:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div>
       <div className="flex items-center py-4">
         <div className="flex justify-end space-x-2 ml-auto">
+          {isDeleting ? (
+            <ButtonLoading />
+          ) : (
+            <Button
+              variant="destructive"
+              disabled={
+                table.getFilteredSelectedRowModel().rows.length === 0 ||
+                isDeleting
+              }
+              onClick={handleDelete}
+            >
+              Delete
+            </Button>
+          )}
           <NewTransferDialog
             onTransferAdded={onTransferAdded}
             admissionId={admissionId}
