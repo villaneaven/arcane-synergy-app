@@ -77,7 +77,7 @@ export function EditPatientDialog({
       }
 
       setDialogOpen(false);
-      toast.success("Patient edited successfully!", {
+      toast.success("Patient updated successfully!", {
         position: "top-center",
       });
 
@@ -87,7 +87,6 @@ export function EditPatientDialog({
       toast.error("Failed to edit patient. Please try again.", {
         position: "top-center",
       });
-      throw error;
     }
   };
 
