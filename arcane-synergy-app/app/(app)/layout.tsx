@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import Footer from "@/components/footer";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,6 +13,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
           <Footer />
         </main>
+        <Toaster />
       </div>
     </SidebarProvider>
   );
