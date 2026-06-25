@@ -339,8 +339,6 @@ export const createColumns = (
               admission={admission}
               onAdmissionUpdated={onDataChange}
             />
-            <DropdownMenuItem>View patient</DropdownMenuItem>
-            <DropdownMenuItem>View admissions</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       );

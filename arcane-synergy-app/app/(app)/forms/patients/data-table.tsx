@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -124,8 +125,14 @@ export function DataTable<TData, TValue>({
       if (onPatientAdded) {
         onPatientAdded();
       }
+      toast.success("Selected patients deleted successfully.", {
+        position: "top-center",
+      });
     } catch (error) {
       console.error("Error deleting patients:", error);
+      toast.error("Error deleting patients.", {
+        position: "top-center",
+      });
     } finally {
       setIsDeleting(false);
     }

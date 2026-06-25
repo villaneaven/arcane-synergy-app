@@ -240,7 +240,7 @@ export function PatientForm({
             <SelectContent>
               <SelectGroup>
                 <SelectLabel>Clinics</SelectLabel>
-                <SelectItem value="EM">EMC</SelectItem>
+                <SelectItem value="EMC">EMC</SelectItem>
                 <SelectItem value="VFC">VFC</SelectItem>
                 <SelectItem value="RGVAIMS-WES">RGVAIMS-WES</SelectItem>
                 <SelectItem value="DMC">DMC</SelectItem>
