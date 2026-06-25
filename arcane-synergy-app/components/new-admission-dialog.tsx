@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,8 +35,6 @@ export function NewAdmissionDialog({
     dateSeen?: string | undefined;
     seenBy?: string;
   }) => {
-    console.log("Submitting admission data:", formData);
-
     const accessToken = (session as { access_token?: string })?.access_token;
 
     try {
@@ -49,20 +48,24 @@ export function NewAdmissionDialog({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create admission");
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to create admission");
       }
 
-      const result = await response.json();
-      console.log("Admission created:", result);
-      // Close dialog on success
-      setDialogOpen(false);
+      // const result = await response.json();
+      // console.log("Admission created:", result);
 
-      // Call the callback to refresh the data table
+      setDialogOpen(false);
+      toast.success("Admission created successfully!", {
+        position: "top-center",
+      });
+
       onAdmissionAdded?.();
     } catch (error) {
       console.error("Error creating admission:", error);
-      alert("Failed to create admission. Please try again.");
-      throw error;
+      toast.error("Error creating admission. Please try again.", {
+        position: "top-center",
+      });
     }
   };
 
