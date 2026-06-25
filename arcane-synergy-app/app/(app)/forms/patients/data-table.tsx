@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useSession } from "next-auth/react"
+import * as React from "react";
+import { useSession } from "next-auth/react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -13,18 +13,18 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
 
-import { ButtonLoading } from "@/components/button-loading"
-import { NewPatientDialog } from "@/components/new-patient-dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { ButtonLoading } from "@/components/button-loading";
+import { NewPatientDialog } from "@/components/new-patient-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -32,38 +32,39 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
+import { toast } from "sonner";
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
-  onPatientAdded?: () => void
+  columns: ColumnDef<TData, TValue>[];
+  data: TData[];
+  onPatientAdded?: () => void;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   onPatientAdded,
-}: DataTableProps<TData, TValue>){
-  const { data: session } = useSession()
-  const [sorting, setSorting] = React.useState<SortingState>([])
+}: DataTableProps<TData, TValue>) {
+  const { data: session } = useSession();
+  const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
-  const [isDeleting, setIsDeleting] = React.useState(false)
+    [],
+  );
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
       firstName: false,
       lastName: false,
-    })
-  const [rowSelection, setRowSelection] = React.useState({})
+    });
+  const [rowSelection, setRowSelection] = React.useState({});
 
   // Pass the onPatientAdded callback to columns so they can refresh data
   const columnsWithCallbacks = React.useMemo(
-    () => (typeof columns === 'function' ? columns(onPatientAdded) : columns),
-    [columns, onPatientAdded]
-  )
+    () => (typeof columns === "function" ? columns(onPatientAdded) : columns),
+    [columns, onPatientAdded],
+  );
 
   const table = useReactTable({
     data,
@@ -82,21 +83,26 @@ export function DataTable<TData, TValue>({
       columnVisibility,
       rowSelection,
     },
-  })
+  });
 
   const handleDelete = async () => {
-    const selectedRowIds = table.getSelectedRowModel().rows.map(row => row.original.patientID);
+    const selectedRowIds = table
+      .getSelectedRowModel()
+      .rows.map((row) => row.original.patientID);
     const accessToken = (session as { access_token?: string })?.access_token;
 
     setIsDeleting(true);
     try {
       for (const patientId of selectedRowIds) {
-        const response = await fetch(`http://localhost:5201/api/patients/${patientId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
+        const response = await fetch(
+          `http://localhost:5201/api/patients/${patientId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
           },
-        });
+        );
 
         if (!response.ok) {
           throw new Error(`Failed to delete patient ${patientId}`);
@@ -108,19 +114,27 @@ export function DataTable<TData, TValue>({
       if (onPatientAdded) {
         onPatientAdded();
       }
+      toast.success("Selected patients deleted successfully.", {
+        position: "top-center",
+      });
     } catch (error) {
       console.error("Error deleting patients:", error);
+      toast.error("Error deleting patients.", {
+        position: "top-center",
+      });
     } finally {
       setIsDeleting(false);
     }
-  }
+  };
 
   return (
     <div>
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter names..."
-          value={(table.getColumn("fullName")?.getFilterValue() as string) ?? ""}
+          value={
+            (table.getColumn("fullName")?.getFilterValue() as string) ?? ""
+          }
           onChange={(event) =>
             table.getColumn("fullName")?.setFilterValue(event.target.value)
           }
@@ -130,7 +144,14 @@ export function DataTable<TData, TValue>({
           {isDeleting ? (
             <ButtonLoading />
           ) : (
-            <Button variant="destructive" disabled={table.getFilteredSelectedRowModel().rows.length === 0 || isDeleting} onClick={handleDelete}>
+            <Button
+              variant="destructive"
+              disabled={
+                table.getFilteredSelectedRowModel().rows.length === 0 ||
+                isDeleting
+              }
+              onClick={handleDelete}
+            >
               Delete
             </Button>
           )}
@@ -144,9 +165,7 @@ export function DataTable<TData, TValue>({
             <DropdownMenuContent align="end">
               {table
                 .getAllColumns()
-                .filter(
-                  (column) => column.getCanHide()
-                )
+                .filter((column) => column.getCanHide())
                 .map((column) => {
                   return (
                     <DropdownMenuCheckboxItem
@@ -159,7 +178,7 @@ export function DataTable<TData, TValue>({
                     >
                       {column.id}
                     </DropdownMenuCheckboxItem>
-                  )
+                  );
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -177,10 +196,10 @@ export function DataTable<TData, TValue>({
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </TableHead>
-                  )
+                  );
                 })}
               </TableRow>
             ))}
@@ -194,14 +213,20 @@ export function DataTable<TData, TValue>({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No results.
                 </TableCell>
               </TableRow>
@@ -232,5 +257,5 @@ export function DataTable<TData, TValue>({
         </Button>
       </div>
     </div>
-  )
+  );
 }
