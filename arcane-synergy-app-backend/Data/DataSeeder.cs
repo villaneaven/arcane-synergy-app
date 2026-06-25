@@ -49,13 +49,13 @@ public static class DataSeeder
 
         var patientLookup = dbPatients
             .Where(p => !string.IsNullOrWhiteSpace(p.MRN))
-            .ToDictionary(p => p.MRN!, p => p.PatientID);
+            .ToLookup(p => (Group: p.Group ?? string.Empty, MRN: p.MRN!));
 
         var admissions = new List<Admission>
         {
             new Admission
             {
-                PatientID = patientLookup.GetValueOrDefault("MRN10001"),
+                PatientID = patientLookup[("DMC", "MRN10001")].Select(p => p.PatientID).FirstOrDefault(),
                 FacilityType = "Hospital",
                 Facility = "DMC Main Campus",
                 Type = "Emergency",
@@ -75,7 +75,7 @@ public static class DataSeeder
             },
             new Admission
             {
-                PatientID = patientLookup.GetValueOrDefault("MRN10002"),
+                PatientID = patientLookup[("RGVAIMS", "MRN10002")].Select(p => p.PatientID).FirstOrDefault(),
                 FacilityType = "SNF",
                 Facility = "Valley Recovery Center",
                 Type = "Post-Acute",
@@ -94,7 +94,7 @@ public static class DataSeeder
             },
             new Admission
             {
-                PatientID = patientLookup.GetValueOrDefault("MRN10001"),
+                PatientID = patientLookup[("DMC", "MRN10001")].Select(p => p.PatientID).FirstOrDefault(),
                 FacilityType = "Hospital",
                 Facility = "DMC Main Campus",
                 Type = "Readmission",
