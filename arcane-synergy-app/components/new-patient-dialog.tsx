@@ -1,33 +1,36 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useSession } from "next-auth/react"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { PatientForm } from "@/components/patient-form"
+} from "@/components/ui/dialog";
+import { PatientForm } from "@/components/patient-form";
 
-export function NewPatientDialog({ onPatientAdded }: { onPatientAdded?: () => void }) {
-  const [dialogOpen, setDialogOpen] = React.useState(false)
-  const { data: session } = useSession()
+export function NewPatientDialog({
+  onPatientAdded,
+}: {
+  onPatientAdded?: () => void;
+}) {
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const { data: session } = useSession();
 
   const handleSubmit = async (formData: {
-    firstName: string
-    lastName: string
-    dob: string | undefined
-    mrn: string
-    group: string
-    insurance: string
-    pcp: string
-    clinic: string
+    firstName: string;
+    lastName: string;
+    dob: string | undefined;
+    mrn: string;
+    group: string;
+    insurance: string;
+    pcp: string;
+    clinic: string;
   }) => {
-    console.log("Submitting patient data:", formData)
-
     const accessToken = (session as { access_token?: string })?.access_token;
 
     try {
@@ -35,29 +38,43 @@ export function NewPatientDialog({ onPatientAdded }: { onPatientAdded?: () => vo
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify(formData),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to create patient")
+        if (response.status === 409) {
+          toast.error(
+            "MRN already exists in this group. Please choose a different MRN or change the Group.",
+            {
+              position: "top-center",
+            },
+          );
+          return;
+        }
+
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to create patient");
       }
 
-      const result = await response.json()
-      console.log("Patient created:", result)
+      // const result = await response.json();
+      // console.log("Patient created:", result);
 
-      // Close dialog on success
-      setDialogOpen(false)
+      setDialogOpen(false);
+      toast.success("Patient created successfully!", {
+        position: "top-center",
+      });
 
-      // Call the callback to refresh the data table
-      onPatientAdded?.()
+      onPatientAdded?.();
     } catch (error) {
-      console.error("Error creating patient:", error)
-      alert("Failed to create patient. Please try again.")
-      throw error
+      console.error("Error creating patient:", error);
+      toast.error("Error creating patient. Please try again.", {
+        position: "top-center",
+      });
+      throw error;
     }
-  }
+  };
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -74,5 +91,5 @@ export function NewPatientDialog({ onPatientAdded }: { onPatientAdded?: () => vo
         />
       </DialogContent>
     </Dialog>
-  )
+  );
 }
