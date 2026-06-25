@@ -68,6 +68,7 @@ export function NewPatientDialog({
 
       onPatientAdded?.();
     } catch (error) {
+      console.error("Error creating patient:", error);
       toast.error("Error creating patient. Please try again.", {
         position: "top-center",
       });
