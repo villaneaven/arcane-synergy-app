@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -15,6 +16,17 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { ButtonLoading } from "@/components/button-loading";
 import { NewPatientDialog } from "@/components/new-patient-dialog";
 import { Button } from "@/components/ui/button";
@@ -33,7 +45,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { toast } from "sonner";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -144,16 +155,38 @@ export function DataTable<TData, TValue>({
           {isDeleting ? (
             <ButtonLoading />
           ) : (
-            <Button
-              variant="destructive"
-              disabled={
-                table.getFilteredSelectedRowModel().rows.length === 0 ||
-                isDeleting
-              }
-              onClick={handleDelete}
-            >
-              Delete
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  disabled={
+                    table.getFilteredSelectedRowModel().rows.length === 0 ||
+                    isDeleting
+                  }
+                >
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent size="sm">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete patient(s)?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete the selected patients.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel variant="outline">
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    variant="destructive"
+                    onClick={handleDelete}
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
           <NewPatientDialog onPatientAdded={onPatientAdded} />
           <DropdownMenu>
