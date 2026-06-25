@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
@@ -45,8 +46,6 @@ export function EditPatientDialog({
     pcp: string;
     clinic: string;
   }) => {
-    console.log("Submitting patient data:", formData);
-
     const accessToken = (session as { access_token?: string })?.access_token;
 
     try {
@@ -63,17 +62,31 @@ export function EditPatientDialog({
       );
 
       if (!response.ok) {
-        throw new Error("Failed to edit patient");
+        if (response.status === 409) {
+          toast.error(
+            "MRN already exists in this group. Please choose a different MRN or change the Group.",
+            {
+              position: "top-center",
+            },
+          );
+          return;
+        }
+
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to edit patient");
       }
 
-      // Close dialog on success
       setDialogOpen(false);
+      toast.success("Patient edited successfully!", {
+        position: "top-center",
+      });
 
-      // Call the callback to refresh the data table
       onPatientUpdated?.();
     } catch (error) {
       console.error("Error editing patient:", error);
-      alert("Failed to edit patient. Please try again.");
+      toast.error("Failed to edit patient. Please try again.", {
+        position: "top-center",
+      });
       throw error;
     }
   };
