@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 import {
   ColumnDef,
@@ -113,8 +114,14 @@ export function SubDataTable<TData, TValue>({
       if (onTransferAdded) {
         onTransferAdded();
       }
+      toast.success("Selected transfer(s) deleted successfully.", {
+        position: "top-center",
+      });
     } catch (error) {
       console.error("Error deleting transfers:", error);
+      toast.error("Error deleting transfer(s). Try again later.", {
+        position: "top-center",
+      });
     } finally {
       setIsDeleting(false);
     }
