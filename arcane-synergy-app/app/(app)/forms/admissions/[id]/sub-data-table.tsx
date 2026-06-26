@@ -119,7 +119,7 @@ export function SubDataTable<TData, TValue>({
       });
     } catch (error) {
       console.error("Error deleting transfers:", error);
-      toast.error("Error deleting transfer(s). Try again later.", {
+      toast.error("Failed to delete selected transfer(s). Try again later.", {
         position: "top-center",
       });
     } finally {
