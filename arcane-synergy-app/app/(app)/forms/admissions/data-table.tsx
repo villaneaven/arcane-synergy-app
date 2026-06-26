@@ -129,12 +129,12 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
       if (onAdmissionAdded) {
         onAdmissionAdded();
       }
-      toast.success("Selected admissions deleted successfully.", {
+      toast.success("Selected admission(s) deleted successfully.", {
         position: "top-center",
       });
     } catch (error) {
       console.error("Error deleting admissions:", error);
-      toast.error("Failed to delete selected admissions.", {
+      toast.error("Failed to delete selected admission(s). Try again later.", {
         position: "top-center",
       });
     } finally {
