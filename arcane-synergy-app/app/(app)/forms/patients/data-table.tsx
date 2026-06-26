@@ -125,12 +125,12 @@ export function DataTable<TData, TValue>({
       if (onPatientAdded) {
         onPatientAdded();
       }
-      toast.success("Selected patients deleted successfully.", {
+      toast.success("Selected patient(s) deleted successfully.", {
         position: "top-center",
       });
     } catch (error) {
       console.error("Error deleting patients:", error);
-      toast.error("Error deleting patients.", {
+      toast.error("Failed to delete selected patient(s). Try again later.", {
         position: "top-center",
       });
     } finally {
