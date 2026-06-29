@@ -23,13 +23,13 @@ const chartData = [
 const chartConfig = {
   admissions: {
     label: "Admissions",
-    color: "#ffffff",
+    color: "#2563eb",
   },
 } satisfies ChartConfig;
 
 export function DashboardChart() {
   return (
-    <ChartContainer config={chartConfig} className="min-h-50 w-full">
+    <ChartContainer config={chartConfig} className="min-h-50 max-h-70 w-full">
       <LineChart accessibilityLayer data={chartData}>
         <CartesianGrid vertical={false} />
         <XAxis
