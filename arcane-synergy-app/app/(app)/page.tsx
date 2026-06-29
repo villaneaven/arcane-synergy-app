@@ -1,68 +1,149 @@
 "use client";
 
-import { useSession } from "next-auth/react"
-import Image from "next/image";
+import { DashboardChart } from "@/components/dashboard-chart";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldLabel } from "@/components/ui/field";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useSession } from "next-auth/react";
+import { Eye, TrendingUpDown, Users } from "lucide-react";
 
 export default function Home() {
-  const { data: session } = useSession()
+  const { data: session } = useSession();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            Welcome {session?.user?.name}!
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen w-full bg-background font-sans dark:bg-black">
+      <main className="flex min-h-screen w-full flex-col gap-8 bg-white dark:bg-black">
+        <header className="relative flex w-full items-start bg-accent px-4 py-4 pl-14 dark:bg-accent-dark sm:px-8 sm:pl-16">
+          <SidebarTrigger className="absolute left-0 top-0" />
+          <div className="flex flex-col items-start gap-4 w-full py-4">
+            <h1 className="text-4xl font-bold text-black dark:text-white">
+              Welcome back, {session?.user?.name || "User"}!
+            </h1>
+            <Separator className="w-full" />
+            <div className="flex w-full flex-wrap items-center gap-4">
+              <Field className="w-full max-w-48">
+                <FieldLabel>Group</FieldLabel>
+                <Select defaultValue="all">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="all">All Groups</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field className="w-full max-w-48">
+                <FieldLabel>Insurance</FieldLabel>
+                <Select defaultValue="all">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="all">All Insurance</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field className="w-full max-w-48">
+                <FieldLabel>Clinic</FieldLabel>
+                <Select defaultValue="all">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="all">All Clinics</SelectItem>
+                      <SelectItem value="EMC">EMC</SelectItem>
+                      <SelectItem value="VFC">VFC</SelectItem>
+                      <SelectItem value="RGVAIMS-WES">RGVAIMS-WES</SelectItem>
+                      <SelectItem value="DMC">DMC</SelectItem>
+                      <SelectItem value="RGVAIMS-MER">RGVAIMS-MER</SelectItem>
+                      <SelectItem value="MVFPA">MVFPA</SelectItem>
+                      <SelectItem value="MCACC">MCACC</SelectItem>
+                      <SelectItem value="WMC">WMC</SelectItem>
+                      <SelectItem value="KCP-HAR">KCP-HAR</SelectItem>
+                      <SelectItem value="MMC">MMC</SelectItem>
+                      <SelectItem value="DDNC">DDNC</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field className="w-full max-w-48">
+                <FieldLabel>Type of Admission</FieldLabel>
+                <Select defaultValue="all">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="all">All Admission Types</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field className="w-full max-w-48">
+                <FieldLabel>Date Range</FieldLabel>
+                <Select defaultValue="180">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="all">All Time</SelectItem>
+                      <SelectItem value="365">Last 365 Days</SelectItem>
+                      <SelectItem value="180">Last 180 Days</SelectItem>
+                      <SelectItem value="90">Last 90 Days</SelectItem>
+                      <SelectItem value="30">Last 30 Days</SelectItem>
+                      <SelectItem value="7">Last 7 Days</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+          </div>
+        </header>
+        <div className="mx-auto flex w-full flex-row items-center start-center gap-8 px-16 sm:px-8">
+          <Card className="w-full max-w-3xs">
+            <CardHeader className="flex items-center gap-2">
+              <Users />
+              <CardTitle>Count of Admissions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>6,909</p>
+            </CardContent>
+          </Card>
+          <Card className="w-full max-w-3xs">
+            <CardHeader className="flex items-center gap-2">
+              <Eye />
+              <CardTitle>Patients Pending</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>6,909</p>
+            </CardContent>
+          </Card>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="mx-auto flex w-full flex-col gap-8 px-16 sm:px-8">
+          <Card className="mx-auto flex w-full flex-col gap-8 p-8 sm:px-8">
+            <CardHeader className="flex items-center gap-2">
+              <TrendingUpDown />
+              <CardTitle>Admissions Trend</CardTitle>
+            </CardHeader>
+            <CardContent className="w-full">
+              <DashboardChart />
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
