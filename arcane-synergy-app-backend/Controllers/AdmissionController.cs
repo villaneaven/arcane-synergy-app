@@ -40,6 +40,41 @@ public class AdmissionsController : ControllerBase
         return admission == null ? NotFound() : Ok(admission);
     }
 
+    [HttpGet("count")]
+    public async Task<IActionResult> GetAdmissionCount(
+        [FromQuery] string? group = "",
+        [FromQuery] string? insurance = "",
+        [FromQuery] string? clinic = "",
+        [FromQuery] string? admissionType = "",
+        [FromQuery] int? lastDays = null)
+    {
+        var query = _context.Admissions
+            .Include(a => a.Patient)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(group))
+            query = query.Where(a => a.Patient != null && a.Patient.Group == group);
+
+        if (!string.IsNullOrWhiteSpace(insurance))
+            query = query.Where(a => a.Patient != null && a.Patient.Insurance == insurance);
+
+        if (!string.IsNullOrWhiteSpace(clinic))
+            query = query.Where(a => a.Patient != null && a.Patient.Clinic == clinic);
+
+        if (!string.IsNullOrWhiteSpace(admissionType))
+            query = query.Where(a => a.Type == admissionType);
+
+        if (lastDays.HasValue && lastDays.Value > 0)
+        {
+            var endDate = DateTime.Today;
+            var startDate = endDate.AddDays(-lastDays.Value);
+            query = query.Where(a => a.AdmissionDate >= startDate && a.AdmissionDate <= endDate);
+        }
+
+        var count = await query.CountAsync();
+        return Ok(new { count });
+    }
+
     [HttpPost]
     public async Task<IActionResult> AddAdmission([FromBody] Admission admission)
     {
