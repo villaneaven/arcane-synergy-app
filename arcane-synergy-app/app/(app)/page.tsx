@@ -114,7 +114,7 @@ export default function Home() {
             </div>
           </div>
         </header>
-        <div className="mx-auto flex w-full flex-row items-center start-center gap-8 px-16 sm:px-8">
+        <div className="mx-auto flex w-full flex-row items-center start-center gap-8 px-8">
           <Card className="w-full max-w-3xs">
             <CardHeader className="flex items-center gap-2">
               <Users />
@@ -134,7 +134,7 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
-        <div className="mx-auto flex w-full flex-col gap-8 px-16 sm:px-8">
+        <div className="mx-auto flex w-full flex-col gap-8 px-8">
           <Card className="mx-auto flex w-full flex-col gap-8 p-8 sm:px-8">
             <CardHeader className="flex items-center gap-2">
               <TrendingUpDown />
