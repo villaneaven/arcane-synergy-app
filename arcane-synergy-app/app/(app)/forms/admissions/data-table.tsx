@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/table";
 import { ButtonLoading } from "@/components/button-loading";
 import { NewAdmissionDialog } from "@/components/new-admission-dialog";
+import { toast } from "sonner";
 
 interface DataTableProps<TData extends { admissionId: string }, TValue> {
   columns:
@@ -139,8 +140,14 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
       if (onAdmissionAdded) {
         onAdmissionAdded();
       }
+      toast.success("Selected admission(s) deleted successfully.", {
+        position: "top-center",
+      });
     } catch (error) {
       console.error("Error deleting admissions:", error);
+      toast.error("Failed to delete selected admission(s). Try again later.", {
+        position: "top-center",
+      });
     } finally {
       setIsDeleting(false);
     }
