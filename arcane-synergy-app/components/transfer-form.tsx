@@ -6,6 +6,7 @@ import { DatePickerInput } from "@/components/date-picker-input";
 import { DatePickerTimeInput } from "@/components/date-picker-time-input";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -25,6 +26,7 @@ export function TransferForm({
   onSubmit: (formData: {
     admissionDate: string;
     dischargeDate?: string | undefined;
+    isFinalDischarge?: boolean;
     facilityType?: string;
     facility?: string;
     type: string;
@@ -38,6 +40,7 @@ export function TransferForm({
   initialValues?: {
     admissionDate?: string;
     dischargeDate?: string;
+    isFinalDischarge?: boolean;
     facilityType?: string;
     facility?: string;
     type?: string;
@@ -77,6 +80,7 @@ export function TransferForm({
     const admissionData: {
       admissionDate: string;
       dischargeDate?: string | undefined;
+      isFinalDischarge?: boolean;
       facilityType?: string;
       facility?: string;
       type: string;
@@ -94,6 +98,7 @@ export function TransferForm({
       notificationSource: formData.get("notification-source") as string,
       dateNotified: notificationDate ? notificationDate.toISOString() : "",
       dischargeDate: dischargeDate ? dischargeDate.toISOString() : undefined,
+      isFinalDischarge: formData.get("is-final-discharge") === "on",
       dischargeTo: formData.get("discharge-to") as string,
     };
 
@@ -131,6 +136,14 @@ export function TransferForm({
             name="discharge-date"
             value={dischargeDate}
             onChange={setDischargeDate}
+          />
+        </div>
+        <div className="grid gap-3">
+          <Label htmlFor="is-final-discharge">Final Discharge</Label>
+          <Checkbox
+            id="is-final-discharge"
+            name="is-final-discharge"
+            defaultChecked={initialValues?.isFinalDischarge ?? false}
           />
         </div>
         <div className="grid gap-3">
