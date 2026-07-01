@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { DashboardChart } from "@/components/dashboard-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -13,11 +14,29 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
+
+import { useAdmissionsCount } from "@/hooks/use-admissions-count";
 import { useSession } from "next-auth/react";
 import { Eye, TrendingUpDown, Users } from "lucide-react";
 
 export default function Home() {
   const { data: session } = useSession();
+  const [group, setGroup] = useState("all");
+  const [insurance, setInsurance] = useState("all");
+  const [clinic, setClinic] = useState("all");
+  const [admissionType, setAdmissionType] = useState("all");
+  const [lastDays, setLastDays] = useState("180");
+
+  const filters = useMemo(
+    () => ({ group, insurance, clinic, admissionType, lastDays }),
+    [group, insurance, clinic, admissionType, lastDays],
+  );
+
+  const { count: admissionsCount, isLoading } = useAdmissionsCount(
+    session as Parameters<typeof useAdmissionsCount>[0],
+    filters,
+  );
 
   return (
     <div className="min-h-screen w-full bg-background font-sans dark:bg-black">
@@ -32,7 +51,7 @@ export default function Home() {
             <div className="flex w-full flex-wrap items-center gap-4">
               <Field className="w-full max-w-48">
                 <FieldLabel>Group</FieldLabel>
-                <Select defaultValue="all">
+                <Select value={group} onValueChange={setGroup}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -45,7 +64,7 @@ export default function Home() {
               </Field>
               <Field className="w-full max-w-48">
                 <FieldLabel>Insurance</FieldLabel>
-                <Select defaultValue="all">
+                <Select value={insurance} onValueChange={setInsurance}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -58,7 +77,7 @@ export default function Home() {
               </Field>
               <Field className="w-full max-w-48">
                 <FieldLabel>Clinic</FieldLabel>
-                <Select defaultValue="all">
+                <Select value={clinic} onValueChange={setClinic}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -82,7 +101,7 @@ export default function Home() {
               </Field>
               <Field className="w-full max-w-48">
                 <FieldLabel>Type of Admission</FieldLabel>
-                <Select defaultValue="all">
+                <Select value={admissionType} onValueChange={setAdmissionType}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -95,7 +114,7 @@ export default function Home() {
               </Field>
               <Field className="w-full max-w-48">
                 <FieldLabel>Date Range</FieldLabel>
-                <Select defaultValue="180">
+                <Select value={lastDays} onValueChange={setLastDays}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -121,7 +140,11 @@ export default function Home() {
               <CardTitle>Count of Admissions</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>6,909</p>
+              {isLoading ? (
+                <Skeleton className="h-6 w-20" />
+              ) : (
+                <p>{admissionsCount}</p>
+              )}
             </CardContent>
           </Card>
           <Card className="w-full max-w-3xs">
