@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -35,8 +36,6 @@ export function NewTransferDialog({
     dateNotified: string;
     dischargeTo?: string;
   }) => {
-    console.log("Submitting transfer data:", formData);
-
     const accessToken = (session as { access_token?: string })?.access_token;
 
     try {
@@ -50,20 +49,24 @@ export function NewTransferDialog({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create transfer");
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to create transfer");
       }
 
-      const result = await response.json();
-      console.log("Transfer created:", result);
-      // Close dialog on success
-      setDialogOpen(false);
+      // const result = await response.json();
+      // console.log("Transfer created:", result);
 
-      // Call the callback to refresh the data table
+      setDialogOpen(false);
+      toast.success("Transfer created successfully!", {
+        position: "top-center",
+      });
+
       onTransferAdded?.();
     } catch (error) {
       console.error("Error creating transfer:", error);
-      alert("Failed to create transfer. Please try again.");
-      throw error;
+      toast.error("Failed to create transfer. Please try again.", {
+        position: "top-center",
+      });
     }
   };
 

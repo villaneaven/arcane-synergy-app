@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 import {
   ColumnDef,
@@ -16,6 +17,17 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -113,8 +125,14 @@ export function SubDataTable<TData, TValue>({
       if (onTransferAdded) {
         onTransferAdded();
       }
+      toast.success("Selected transfer(s) deleted successfully.", {
+        position: "top-center",
+      });
     } catch (error) {
       console.error("Error deleting transfers:", error);
+      toast.error("Failed to delete selected transfer(s). Try again later.", {
+        position: "top-center",
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -127,16 +145,38 @@ export function SubDataTable<TData, TValue>({
           {isDeleting ? (
             <ButtonLoading />
           ) : (
-            <Button
-              variant="destructive"
-              disabled={
-                table.getFilteredSelectedRowModel().rows.length === 0 ||
-                isDeleting
-              }
-              onClick={handleDelete}
-            >
-              Delete
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  disabled={
+                    table.getFilteredSelectedRowModel().rows.length === 0 ||
+                    isDeleting
+                  }
+                >
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent size="sm">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete transfer(s)?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete the selected transfer(s).
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel variant="outline">
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    variant="destructive"
+                    onClick={handleDelete}
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
           <NewTransferDialog
             onTransferAdded={onTransferAdded}

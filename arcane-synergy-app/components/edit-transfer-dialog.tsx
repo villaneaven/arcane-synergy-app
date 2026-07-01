@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
@@ -56,9 +57,6 @@ export function EditTransferDialog({
       admissionId: transfer.admissionId,
       transferId: transfer.transferId,
     };
-
-    console.log("Submitting transfer data:", transferData);
-
     const accessToken = (session as { access_token?: string })?.access_token;
 
     try {
@@ -75,16 +73,21 @@ export function EditTransferDialog({
       );
 
       if (!response.ok) {
-        throw new Error("Failed to edit transfer");
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to edit transfer");
       }
 
       setDialogOpen(false);
+      toast.success("Transfer updated successfully!", {
+        position: "top-center",
+      });
 
       onTransferUpdated?.();
     } catch (error) {
       console.error("Error editing transfer:", error);
-      alert("Failed to edit transfer. Please try again.");
-      throw error;
+      toast.error("Failed to edit transfer. Please try again.", {
+        position: "top-center",
+      });
     }
   };
 

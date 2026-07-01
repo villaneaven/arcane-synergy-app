@@ -17,6 +17,17 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,6 +46,7 @@ import {
 } from "@/components/ui/table";
 import { ButtonLoading } from "@/components/button-loading";
 import { NewAdmissionDialog } from "@/components/new-admission-dialog";
+import { toast } from "sonner";
 
 interface DataTableProps<TData extends { admissionId: string }, TValue> {
   columns:
@@ -128,8 +140,14 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
       if (onAdmissionAdded) {
         onAdmissionAdded();
       }
+      toast.success("Selected admission(s) deleted successfully.", {
+        position: "top-center",
+      });
     } catch (error) {
       console.error("Error deleting admissions:", error);
+      toast.error("Failed to delete selected admission(s). Try again later.", {
+        position: "top-center",
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -155,16 +173,38 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
           {isDeleting ? (
             <ButtonLoading />
           ) : (
-            <Button
-              variant="destructive"
-              disabled={
-                table.getFilteredSelectedRowModel().rows.length === 0 ||
-                isDeleting
-              }
-              onClick={handleDelete}
-            >
-              Delete
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  disabled={
+                    table.getFilteredSelectedRowModel().rows.length === 0 ||
+                    isDeleting
+                  }
+                >
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent size="sm">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete admission(s)?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete the selected admission(s).
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel variant="outline">
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    variant="destructive"
+                    onClick={handleDelete}
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
           <NewAdmissionDialog onAdmissionAdded={onAdmissionAdded} />
           <DropdownMenu>
