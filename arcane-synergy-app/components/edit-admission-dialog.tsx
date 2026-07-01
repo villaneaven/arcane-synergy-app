@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
@@ -57,8 +58,6 @@ export function EditAdmissionDialog({
       admissionId: admission.admissionId,
     };
 
-    console.log("Submitting admission data:", admissionData);
-
     const accessToken = (session as { access_token?: string })?.access_token;
 
     try {
@@ -75,18 +74,21 @@ export function EditAdmissionDialog({
       );
 
       if (!response.ok) {
-        throw new Error("Failed to edit admission");
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to edit admission");
       }
 
-      // Close dialog on success
       setDialogOpen(false);
+      toast.success("Admission updated successfully!", {
+        position: "top-center",
+      });
 
-      // Call the callback to refresh the data table
       onAdmissionUpdated?.();
     } catch (error) {
       console.error("Error editing admission:", error);
-      alert("Failed to edit admission. Please try again.");
-      throw error;
+      toast.error("Failed to edit admission. Please try again.", {
+        position: "top-center",
+      });
     }
   };
 
