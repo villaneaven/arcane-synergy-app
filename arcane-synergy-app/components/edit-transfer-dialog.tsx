@@ -17,6 +17,7 @@ type Transfer = {
   transferId: string;
   admissionId: string;
   admissionDate: string;
+  isFinalDischarge?: boolean;
   dischargeDate?: string | undefined;
   facilityType?: string;
   facility?: string;
@@ -41,6 +42,7 @@ export function EditTransferDialog({
   const handleSubmit = async (formData: {
     admissionDate: string;
     dischargeDate?: string | undefined;
+    isFinalDischarge?: boolean;
     facilityType?: string;
     facility?: string;
     type: string;
@@ -110,6 +112,7 @@ export function EditTransferDialog({
           initialValues={{
             admissionDate: transfer.admissionDate,
             dischargeDate: transfer.dischargeDate,
+            isFinalDischarge: transfer.isFinalDischarge,
             facilityType: transfer.facilityType,
             facility: transfer.facility,
             type: transfer.type,

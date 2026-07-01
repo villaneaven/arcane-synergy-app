@@ -26,6 +26,7 @@ export function NewTransferDialog({
   const handleSubmit = async (formData: {
     admissionDate: string;
     dischargeDate?: string | undefined;
+    isFinalDischarge?: boolean;
     facilityType?: string;
     facility?: string;
     type: string;
