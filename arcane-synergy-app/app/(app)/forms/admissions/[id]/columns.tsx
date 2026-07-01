@@ -83,6 +83,14 @@ export const createColumns = (
     },
   },
   {
+    accessorKey: "isFinalDischarge",
+    header: "Final Discharge",
+    cell: ({ row }) => {
+      const isFinalDischarge = row.getValue("isFinalDischarge");
+      return isFinalDischarge ? "Yes" : "No";
+    },
+  },
+  {
     accessorKey: "facilityType",
     header: "Facility Type",
     cell: ({ row }) => {
