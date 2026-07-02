@@ -52,6 +52,9 @@ public class TransfersController : ControllerBase
 		_context.Transfers.Add(transfer);
 		await _context.SaveChangesAsync();
 
+		await SyncAdmissionFinalDischargeDateAsync(transfer.AdmissionId);
+		await _context.SaveChangesAsync();
+
 		return CreatedAtAction(nameof(GetTransfer),
 			new { id = transfer.TransferId },
 			transfer);
@@ -69,6 +72,8 @@ public class TransfersController : ControllerBase
 			return NotFound();
 		}
 
+		var originalAdmissionId = existingTransfer.AdmissionId;
+
         existingTransfer.AdmissionId = transfer.AdmissionId;
         existingTransfer.AdmissionDate = transfer.AdmissionDate;
         existingTransfer.DischargeDate = transfer.DischargeDate;
@@ -82,6 +87,13 @@ public class TransfersController : ControllerBase
         existingTransfer.DateNotified = transfer.DateNotified;
         existingTransfer.DischargeTo = transfer.DischargeTo;
 
+		await _context.SaveChangesAsync();
+
+		await SyncAdmissionFinalDischargeDateAsync(originalAdmissionId);
+		if (transfer.AdmissionId != originalAdmissionId)
+		{
+			await SyncAdmissionFinalDischargeDateAsync(transfer.AdmissionId);
+		}
 		await _context.SaveChangesAsync();
 		return Ok(existingTransfer);
 	}
@@ -97,6 +109,26 @@ public class TransfersController : ControllerBase
 
 		_context.Transfers.Remove(transfer);
 		await _context.SaveChangesAsync();
+
+		await SyncAdmissionFinalDischargeDateAsync(transfer.AdmissionId);
+		await _context.SaveChangesAsync();
 		return NoContent();
+	}
+
+	private async Task SyncAdmissionFinalDischargeDateAsync(int admissionId)
+	{
+		var admission = await _context.Admissions.FirstOrDefaultAsync(a => a.AdmissionId == admissionId);
+		if (admission == null)
+		{
+			return;
+		}
+
+		admission.FinalDischargeDate = await _context.Transfers
+			.Where(t => t.AdmissionId == admissionId && t.IsFinalDischarge && t.DischargeDate.HasValue)
+			.OrderByDescending(t => t.DischargeDate)
+			.Select(t => t.DischargeDate)
+			.FirstOrDefaultAsync();
+
+		admission.UpdateCalculatedFields();
 	}
 }
