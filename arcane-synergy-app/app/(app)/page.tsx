@@ -175,7 +175,7 @@ export default function Home() {
               <CardTitle>Admissions Trend</CardTitle>
             </CardHeader>
             <CardContent className="w-full">
-              <DashboardChart />
+              <DashboardChart session={session} filters={filters} />
             </CardContent>
           </Card>
         </div>
