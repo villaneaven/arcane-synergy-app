@@ -171,7 +171,8 @@ export function DataTable<TData, TValue>({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete patient(s)?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete the selected patients.
+                    This will permanently delete the selected patient(s) and
+                    their associated admission(s) and transfer(s).
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

@@ -126,8 +126,27 @@ public class PatientsController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeletePatient(int id)
     {
-        var patient = await _context.Patients.FindAsync(id);
+        var patient = await _context.Patients
+            .Include(p => p.Admissions)
+                .ThenInclude(a => a.Transfers)
+            .FirstOrDefaultAsync(p => p.PatientID == id);
+
         if (patient == null) return NotFound();
+
+        var admissions = patient.Admissions?.ToList();
+        var transfers = admissions?
+            .SelectMany(admission => admission.Transfers ?? Array.Empty<Transfer>())
+            .ToList();
+
+        if (transfers?.Any() == true)
+        {
+            _context.Transfers.RemoveRange(transfers);
+        }
+
+        if (admissions?.Any() == true)
+        {
+            _context.Admissions.RemoveRange(admissions);
+        }
 
         _context.Patients.Remove(patient);
         await _context.SaveChangesAsync();
