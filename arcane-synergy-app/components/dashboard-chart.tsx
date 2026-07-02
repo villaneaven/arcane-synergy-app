@@ -45,9 +45,11 @@ const chartConfig = {
 export function DashboardChart({
   session,
   filters,
+  onLoadingChange,
 }: {
   session: SessionWithAccessToken;
   filters: DashboardFilters;
+  onLoadingChange?: (isLoading: boolean) => void;
 }) {
   const [chartData, setChartData] = useState<MonthlyAdmissionCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -107,6 +109,10 @@ export function DashboardChart({
       void fetchChartData();
     }
   }, [session, fetchChartData]);
+
+  useEffect(() => {
+    onLoadingChange?.(isLoading);
+  }, [isLoading, onLoadingChange]);
 
   const chartRows = chartData.map((item) => ({
     month: `${item.monthName} ${item.year}`,

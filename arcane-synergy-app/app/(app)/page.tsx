@@ -23,6 +23,7 @@ import { Eye, TrendingUpDown, Users } from "lucide-react";
 
 export default function Home() {
   const { data: session } = useSession();
+  const [isChartLoading, setIsChartLoading] = useState(true);
   const [group, setGroup] = useState("all");
   const [insurance, setInsurance] = useState("all");
   const [clinic, setClinic] = useState("all");
@@ -44,6 +45,8 @@ export default function Home() {
       session as Parameters<typeof usePendingPatientsCount>[0],
       filters,
     );
+
+  const isDashboardLoading = isLoading || isPendingLoading || isChartLoading;
 
   return (
     <div className="min-h-screen w-full bg-background font-sans dark:bg-black">
@@ -147,7 +150,7 @@ export default function Home() {
               <CardTitle>Count of Admissions</CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
+              {isDashboardLoading ? (
                 <Skeleton className="h-6 w-20" />
               ) : (
                 <p>{admissionsCount}</p>
@@ -160,7 +163,7 @@ export default function Home() {
               <CardTitle>Patients Pending</CardTitle>
             </CardHeader>
             <CardContent>
-              {isPendingLoading ? (
+              {isDashboardLoading ? (
                 <Skeleton className="h-6 w-20" />
               ) : (
                 <p>{pendingPatientsCount}</p>
@@ -175,7 +178,11 @@ export default function Home() {
               <CardTitle>Admissions Trend</CardTitle>
             </CardHeader>
             <CardContent className="w-full">
-              <DashboardChart session={session} filters={filters} />
+              <DashboardChart
+                session={session as Parameters<typeof useAdmissionsCount>[0]}
+                filters={filters}
+                onLoadingChange={setIsChartLoading}
+              />
             </CardContent>
           </Card>
         </div>
