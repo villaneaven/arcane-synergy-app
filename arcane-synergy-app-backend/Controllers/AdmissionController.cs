@@ -19,10 +19,28 @@ public class AdmissionsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAdmissions()
+    public async Task<IActionResult> GetAdmissions(
+        [FromQuery] string? admissionType = "",
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null)
     {
-        var admissions = await _context.Admissions
+        var query = _context.Admissions
             .Include(a => a.Patient)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(admissionType))
+            query = query.Where(a => a.Type == admissionType);
+
+        if (startDate.HasValue)
+            query = query.Where(a => a.AdmissionDate >= startDate.Value.Date);
+
+        if (endDate.HasValue)
+        {
+            var exclusiveEndDate = endDate.Value.Date.AddDays(1);
+            query = query.Where(a => a.AdmissionDate < exclusiveEndDate);
+        }
+
+        var admissions = await query
             .OrderByDescending(a => a.AdmissionDate)
             .ToListAsync();
 
