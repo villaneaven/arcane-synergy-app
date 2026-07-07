@@ -59,7 +59,21 @@ import { NewAdmissionDialog } from "@/components/new-admission-dialog";
 import { toast } from "sonner";
 import { DatePickerInput } from "@/components/date-picker-input";
 
-interface DataTableProps<TData extends { admissionId: string }, TValue> {
+interface DataTableProps<
+  TData extends {
+    admissionId: string;
+    patient?: {
+      firstName?: string;
+      lastName?: string;
+      mrn?: string;
+      group?: string;
+      insurance?: string;
+      pcp?: string;
+      clinic?: string;
+    };
+  },
+  TValue,
+> {
   columns:
     | ColumnDef<TData, TValue>[]
     | ((onAdmissionAdded?: () => void) => ColumnDef<TData, TValue>[]);
@@ -73,7 +87,21 @@ interface DataTableProps<TData extends { admissionId: string }, TValue> {
   onEndDateChange: (date: Date | undefined) => void;
 }
 
-export function DataTable<TData extends { admissionId: string }, TValue>({
+export function DataTable<
+  TData extends {
+    admissionId: string;
+    patient?: {
+      firstName?: string;
+      lastName?: string;
+      mrn?: string;
+      group?: string;
+      insurance?: string;
+      pcp?: string;
+      clinic?: string;
+    };
+  },
+  TValue,
+>({
   columns,
   data,
   onAdmissionAdded,
@@ -197,9 +225,30 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
 
     return {
       headers: exportableColumns.map((column) => column.id),
-      rowValues: rows.map((row) =>
-        exportableColumns.map((column) => row.getValue(column.id)),
-      ),
+      rowValues: rows.map((row) => {
+        const patient = row.original.patient;
+
+        return [
+          ...exportableColumns.map((column) => row.getValue(column.id)),
+          patient?.firstName ?? "",
+          patient?.lastName ?? "",
+          patient?.mrn ?? "",
+          patient?.group ?? "",
+          patient?.insurance ?? "",
+          patient?.pcp ?? "",
+          patient?.clinic ?? "",
+        ];
+      }),
+      extraHeaders: [
+        "patientFirstName",
+        "patientLastName",
+        "patientDOB",
+        "patientMRN",
+        "patientGroup",
+        "patientInsurance",
+        "patientPCP",
+        "patientClinic",
+      ],
     };
   };
 
@@ -230,7 +279,10 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
       rowValues.map((value) => escapeCsvValue(value)).join(","),
     );
 
-    const csv = [exportData.headers.join(","), ...csvRows].join("\n");
+    const csv = [
+      [...exportData.headers, ...exportData.extraHeaders].join(","),
+      ...csvRows,
+    ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -266,7 +318,10 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
       rowValues.map((value) => escapeExcelValue(value)).join("\t"),
     );
 
-    const content = [exportData.headers.join("\t"), ...rows].join("\n");
+    const content = [
+      [...exportData.headers, ...exportData.extraHeaders].join("\t"),
+      ...rows,
+    ].join("\n");
     const blob = new Blob([content], {
       type: "application/vnd.ms-excel;charset=utf-8;",
     });
