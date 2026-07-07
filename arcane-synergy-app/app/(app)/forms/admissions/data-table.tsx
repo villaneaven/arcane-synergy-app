@@ -176,6 +176,66 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
     }
   };
 
+  const handleExportCsv = () => {
+    const exportableColumns = table
+      .getAllLeafColumns()
+      .filter(
+        (column) =>
+          column.getIsVisible() &&
+          column.id !== "select" &&
+          column.id !== "actions",
+      );
+
+    if (exportableColumns.length === 0) {
+      toast.error("No visible columns to export.", {
+        position: "top-center",
+      });
+      return;
+    }
+
+    const rows = table.getSortedRowModel().rows;
+
+    const escapeCsvValue = (value: unknown) => {
+      if (value === null || value === undefined) {
+        return "";
+      }
+
+      const stringValue = String(value);
+      if (
+        stringValue.includes(",") ||
+        stringValue.includes('"') ||
+        stringValue.includes("\n")
+      ) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+
+      return stringValue;
+    };
+
+    const headers = exportableColumns.map((column) => column.id);
+    const csvRows = rows.map((row) =>
+      exportableColumns
+        .map((column) => escapeCsvValue(row.getValue(column.id)))
+        .join(","),
+    );
+
+    const csv = [headers.join(","), ...csvRows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `admissions-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success("CSV export completed.", {
+      position: "top-center",
+    });
+  };
+
   return (
     <div>
       <div className="flex w-full flex-wrap items-center gap-4">
@@ -222,6 +282,9 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
           className="max-w-sm"
         />
         <div className="flex justify-end space-x-2 ml-auto">
+          <Button variant="outline" onClick={handleExportCsv}>
+            Export CSV
+          </Button>
           {isDeleting ? (
             <ButtonLoading />
           ) : (
