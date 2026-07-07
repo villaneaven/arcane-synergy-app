@@ -176,7 +176,7 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
     }
   };
 
-  const handleExportCsv = () => {
+  const getExportData = () => {
     const exportableColumns = table
       .getAllLeafColumns()
       .filter(
@@ -190,10 +190,24 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
       toast.error("No visible columns to export.", {
         position: "top-center",
       });
-      return;
+      return null;
     }
 
     const rows = table.getSortedRowModel().rows;
+
+    return {
+      headers: exportableColumns.map((column) => column.id),
+      rowValues: rows.map((row) =>
+        exportableColumns.map((column) => row.getValue(column.id)),
+      ),
+    };
+  };
+
+  const handleExportCsv = () => {
+    const exportData = getExportData();
+    if (!exportData) {
+      return;
+    }
 
     const escapeCsvValue = (value: unknown) => {
       if (value === null || value === undefined) {
@@ -212,14 +226,11 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
       return stringValue;
     };
 
-    const headers = exportableColumns.map((column) => column.id);
-    const csvRows = rows.map((row) =>
-      exportableColumns
-        .map((column) => escapeCsvValue(row.getValue(column.id)))
-        .join(","),
+    const csvRows = exportData.rowValues.map((rowValues) =>
+      rowValues.map((value) => escapeCsvValue(value)).join(","),
     );
 
-    const csv = [headers.join(","), ...csvRows].join("\n");
+    const csv = [exportData.headers.join(","), ...csvRows].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -232,6 +243,44 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
     URL.revokeObjectURL(url);
 
     toast.success("CSV export completed.", {
+      position: "top-center",
+    });
+  };
+
+  const handleExportExcel = () => {
+    const exportData = getExportData();
+    if (!exportData) {
+      return;
+    }
+
+    const escapeExcelValue = (value: unknown) => {
+      if (value === null || value === undefined) {
+        return "";
+      }
+
+      const stringValue = String(value);
+      return stringValue.replace(/\t/g, " ").replace(/\r?\n/g, " ");
+    };
+
+    const rows = exportData.rowValues.map((rowValues) =>
+      rowValues.map((value) => escapeExcelValue(value)).join("\t"),
+    );
+
+    const content = [exportData.headers.join("\t"), ...rows].join("\n");
+    const blob = new Blob([content], {
+      type: "application/vnd.ms-excel;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `admissions-${new Date().toISOString().slice(0, 10)}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success("Excel export completed.", {
       position: "top-center",
     });
   };
@@ -282,9 +331,28 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
           className="max-w-sm"
         />
         <div className="flex justify-end space-x-2 ml-auto">
-          <Button variant="outline" onClick={handleExportCsv}>
-            Export CSV
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline">Export</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent size="sm">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Export admissions</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Choose a file format to export the current table view.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogAction variant="outline" onClick={handleExportCsv}>
+                  Export CSV
+                </AlertDialogAction>
+                <AlertDialogAction onClick={handleExportExcel}>
+                  Export Excel
+                </AlertDialogAction>
+                <AlertDialogCancel variant="outline">Cancel</AlertDialogCancel>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           {isDeleting ? (
             <ButtonLoading />
           ) : (
