@@ -18,6 +18,25 @@ public class TransfersController : ControllerBase
         _context = context;
     }
 
+	[HttpGet("export")]
+	public async Task<IActionResult> GetTransfersForExport([FromQuery] List<int>? admissionIds)
+	{
+		var query = _context.Transfers.AsQueryable();
+
+		if (admissionIds != null && admissionIds.Count > 0)
+		{
+			query = query.Where(transfer => admissionIds.Contains(transfer.AdmissionId));
+		}
+
+		var transfers = await query
+			.AsNoTracking()
+			.OrderBy(transfer => transfer.AdmissionId)
+			.ThenBy(transfer => transfer.TransferId)
+			.ToListAsync();
+
+		return Ok(transfers);
+	}
+
 
 	[HttpGet]
 	public async Task<IActionResult> GetTransfers()
