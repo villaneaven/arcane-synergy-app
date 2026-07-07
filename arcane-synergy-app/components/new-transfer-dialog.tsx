@@ -49,6 +49,16 @@ export function NewTransferDialog({
       });
 
       if (!response.ok) {
+        if (response.status === 409) {
+          toast.error(
+            "Final discharge already exists for this admission. Please check the admission details.",
+            {
+              position: "top-center",
+            },
+          );
+          return;
+        }
+
         const errorText = await response.text();
         throw new Error(errorText || "Failed to create transfer");
       }
