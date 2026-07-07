@@ -49,8 +49,26 @@ public class TransfersController : ControllerBase
 	[HttpPost]
 	public async Task<IActionResult> AddTransfer([FromBody] Transfer transfer)
 	{
+		if (transfer.IsFinalDischarge)
+		{
+			var hasFinalTransfer = await _context.Transfers
+				.AnyAsync(t => t.AdmissionId == transfer.AdmissionId && t.IsFinalDischarge);
+
+			if (hasFinalTransfer)
+			{
+				return Conflict("This admission already has a final transfer.");
+			}
+		}
+
 		_context.Transfers.Add(transfer);
-		await _context.SaveChangesAsync();
+		try
+		{
+			await _context.SaveChangesAsync();
+		}
+		catch (DbUpdateException)
+		{
+			return Conflict("This admission already has a final transfer.");
+		}
 
 		await SyncAdmissionFinalDischargeDateAsync(transfer.AdmissionId);
 		await _context.SaveChangesAsync();
@@ -65,6 +83,17 @@ public class TransfersController : ControllerBase
 	{
         if (id != transfer.TransferId)
             return BadRequest("TransferId mismatch");
+
+		if (transfer.IsFinalDischarge)
+		{
+			var hasFinalTransfer = await _context.Transfers
+				.AnyAsync(t => t.AdmissionId == transfer.AdmissionId && t.IsFinalDischarge && t.TransferId != id);
+
+			if (hasFinalTransfer)
+			{
+				return Conflict("This admission already has a final transfer.");
+			}
+		}
 
 		var existingTransfer = await _context.Transfers.FindAsync(id);
 		if (existingTransfer == null)
@@ -87,14 +116,20 @@ public class TransfersController : ControllerBase
         existingTransfer.DateNotified = transfer.DateNotified;
         existingTransfer.DischargeTo = transfer.DischargeTo;
 
-		await _context.SaveChangesAsync();
-
-		await SyncAdmissionFinalDischargeDateAsync(originalAdmissionId);
-		if (transfer.AdmissionId != originalAdmissionId)
+		try
 		{
-			await SyncAdmissionFinalDischargeDateAsync(transfer.AdmissionId);
+			await _context.SaveChangesAsync();
+			await SyncAdmissionFinalDischargeDateAsync(originalAdmissionId);
+			if (transfer.AdmissionId != originalAdmissionId)
+			{
+				await SyncAdmissionFinalDischargeDateAsync(transfer.AdmissionId);
+			}
+			await _context.SaveChangesAsync();
 		}
-		await _context.SaveChangesAsync();
+		catch (DbUpdateException)
+		{
+			return Conflict("This admission already has a final transfer.");
+		}
 		return Ok(existingTransfer);
 	}
 
