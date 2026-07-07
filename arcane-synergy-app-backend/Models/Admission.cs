@@ -57,6 +57,10 @@ namespace arcane_synergy_app_backend.Models
             {
                 ReadmissionFlag = (NextAdmissionDate.Value - FinalDischargeDate.Value).TotalDays <= 30;
             }
+            else
+            {
+                ReadmissionFlag = false;
+            }
 
         }
     }
