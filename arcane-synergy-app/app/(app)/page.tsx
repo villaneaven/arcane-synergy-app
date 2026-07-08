@@ -17,6 +17,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useAdmissionsCount } from "@/hooks/use-admissions-count";
+import { usePendingPatientsCount } from "@/hooks/use-pending-patients-count";
 import { useSession } from "next-auth/react";
 import { Eye, TrendingUpDown, Users } from "lucide-react";
 
@@ -33,10 +34,16 @@ export default function Home() {
     [group, insurance, clinic, admissionType, lastDays],
   );
 
-  const { count: admissionsCount, isLoading } = useAdmissionsCount(
+  const { admissionsCount, isLoading } = useAdmissionsCount(
     session as Parameters<typeof useAdmissionsCount>[0],
     filters,
   );
+
+  const { pendingPatientsCount, isLoading: isPendingLoading } =
+    usePendingPatientsCount(
+      session as Parameters<typeof usePendingPatientsCount>[0],
+      filters,
+    );
 
   return (
     <div className="min-h-screen w-full bg-background font-sans dark:bg-black">
@@ -153,7 +160,11 @@ export default function Home() {
               <CardTitle>Patients Pending</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>6,909</p>
+              {isPendingLoading ? (
+                <Skeleton className="h-6 w-20" />
+              ) : (
+                <p>{pendingPatientsCount}</p>
+              )}
             </CardContent>
           </Card>
         </div>

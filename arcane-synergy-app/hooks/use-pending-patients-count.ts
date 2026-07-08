@@ -17,14 +17,16 @@ type AdmissionsCountFilters = {
   lastDays: string;
 };
 
-export function useAdmissionsCount(
+export function usePendingPatientsCount(
   session: SessionWithAccessToken,
   filters: AdmissionsCountFilters,
 ) {
-  const [admissionsCount, setAdmissionsCount] = useState<number | null>(null);
+  const [pendingPatientsCount, setPendingPatientsCount] = useState<
+    number | null
+  >(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchAdmissionsCount = useCallback(async () => {
+  const fetchPendingPatients = useCallback(async () => {
     const accessToken = session?.access_token;
     const queryParams = new URLSearchParams();
 
@@ -44,7 +46,7 @@ export function useAdmissionsCount(
       setIsLoading(true);
 
       const response = await fetch(
-        `http://localhost:5201/api/Admissions/count${
+        `http://localhost:5201/api/Admissions/pending/count${
           queryParams.toString() ? `?${queryParams.toString()}` : ""
         }`,
         {
@@ -56,14 +58,14 @@ export function useAdmissionsCount(
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch admissions count");
+        throw new Error("Failed to fetch pending patients count");
       }
 
       const data: { count: number } = await response.json();
-      setAdmissionsCount(data.count);
+      setPendingPatientsCount(data.count);
     } catch (error) {
-      console.error("Error fetching admissions count:", error);
-      setAdmissionsCount(null);
+      console.error("Error fetching pending patients count:", error);
+      setPendingPatientsCount(null);
     } finally {
       setIsLoading(false);
     }
@@ -71,9 +73,9 @@ export function useAdmissionsCount(
 
   useEffect(() => {
     if (session) {
-      void fetchAdmissionsCount();
+      void fetchPendingPatients();
     }
-  }, [session, fetchAdmissionsCount]);
+  }, [session, fetchPendingPatients]);
 
-  return { admissionsCount, isLoading };
+  return { isLoading, pendingPatientsCount };
 }
