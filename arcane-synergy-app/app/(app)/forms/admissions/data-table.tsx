@@ -537,30 +537,30 @@ export function DataTable<
                   Choose a file format to export the current table view.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <div className="flex items-center gap-2 py-2">
+              <div className="flex items-center gap-3 py-2">
                 <Checkbox
                   id="include-transfers"
                   checked={includeTransfers}
                   onCheckedChange={(checked) => setIncludeTransfers(!!checked)}
                 />
                 <Label htmlFor="include-transfers" className="text-sm">
-                  Attach transfers to each admission
+                  Export associated transfers
                 </Label>
               </div>
-              <AlertDialogFooter>
-                <AlertDialogAction
-                  variant="outline"
-                  onClick={handleExportCsv}
-                  disabled={isExporting}
-                >
-                  Export CSV
-                </AlertDialogAction>
-                <AlertDialogAction
-                  onClick={handleExportExcel}
-                  disabled={isExporting}
-                >
-                  Export Excel
-                </AlertDialogAction>
+              <AlertDialogAction
+                variant="outline"
+                onClick={handleExportCsv}
+                disabled={isExporting}
+              >
+                Export CSV
+              </AlertDialogAction>
+              <AlertDialogAction
+                onClick={handleExportExcel}
+                disabled={isExporting}
+              >
+                Export Excel
+              </AlertDialogAction>
+              <AlertDialogFooter className="pt-6">
                 <AlertDialogCancel variant="outline">Cancel</AlertDialogCancel>
               </AlertDialogFooter>
             </AlertDialogContent>
