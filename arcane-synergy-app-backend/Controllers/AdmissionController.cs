@@ -13,7 +13,7 @@ public class AdmissionsController : ControllerBase
 {
     private readonly ArcaneSynergyContext _context;
 
-    private const int MaxMonthlyRangeDays = 365;
+    private const int MaxMonthlyRangeMonths = 12;
 
     public AdmissionsController(ArcaneSynergyContext context)
     {
@@ -82,15 +82,21 @@ public class AdmissionsController : ControllerBase
         [FromQuery] string? insurance = "",
         [FromQuery] string? clinic = "",
         [FromQuery] string? admissionType = "",
-        [FromQuery] int? lastDays = 365)
+        [FromQuery] int? lastMonths = 6)
     {
-        if (lastDays.HasValue && lastDays.Value <= 0)
-            return BadRequest("lastDays must be between 1 and 365.");
+        if (lastMonths.HasValue && lastMonths.Value <= 0)
+            return BadRequest($"lastMonths must be between 1 and {MaxMonthlyRangeMonths}.");
 
-        if (lastDays.HasValue && lastDays.Value > MaxMonthlyRangeDays)
-            return BadRequest($"lastDays cannot exceed {MaxMonthlyRangeDays}.");
+        if (lastMonths.HasValue && lastMonths.Value > MaxMonthlyRangeMonths)
+            return BadRequest($"lastMonths cannot exceed {MaxMonthlyRangeMonths}.");
 
-        var query = ApplyAdmissionFilters(group, insurance, clinic, admissionType, lastDays);
+        var rangeMonths = lastMonths ?? MaxMonthlyRangeMonths;
+        var endMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        var startMonth = endMonth.AddMonths(-(rangeMonths - 1));
+        var endDate = DateTime.Today.AddDays(1).AddTicks(-1);
+
+        var query = ApplyAdmissionFilters(group, insurance, clinic, admissionType, null)
+            .Where(a => a.AdmissionDate >= startMonth && a.AdmissionDate <= endDate);
 
         var monthlyCounts = await query
             .GroupBy(a => new { a.AdmissionDate.Year, a.AdmissionDate.Month })
@@ -103,10 +109,6 @@ public class AdmissionsController : ControllerBase
             .ToListAsync();
 
         var countLookup = monthlyCounts.ToDictionary(item => (item.Year, item.Month), item => item.Count);
-
-        var rangeDays = lastDays ?? 365;
-        var startMonth = new DateTime(DateTime.Today.AddDays(-rangeDays).Year, DateTime.Today.AddDays(-rangeDays).Month, 1);
-        var endMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
 
         var response = new List<object>();
         for (var month = startMonth; month <= endMonth; month = month.AddMonths(1))
