@@ -94,8 +94,6 @@ public class AdmissionsController : ControllerBase
 
         var monthlyCounts = await query
             .GroupBy(a => new { a.AdmissionDate.Year, a.AdmissionDate.Month })
-            .OrderBy(g => g.Key.Year)
-            .ThenBy(g => g.Key.Month)
             .Select(g => new
             {
                 g.Key.Year,
@@ -104,13 +102,24 @@ public class AdmissionsController : ControllerBase
             })
             .ToListAsync();
 
-        var response = monthlyCounts.Select(item => new
+        var countLookup = monthlyCounts.ToDictionary(item => (item.Year, item.Month), item => item.Count);
+
+        var rangeDays = lastDays ?? 365;
+        var startMonth = new DateTime(DateTime.Today.AddDays(-rangeDays).Year, DateTime.Today.AddDays(-rangeDays).Month, 1);
+        var endMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+        var response = new List<object>();
+        for (var month = startMonth; month <= endMonth; month = month.AddMonths(1))
         {
-            month = $"{item.Year:D4}-{item.Month:D2}",
-            monthName = new DateTime(item.Year, item.Month, 1).ToString("MMMM"),
-            year = item.Year,
-            count = item.Count
-        });
+            countLookup.TryGetValue((month.Year, month.Month), out var count);
+            response.Add(new
+            {
+                month = $"{month.Year:D4}-{month.Month:D2}",
+                monthName = month.ToString("MMMM"),
+                year = month.Year,
+                count
+            });
+        }
 
         return Ok(response);
     }
@@ -210,8 +219,8 @@ public class AdmissionsController : ControllerBase
 
         if (lastDays.HasValue && lastDays.Value > 0)
         {
-            var endDate = DateTime.Today;
-            var startDate = endDate.AddDays(-lastDays.Value);
+            var endDate = DateTime.Today.AddDays(1).AddTicks(-1);
+            var startDate = DateTime.Today.AddDays(-lastDays.Value);
             query = query.Where(a => a.AdmissionDate >= startDate && a.AdmissionDate <= endDate);
         }
 
