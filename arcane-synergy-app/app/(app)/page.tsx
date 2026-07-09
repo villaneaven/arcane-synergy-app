@@ -28,11 +28,11 @@ export default function Home() {
   const [insurance, setInsurance] = useState("all");
   const [clinic, setClinic] = useState("all");
   const [admissionType, setAdmissionType] = useState("all");
-  const [lastDays, setLastDays] = useState("180");
+  const [lastMonths, setLastMonths] = useState("6");
 
   const filters = useMemo(
-    () => ({ group, insurance, clinic, admissionType, lastDays }),
-    [group, insurance, clinic, admissionType, lastDays],
+    () => ({ group, insurance, clinic, admissionType, lastMonths }),
+    [group, insurance, clinic, admissionType, lastMonths],
   );
 
   const { admissionsCount, isLoading } = useAdmissionsCount(
@@ -124,18 +124,17 @@ export default function Home() {
               </Field>
               <Field className="w-full max-w-48">
                 <FieldLabel>Date Range</FieldLabel>
-                <Select value={lastDays} onValueChange={setLastDays}>
+                <Select value={lastMonths} onValueChange={setLastMonths}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
                       <SelectItem value="all">All Time</SelectItem>
-                      <SelectItem value="365">Last 365 Days</SelectItem>
-                      <SelectItem value="180">Last 180 Days</SelectItem>
-                      <SelectItem value="90">Last 90 Days</SelectItem>
-                      <SelectItem value="30">Last 30 Days</SelectItem>
-                      <SelectItem value="7">Last 7 Days</SelectItem>
+                      <SelectItem value="12">Last 12 Months</SelectItem>
+                      <SelectItem value="9">Last 9 Months</SelectItem>
+                      <SelectItem value="6">Last 6 Months</SelectItem>
+                      <SelectItem value="3">Last 3 Months</SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>

@@ -25,7 +25,7 @@ type DashboardFilters = {
   insurance: string;
   clinic: string;
   admissionType: string;
-  lastDays: string;
+  lastMonths: string;
 };
 
 type MonthlyAdmissionCount = {
@@ -65,8 +65,8 @@ export function DashboardChart({
     if (filters.admissionType !== "all") {
       queryParams.set("admissionType", filters.admissionType);
     }
-    if (filters.lastDays !== "all") {
-      queryParams.set("lastDays", filters.lastDays);
+    if (filters.lastMonths !== "all") {
+      queryParams.set("lastMonths", filters.lastMonths);
     }
 
     return queryParams.toString();
