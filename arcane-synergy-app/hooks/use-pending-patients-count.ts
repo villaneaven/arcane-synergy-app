@@ -14,7 +14,7 @@ type AdmissionsCountFilters = {
   insurance: string;
   clinic: string;
   admissionType: string;
-  lastDays: string;
+  lastMonths: string;
 };
 
 export function usePendingPatientsCount(
@@ -38,8 +38,8 @@ export function usePendingPatientsCount(
     if (filters.admissionType !== "all") {
       queryParams.set("admissionType", filters.admissionType);
     }
-    if (filters.lastDays !== "all") {
-      queryParams.set("lastDays", filters.lastDays);
+    if (filters.lastMonths !== "all") {
+      queryParams.set("lastMonths", filters.lastMonths);
     }
 
     try {
