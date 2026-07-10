@@ -176,8 +176,16 @@ public class AdmissionsController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteAdmission(int id)
     {
-        var admission = await _context.Admissions.FindAsync(id);
+        var admission = await _context.Admissions
+            .Include(a => a.Transfers)
+            .FirstOrDefaultAsync(a => a.AdmissionId == id);
+
         if (admission == null) return NotFound();
+
+        if (admission.Transfers?.Any() == true)
+        {
+            _context.Transfers.RemoveRange(admission.Transfers);
+        }
 
         _context.Admissions.Remove(admission);
         await _context.SaveChangesAsync();

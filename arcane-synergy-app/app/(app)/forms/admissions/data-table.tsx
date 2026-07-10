@@ -189,7 +189,8 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete admission(s)?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete the selected admission(s).
+                    This will permanently delete the selected admission(s) and
+                    their associated transfer(s).
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
