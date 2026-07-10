@@ -660,8 +660,10 @@ export function DataTable<
                   data-state={row.getIsSelected() && "selected"}
                   onClick={(e: React.MouseEvent) => {
                     const target = e.target as HTMLElement | null;
+                    if (!target || !e.currentTarget.contains(target)) {
+                      return;
+                    }
                     if (
-                      target &&
                       target.closest("button, a, [role=menuitem], input, label")
                     ) {
                       return;
