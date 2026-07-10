@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { CalendarIcon } from "lucide-react"
+import * as React from "react";
+import { CalendarIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -20,24 +20,30 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
+import {
+  CLINIC_OPTIONS,
+  GROUP_OPTIONS,
+  INSURANCE_OPTIONS,
+  PCP_OPTIONS,
+} from "@/lib/patient-options";
 
 function formatDate(date: Date | undefined) {
   if (!date) {
-    return ""
+    return "";
   }
   return date.toLocaleDateString("en-US", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  })
+  });
 }
 
 function isValidDate(date: Date | undefined) {
   if (!date) {
-    return false
+    return false;
   }
-  return !isNaN(date.getTime())
+  return !isNaN(date.getTime());
 }
 
 export function PatientForm({
@@ -46,87 +52,104 @@ export function PatientForm({
   initialValues,
 }: {
   onSubmit: (formData: {
-    firstName: string
-    lastName: string
-    dob: string | undefined
-    mrn: string
-    group: string
-    insurance: string
-    pcp: string
-    clinic: string
-  }) => Promise<void>
-  onCancel?: () => void
+    firstName: string;
+    lastName: string;
+    dob: string | undefined;
+    mrn: string;
+    group: string;
+    insurance: string;
+    pcp: string;
+    clinic: string;
+  }) => Promise<void>;
+  onCancel?: () => void;
   initialValues?: {
-    firstName?: string
-    lastName?: string
-    dob?: string
-    mrn?: string
-    group?: string
-    insurance?: string
-    pcp?: string
-    clinic?: string
-  }
+    firstName?: string;
+    lastName?: string;
+    dob?: string;
+    mrn?: string;
+    group?: string;
+    insurance?: string;
+    pcp?: string;
+    clinic?: string;
+  };
 }) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(false);
   const [date, setDate] = React.useState<Date | undefined>(() =>
-    initialValues?.dob ? new Date(initialValues.dob) : new Date("1990-01-01T00:00:00"),
-  )
-  const [month, setMonth] = React.useState<Date | undefined>(date)
-  const [value, setValue] = React.useState(formatDate(date))
-  const [clinic, setClinic] = React.useState<string>(initialValues?.clinic ?? "")
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
+    initialValues?.dob
+      ? new Date(initialValues.dob)
+      : new Date("1990-01-01T00:00:00"),
+  );
+  const [month, setMonth] = React.useState<Date | undefined>(date);
+  const [value, setValue] = React.useState(formatDate(date));
+  const [group, setGroup] = React.useState<string>(initialValues?.group ?? "");
+  const [insurance, setInsurance] = React.useState<string>(
+    initialValues?.insurance ?? "",
+  );
+  const [pcp, setPcp] = React.useState<string>(initialValues?.pcp ?? "");
+  const [clinic, setClinic] = React.useState<string>(
+    initialValues?.clinic ?? "",
+  );
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   React.useEffect(() => {
-    const nextDate = initialValues?.dob ? new Date(initialValues.dob) : new Date("1990-01-01T00:00:00")
-    setDate(nextDate)
-    setMonth(nextDate)
-    setValue(formatDate(nextDate))
-    setClinic(initialValues?.clinic ?? "")
-  }, [initialValues])
+    const nextDate = initialValues?.dob
+      ? new Date(initialValues.dob)
+      : new Date("1990-01-01T00:00:00");
+    setDate(nextDate);
+    setMonth(nextDate);
+    setValue(formatDate(nextDate));
+    setGroup(initialValues?.group ?? "");
+    setInsurance(initialValues?.insurance ?? "");
+    setPcp(initialValues?.pcp ?? "");
+    setClinic(initialValues?.clinic ?? "");
+  }, [initialValues]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+    e.preventDefault();
+    setIsSubmitting(true);
 
-    const formData = new FormData(e.currentTarget)
+    const formData = new FormData(e.currentTarget);
     const patientData: {
-      firstName: string
-      lastName: string
-      dob: string | undefined
-      mrn: string
-      group: string
-      insurance: string
-      pcp: string
-      clinic: string
-      patientID?: string
+      firstName: string;
+      lastName: string;
+      dob: string | undefined;
+      mrn: string;
+      group: string;
+      insurance: string;
+      pcp: string;
+      clinic: string;
+      patientID?: string;
     } = {
       firstName: formData.get("first-name") as string,
       lastName: formData.get("last-name") as string,
       dob: date?.toISOString(),
       mrn: formData.get("mrn") as string,
-      group: formData.get("group") as string,
-      insurance: formData.get("insurance") as string,
-      pcp: formData.get("pcp") as string,
+      group: group,
+      insurance: insurance,
+      pcp: pcp,
       clinic: clinic,
-    }
+    };
 
     if (initialValues?.patientID) {
-      patientData.patientID = initialValues.patientID
+      patientData.patientID = initialValues.patientID;
     }
 
     try {
-      await onSubmit(patientData)
+      await onSubmit(patientData);
 
       // Reset form state
-      setDate(new Date("1990-01-01T00:00:00"))
-      setValue(formatDate(new Date("1990-01-01T00:00:00")))
-      setClinic("")
+      setDate(new Date("1990-01-01T00:00:00"));
+      setValue(formatDate(new Date("1990-01-01T00:00:00")));
+      setClinic("");
+      setGroup("");
+      setInsurance("");
+      setPcp("");
     } catch (error) {
       // Error is already handled in the onSubmit callback
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit}>
@@ -158,23 +181,23 @@ export function PatientForm({
               placeholder="MM/DD/YYYY"
               className="bg-background pr-10"
               onFocus={(e) => {
-                e.currentTarget.select()
+                e.currentTarget.select();
               }}
               onClick={(e) => {
-                e.currentTarget.select()
+                e.currentTarget.select();
               }}
               onChange={(e) => {
-                const date = new Date(e.target.value)
-                setValue(e.target.value)
+                const date = new Date(e.target.value);
+                setValue(e.target.value);
                 if (isValidDate(date)) {
-                  setDate(date)
-                  setMonth(date)
+                  setDate(date);
+                  setMonth(date);
                 }
               }}
               onKeyDown={(e) => {
                 if (e.key === "ArrowDown") {
-                  e.preventDefault()
-                  setOpen(true)
+                  e.preventDefault();
+                  setOpen(true);
                 }
               }}
             />
@@ -202,9 +225,9 @@ export function PatientForm({
                   month={month}
                   onMonthChange={setMonth}
                   onSelect={(date) => {
-                    setDate(date)
-                    setValue(formatDate(date))
-                    setOpen(false)
+                    setDate(date);
+                    setValue(formatDate(date));
+                    setOpen(false);
                   }}
                 />
               </PopoverContent>
@@ -213,23 +236,75 @@ export function PatientForm({
         </div>
         <div className="grid gap-3">
           <Label htmlFor="mrn-1">MRN</Label>
-          <Input id="mrn-1" name="mrn" defaultValue={initialValues?.mrn ?? ""} />
-        </div>
-        <div className="grid gap-3">
-          <Label htmlFor="group-1">Group</Label>
-          <Input id="group-1" name="group" defaultValue={initialValues?.group ?? ""} />
-        </div>
-        <div className="grid gap-3">
-          <Label htmlFor="insurance-1">Insurance</Label>
           <Input
-            id="insurance-1"
-            name="insurance"
-            defaultValue={initialValues?.insurance ?? ""}
+            id="mrn-1"
+            name="mrn"
+            defaultValue={initialValues?.mrn ?? ""}
           />
         </div>
         <div className="grid gap-3">
+          <Label htmlFor="group-1">Group</Label>
+          <Select
+            value={group}
+            onValueChange={(value) => {
+              setGroup(value);
+              setPcp("");
+            }}
+          >
+            <SelectTrigger className="w-45">
+              <SelectValue placeholder="Select a group" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Group</SelectLabel>
+                {GROUP_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-3">
+          <Label htmlFor="insurance-1">Insurance</Label>
+          <Select value={insurance} onValueChange={setInsurance}>
+            <SelectTrigger className="w-45">
+              <SelectValue placeholder="Select an insurance" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Insurance</SelectLabel>
+                {INSURANCE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-3">
           <Label htmlFor="pcp-1">PCP</Label>
-          <Input id="pcp-1" name="pcp" defaultValue={initialValues?.pcp ?? ""} />
+          <Select disabled={!group} value={pcp} onValueChange={setPcp}>
+            <SelectTrigger className="w-45">
+              <SelectValue placeholder="Select a PCP" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>{group} PCP</SelectLabel>
+                {PCP_OPTIONS[group]?.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                )) || (
+                  <SelectItem disabled value="none">
+                    No PCPs available
+                  </SelectItem>
+                )}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
         <div className="grid gap-3">
           <Label htmlFor="clinic-1">Clinic</Label>
@@ -240,17 +315,11 @@ export function PatientForm({
             <SelectContent>
               <SelectGroup>
                 <SelectLabel>Clinics</SelectLabel>
-                <SelectItem value="EMC">EMC</SelectItem>
-                <SelectItem value="VFC">VFC</SelectItem>
-                <SelectItem value="RGVAIMS-WES">RGVAIMS-WES</SelectItem>
-                <SelectItem value="DMC">DMC</SelectItem>
-                <SelectItem value="RGVAIMS-MER">RGVAIMS-MER</SelectItem>
-                <SelectItem value="MVFPA">MVFPA</SelectItem>
-                <SelectItem value="MCACC">MCACC</SelectItem>
-                <SelectItem value="WMC">WMC</SelectItem>
-                <SelectItem value="KCP-HAR">KCP-HAR</SelectItem>
-                <SelectItem value="MMC">MMC</SelectItem>
-                <SelectItem value="DDNC">DDNC</SelectItem>
+                {CLINIC_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -270,5 +339,5 @@ export function PatientForm({
         </Button>
       </div>
     </form>
-  )
+  );
 }
