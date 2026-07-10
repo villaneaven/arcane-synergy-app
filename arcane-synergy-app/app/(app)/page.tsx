@@ -30,6 +30,15 @@ export default function Home() {
   const [admissionType, setAdmissionType] = useState("all");
   const [lastMonths, setLastMonths] = useState("6");
 
+  const chartEndDate = useMemo(() => new Date(), []);
+
+  const chartStartDate = useMemo(() => {
+    const months = lastMonths === "all" ? 12 : parseInt(lastMonths, 10);
+    const now = new Date();
+
+    return new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+  }, [lastMonths]);
+
   const filters = useMemo(
     () => ({ group, insurance, clinic, admissionType, lastMonths }),
     [group, insurance, clinic, admissionType, lastMonths],
@@ -175,6 +184,14 @@ export default function Home() {
             <CardHeader className="flex items-center gap-2">
               <TrendingUpDown />
               <CardTitle>Admissions Trend</CardTitle>
+              {isDashboardLoading ? (
+                <Skeleton className="h-6 w-20" />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {chartStartDate?.toLocaleDateString()} -{" "}
+                  {chartEndDate.toLocaleDateString()}
+                </p>
+              )}
             </CardHeader>
             <CardContent className="w-full">
               <DashboardChart
