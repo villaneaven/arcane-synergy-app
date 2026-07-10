@@ -81,8 +81,18 @@ export function DatePickerInput({
           e.currentTarget.select();
         }}
         onChange={(e) => {
-          const date = new Date(e.target.value);
-          setValue(e.target.value);
+          const inputValue = e.target.value;
+          const date = new Date(inputValue);
+
+          setValue(inputValue);
+
+          if (inputValue.trim() === "") {
+            setDate(undefined);
+            setMonth(undefined);
+            onChange?.(undefined);
+            return;
+          }
+
           if (isValidDate(date)) {
             setDate(date);
             setMonth(date);

@@ -29,13 +29,22 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -44,9 +53,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import { ButtonLoading } from "@/components/button-loading";
 import { NewAdmissionDialog } from "@/components/new-admission-dialog";
 import { toast } from "sonner";
+import { DatePickerInput } from "@/components/date-picker-input";
 
 interface DataTableProps<TData extends { admissionId: string }, TValue> {
   columns:
@@ -54,12 +65,24 @@ interface DataTableProps<TData extends { admissionId: string }, TValue> {
     | ((onAdmissionAdded?: () => void) => ColumnDef<TData, TValue>[]);
   data: TData[];
   onAdmissionAdded?: () => void;
+  admissionType: string;
+  onAdmissionTypeChange: (value: string) => void;
+  startDate?: Date;
+  onStartDateChange: (date: Date | undefined) => void;
+  endDate?: Date;
+  onEndDateChange: (date: Date | undefined) => void;
 }
 
 export function DataTable<TData extends { admissionId: string }, TValue>({
   columns,
   data,
   onAdmissionAdded,
+  admissionType,
+  onAdmissionTypeChange,
+  startDate,
+  onStartDateChange,
+  endDate,
+  onEndDateChange,
 }: DataTableProps<TData, TValue>) {
   const { data: session } = useSession();
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -155,6 +178,35 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
 
   return (
     <div>
+      <div className="flex w-full flex-wrap items-center gap-4">
+        <Field className="w-full max-w-48">
+          <FieldLabel>Type of Admission</FieldLabel>
+          <Select value={admissionType} onValueChange={onAdmissionTypeChange}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="all">All Admission Types</SelectItem>
+                <SelectItem value="Emergency">Emergency</SelectItem>
+                <SelectItem value="ER">ER</SelectItem>
+                <SelectItem value="Inpatient">Inpatient</SelectItem>
+                <SelectItem value="Observation">Observation</SelectItem>
+                <SelectItem value="Post-Acute">Post-Acute</SelectItem>
+                <SelectItem value="Readmission">Readmission</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field className="w-full max-w-48">
+          <FieldLabel>Start Date</FieldLabel>
+          <DatePickerInput value={startDate} onChange={onStartDateChange} />
+        </Field>
+        <Field className="w-full max-w-48">
+          <FieldLabel>End Date</FieldLabel>
+          <DatePickerInput value={endDate} onChange={onEndDateChange} />
+        </Field>
+      </div>
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter names..."
