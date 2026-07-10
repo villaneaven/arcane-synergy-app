@@ -129,12 +129,12 @@ export function AdmissionForm({
       seenBy?: string;
     } = {
       patientID: patientID?.toString() || "",
-      facilityType: formData.get("facility-type") as string,
-      facility: formData.get("facility") as string,
-      type: formData.get("type") as string,
+      facilityType: facilityType,
+      facility: facility,
+      type: type,
       admissionDate: admissionDate ? admissionDate.toISOString() : "",
-      dx: formData.get("dx") as string,
-      notificationSource: formData.get("notification-source") as string,
+      dx: dx,
+      notificationSource: notificationSource,
       dateNotified: notificationDate ? notificationDate.toISOString() : "",
       dischargeDate: dischargeDate ? dischargeDate.toISOString() : undefined,
       dischargeTo: formData.get("discharge-to") as string,

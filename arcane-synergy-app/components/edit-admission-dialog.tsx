@@ -111,7 +111,6 @@ export function EditAdmissionDialog({
           onSubmit={handleSubmit}
           onCancel={() => setDialogOpen(false)}
           initialValues={{
-            admissionId: admission.admissionId,
             patientID: admission.patientID,
             facilityType: admission.facilityType ?? undefined,
             facility: admission.facility ?? undefined,
