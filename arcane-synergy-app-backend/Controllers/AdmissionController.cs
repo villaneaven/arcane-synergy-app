@@ -13,7 +13,7 @@ public class AdmissionsController : ControllerBase
 {
     private readonly ArcaneSynergyContext _context;
 
-    private const int MaxMonthlyRangeDays = 365;
+    private const int MaxMonthlyRangeMonths = 12;
 
     public AdmissionsController(ArcaneSynergyContext context)
     {
@@ -48,9 +48,9 @@ public class AdmissionsController : ControllerBase
         [FromQuery] string? insurance = "",
         [FromQuery] string? clinic = "",
         [FromQuery] string? admissionType = "",
-        [FromQuery] int? lastDays = null)
+        [FromQuery] int? lastMonths = null)
     {
-        var query = ApplyAdmissionFilters(group, insurance, clinic, admissionType, lastDays);
+        var query = ApplyAdmissionFilters(group, insurance, clinic, admissionType, lastMonths);
 
         var count = await query.CountAsync();
         return Ok(new { count });
@@ -62,9 +62,9 @@ public class AdmissionsController : ControllerBase
         [FromQuery] string? insurance = "",
         [FromQuery] string? clinic = "",
         [FromQuery] string? admissionType = "",
-        [FromQuery] int? lastDays = null)
+        [FromQuery] int? lastMonths = null)
     {
-        var query = ApplyAdmissionFilters(group, insurance, clinic, admissionType, lastDays);
+        var query = ApplyAdmissionFilters(group, insurance, clinic, admissionType, lastMonths);
 
         // Pending patients: admissions with a FinalDischargeDate but no DateSeen.
         var pendingCount = await query
@@ -82,15 +82,19 @@ public class AdmissionsController : ControllerBase
         [FromQuery] string? insurance = "",
         [FromQuery] string? clinic = "",
         [FromQuery] string? admissionType = "",
-        [FromQuery] int? lastDays = 365)
+        [FromQuery] int? lastMonths = 12)
     {
-        if (lastDays.HasValue && lastDays.Value <= 0)
-            return BadRequest("lastDays must be between 1 and 365.");
+        if (lastMonths.HasValue && lastMonths.Value <= 0)
+            return BadRequest($"lastMonths must be between 1 and {MaxMonthlyRangeMonths}.");
 
-        if (lastDays.HasValue && lastDays.Value > MaxMonthlyRangeDays)
-            return BadRequest($"lastDays cannot exceed {MaxMonthlyRangeDays}.");
+        if (lastMonths.HasValue && lastMonths.Value > MaxMonthlyRangeMonths)
+            return BadRequest($"lastMonths cannot exceed {MaxMonthlyRangeMonths}.");
 
-        var query = ApplyAdmissionFilters(group, insurance, clinic, admissionType, lastDays);
+        var rangeMonths = lastMonths ?? MaxMonthlyRangeMonths;
+        var endMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        var startMonth = GetStartMonth(rangeMonths);
+
+        var query = ApplyAdmissionFilters(group, insurance, clinic, admissionType, rangeMonths);
 
         var monthlyCounts = await query
             .GroupBy(a => new { a.AdmissionDate.Year, a.AdmissionDate.Month })
@@ -103,10 +107,6 @@ public class AdmissionsController : ControllerBase
             .ToListAsync();
 
         var countLookup = monthlyCounts.ToDictionary(item => (item.Year, item.Month), item => item.Count);
-
-        var rangeDays = lastDays ?? 365;
-        var startMonth = new DateTime(DateTime.Today.AddDays(-rangeDays).Year, DateTime.Today.AddDays(-rangeDays).Month, 1);
-        var endMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
 
         var response = new List<object>();
         for (var month = startMonth; month <= endMonth; month = month.AddMonths(1))
@@ -207,7 +207,7 @@ public class AdmissionsController : ControllerBase
         string? insurance,
         string? clinic,
         string? admissionType,
-        int? lastDays)
+        int? lastMonths)
     {
         var query = _context.Admissions
             .Include(a => a.Patient)
@@ -225,13 +225,19 @@ public class AdmissionsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(admissionType))
             query = query.Where(a => a.Type == admissionType);
 
-        if (lastDays.HasValue && lastDays.Value > 0)
+        if (lastMonths.HasValue && lastMonths.Value > 0)
         {
             var endDate = DateTime.Today.AddDays(1).AddTicks(-1);
-            var startDate = DateTime.Today.AddDays(-lastDays.Value);
+            var startDate = GetStartMonth(lastMonths.Value);
             query = query.Where(a => a.AdmissionDate >= startDate && a.AdmissionDate <= endDate);
         }
 
         return query;
+    }
+
+    private static DateTime GetStartMonth(int lastMonths)
+    {
+        var currentMonthStart = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        return currentMonthStart.AddMonths(-(lastMonths - 1));
     }
 }
