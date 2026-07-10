@@ -29,6 +29,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -37,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -59,7 +61,21 @@ import { NewAdmissionDialog } from "@/components/new-admission-dialog";
 import { toast } from "sonner";
 import { DatePickerInput } from "@/components/date-picker-input";
 
-interface DataTableProps<TData extends { admissionId: string }, TValue> {
+interface DataTableProps<
+  TData extends {
+    admissionId: string;
+    patient?: {
+      firstName?: string;
+      lastName?: string;
+      mrn?: string;
+      group?: string;
+      insurance?: string;
+      pcp?: string;
+      clinic?: string;
+    };
+  },
+  TValue,
+> {
   columns:
     | ColumnDef<TData, TValue>[]
     | ((onAdmissionAdded?: () => void) => ColumnDef<TData, TValue>[]);
@@ -73,7 +89,21 @@ interface DataTableProps<TData extends { admissionId: string }, TValue> {
   onEndDateChange: (date: Date | undefined) => void;
 }
 
-export function DataTable<TData extends { admissionId: string }, TValue>({
+export function DataTable<
+  TData extends {
+    admissionId: string;
+    patient?: {
+      firstName?: string;
+      lastName?: string;
+      mrn?: string;
+      group?: string;
+      insurance?: string;
+      pcp?: string;
+      clinic?: string;
+    };
+  },
+  TValue,
+>({
   columns,
   data,
   onAdmissionAdded,
@@ -91,6 +121,8 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
   );
   const router = useRouter();
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [includeTransfers, setIncludeTransfers] = React.useState(false);
+  const [isExporting, setIsExporting] = React.useState(false);
 
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
@@ -176,6 +208,278 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
     }
   };
 
+  const getExportData = () => {
+    const exportableColumns = table
+      .getAllLeafColumns()
+      .filter(
+        (column) =>
+          column.getIsVisible() &&
+          column.id !== "select" &&
+          column.id !== "actions",
+      );
+
+    if (exportableColumns.length === 0) {
+      toast.error("No visible columns to export.", {
+        position: "top-center",
+      });
+      return null;
+    }
+
+    const rows = table.getSortedRowModel().rows;
+
+    return {
+      headers: [
+        ...exportableColumns.map((column) => column.id),
+        "patientFirstName",
+        "patientLastName",
+        "patientMRN",
+        "patientGroup",
+        "patientInsurance",
+        "patientPCP",
+        "patientClinic",
+      ],
+      rowValues: rows.map((row) => {
+        const patient = row.original.patient;
+
+        return [
+          ...exportableColumns.map((column) => row.getValue(column.id)),
+          patient?.firstName ?? "",
+          patient?.lastName ?? "",
+          patient?.mrn ?? "",
+          patient?.group ?? "",
+          patient?.insurance ?? "",
+          patient?.pcp ?? "",
+          patient?.clinic ?? "",
+        ];
+      }),
+    };
+  };
+
+  const getTransferHeaders = () => [
+    "transferId",
+    "transferAdmissionDate",
+    "transferDischargeDate",
+    "transferIsFinalDischarge",
+    "transferFacilityType",
+    "transferFacility",
+    "transferType",
+    "transferTimeOfAdmission",
+    "transferDX",
+    "transferNotificationSource",
+    "transferDateNotified",
+    "transferDischargeTo",
+  ];
+
+  const fetchTransfersForExport = async (admissionIds: string[]) => {
+    const accessToken = (session as { access_token?: string })?.access_token;
+
+    if (!accessToken) {
+      throw new Error("Missing access token");
+    }
+
+    if (admissionIds.length === 0) {
+      return [];
+    }
+
+    const queryParams = new URLSearchParams();
+
+    admissionIds.forEach((admissionId) => {
+      queryParams.append("admissionIds", admissionId);
+    });
+
+    const response = await fetch(
+      `http://localhost:5201/api/transfers/export${
+        queryParams.toString() ? `?${queryParams.toString()}` : ""
+      }`,
+      {
+        cache: "no-store",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch transfers for export");
+    }
+
+    return (await response.json()) as Array<{
+      transferId?: number;
+      admissionId: number;
+      admissionDate?: string;
+      dischargeDate?: string | null;
+      isFinalDischarge?: boolean;
+      facilityType?: string | null;
+      facility?: string | null;
+      type?: string;
+      timeOfAdmission?: string | null;
+      dx?: string | null;
+      notificationSource?: string | null;
+      dateNotified?: string;
+      dischargeTo?: string | null;
+    }>;
+  };
+
+  const buildExportData = async () => {
+    const exportData = getExportData();
+    if (!exportData) {
+      return null;
+    }
+
+    if (!includeTransfers) {
+      return exportData;
+    }
+
+    const admissionRows = table.getSortedRowModel().rows;
+    const transferRows = await fetchTransfersForExport(
+      admissionRows.map((row) => row.original.admissionId),
+    );
+    const transferHeaders = getTransferHeaders();
+
+    const transfersByAdmissionId = transferRows.reduce((map, transfer) => {
+      const admissionId = String(transfer.admissionId);
+      const existing = map.get(admissionId) ?? [];
+      existing.push(transfer);
+      map.set(admissionId, existing);
+      return map;
+    }, new Map<string, typeof transferRows>());
+
+    const rowValues = admissionRows.flatMap((row, index) => {
+      const baseValues = exportData.rowValues[index];
+      const transfers =
+        transfersByAdmissionId.get(String(row.original.admissionId)) ?? [];
+
+      if (!transfers.length) {
+        return [[...baseValues, ...Array(transferHeaders.length).fill("")]];
+      }
+
+      return transfers.map((transfer) => [
+        ...baseValues,
+        transfer.transferId ?? "",
+        transfer.admissionDate ?? "",
+        transfer.dischargeDate ?? "",
+        transfer.isFinalDischarge ? "Yes" : "No",
+        transfer.facilityType ?? "",
+        transfer.facility ?? "",
+        transfer.type ?? "",
+        transfer.timeOfAdmission ?? "",
+        transfer.dx ?? "",
+        transfer.notificationSource ?? "",
+        transfer.dateNotified ?? "",
+        transfer.dischargeTo ?? "",
+      ]);
+    });
+
+    return {
+      headers: [...exportData.headers, ...transferHeaders],
+      rowValues,
+    };
+  };
+
+  const handleExportCsv = async () => {
+    setIsExporting(true);
+
+    try {
+      const exportData = await buildExportData();
+      if (!exportData) {
+        return;
+      }
+
+      const escapeCsvValue = (value: unknown) => {
+        if (value === null || value === undefined) {
+          return "";
+        }
+
+        const stringValue = String(value);
+        if (
+          stringValue.includes(",") ||
+          stringValue.includes('"') ||
+          stringValue.includes("\n")
+        ) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+
+        return stringValue;
+      };
+
+      const csvRows = exportData.rowValues.map((rowValues) =>
+        rowValues.map((value) => escapeCsvValue(value)).join(","),
+      );
+
+      const csv = [exportData.headers.join(","), ...csvRows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `admissions-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success("CSV export completed.", {
+        position: "top-center",
+      });
+    } catch (error) {
+      console.error("Error exporting admissions as CSV:", error);
+      toast.error("Failed to export CSV.", {
+        position: "top-center",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+
+    try {
+      const exportData = await buildExportData();
+      if (!exportData) {
+        return;
+      }
+
+      const escapeExcelValue = (value: unknown) => {
+        if (value === null || value === undefined) {
+          return "";
+        }
+
+        const stringValue = String(value);
+        return stringValue.replace(/\t/g, " ").replace(/\r?\n/g, " ");
+      };
+
+      const rows = exportData.rowValues.map((rowValues) =>
+        rowValues.map((value) => escapeExcelValue(value)).join("\t"),
+      );
+
+      const content = [exportData.headers.join("\t"), ...rows].join("\n");
+      const blob = new Blob([content], {
+        type: "application/vnd.ms-excel;charset=utf-8;",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `admissions-${new Date().toISOString().slice(0, 10)}.xls`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success("Excel export completed.", {
+        position: "top-center",
+      });
+    } catch (error) {
+      console.error("Error exporting admissions as Excel:", error);
+      toast.error("Failed to export Excel.", {
+        position: "top-center",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex w-full flex-wrap items-center gap-4">
@@ -222,6 +526,45 @@ export function DataTable<TData extends { admissionId: string }, TValue>({
           className="max-w-sm"
         />
         <div className="flex justify-end space-x-2 ml-auto">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline">Export</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent size="sm">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Export admissions</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Choose a file format to export the current table view.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex items-center gap-3 py-2">
+                <Checkbox
+                  id="include-transfers"
+                  checked={includeTransfers}
+                  onCheckedChange={(checked) => setIncludeTransfers(!!checked)}
+                />
+                <Label htmlFor="include-transfers" className="text-sm">
+                  Export associated transfers
+                </Label>
+              </div>
+              <AlertDialogAction
+                variant="outline"
+                onClick={handleExportCsv}
+                disabled={isExporting}
+              >
+                Export CSV
+              </AlertDialogAction>
+              <AlertDialogAction
+                onClick={handleExportExcel}
+                disabled={isExporting}
+              >
+                Export Excel
+              </AlertDialogAction>
+              <AlertDialogFooter className="pt-6">
+                <AlertDialogCancel variant="outline">Cancel</AlertDialogCancel>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           {isDeleting ? (
             <ButtonLoading />
           ) : (
