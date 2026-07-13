@@ -8,6 +8,15 @@ interface Props {
   session?: Session | null;
 }
 
+const SESSION_REFETCH_INTERVAL_SECONDS = 5 * 60;
+
 export default function NextAuthSessionProvider({ children, session }: Props) {
-  return <SessionProvider session={session}>{children}</SessionProvider>;
+  return (
+    <SessionProvider
+      session={session}
+      refetchInterval={SESSION_REFETCH_INTERVAL_SECONDS}
+    >
+      {children}
+    </SessionProvider>
+  );
 }
