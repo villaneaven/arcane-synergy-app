@@ -185,7 +185,7 @@ export default function Home() {
               <TrendingUpDown />
               <CardTitle>Admissions Trend</CardTitle>
               {isDashboardLoading ? (
-                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-6 w-40" />
               ) : (
                 <p className="text-sm text-muted-foreground">
                   {chartStartDate?.toLocaleDateString()} -{" "}
@@ -193,7 +193,7 @@ export default function Home() {
                 </p>
               )}
             </CardHeader>
-            <CardContent className="w-full">
+            <CardContent className="w-full py-6">
               <DashboardChart
                 session={session as Parameters<typeof useAdmissionsCount>[0]}
                 filters={filters}
