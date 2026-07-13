@@ -23,9 +23,9 @@ export function useAdmissionsCount(
 ) {
   const [admissionsCount, setAdmissionsCount] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const accessToken = session?.access_token;
 
   const fetchAdmissionsCount = useCallback(async () => {
-    const accessToken = session?.access_token;
     const queryParams = new URLSearchParams();
 
     if (filters.group !== "all") queryParams.set("group", filters.group);
@@ -67,13 +67,13 @@ export function useAdmissionsCount(
     } finally {
       setIsLoading(false);
     }
-  }, [session, filters]);
+  }, [accessToken, filters]);
 
   useEffect(() => {
-    if (session) {
+    if (accessToken) {
       void fetchAdmissionsCount();
     }
-  }, [session, fetchAdmissionsCount]);
+  }, [accessToken, fetchAdmissionsCount]);
 
   return { admissionsCount, isLoading };
 }

@@ -53,6 +53,7 @@ export function DashboardChart({
 }) {
   const [chartData, setChartData] = useState<MonthlyAdmissionCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const accessToken = session?.access_token;
 
   const queryString = useMemo(() => {
     const queryParams = new URLSearchParams();
@@ -73,8 +74,6 @@ export function DashboardChart({
   }, [filters]);
 
   const fetchChartData = useCallback(async () => {
-    const accessToken = session?.access_token;
-
     try {
       setIsLoading(true);
 
@@ -102,13 +101,13 @@ export function DashboardChart({
     } finally {
       setIsLoading(false);
     }
-  }, [queryString, session]);
+  }, [queryString, accessToken]);
 
   useEffect(() => {
-    if (session) {
+    if (accessToken) {
       void fetchChartData();
     }
-  }, [session, fetchChartData]);
+  }, [accessToken, fetchChartData]);
 
   useEffect(() => {
     onLoadingChange?.(isLoading);
