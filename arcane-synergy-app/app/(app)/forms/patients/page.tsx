@@ -19,7 +19,7 @@ export default async function Patients() {
   const data: Patient[] = await res.json()
 
   return (
-    <div className="block px-8 py-4 min-h-screen justify-center bg-background font-sans dark:bg-black">
+    <div className="block px-8 py-4 justify-center bg-background font-sans dark:bg-black">
       <PatientsTableWrapper initialData={data} />
     </div>
   )

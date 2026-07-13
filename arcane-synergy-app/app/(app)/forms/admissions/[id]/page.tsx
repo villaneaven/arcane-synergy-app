@@ -27,7 +27,7 @@ export default async function Transfers({
   const data: Transfer[] = await res.json();
 
   return (
-    <div className="block px-8 py-4 min-h-screen justify-center bg-background font-sans dark:bg-black">
+    <div className="block px-8 py-4 justify-center bg-background font-sans dark:bg-black">
       <TransferTableWrapper initialData={data} admissionId={id} />
     </div>
   );
