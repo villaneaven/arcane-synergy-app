@@ -42,6 +42,18 @@ public class AdmissionsController : ControllerBase
         return admission == null ? NotFound() : Ok(admission);
     }
 
+    [HttpGet("patient/{patientId:int}")]
+    public async Task<IActionResult> GetAdmissionsByPatient(int patientId)
+    {
+        var admissions = await _context.Admissions
+            .Include(a => a.Patient)
+            .Where(a => a.PatientID == patientId)
+            .OrderByDescending(a => a.AdmissionDate)
+            .ToListAsync();
+
+        return Ok(admissions);
+    }
+
     [HttpGet("count")]
     public async Task<IActionResult> GetAdmissionCount(
         [FromQuery] string? group = "",
