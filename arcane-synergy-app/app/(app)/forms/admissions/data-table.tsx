@@ -44,6 +44,7 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -60,6 +61,7 @@ import { ButtonLoading } from "@/components/button-loading";
 import { NewAdmissionDialog } from "@/components/new-admission-dialog";
 import { toast } from "sonner";
 import { DatePickerInput } from "@/components/date-picker-input";
+import { TYPE_OPTIONS } from "@/lib/admission-options";
 
 interface DataTableProps<
   TData extends {
@@ -486,18 +488,18 @@ export function DataTable<
         <Field className="w-full max-w-48">
           <FieldLabel>Type of Admission</FieldLabel>
           <Select value={admissionType} onValueChange={onAdmissionTypeChange}>
-            <SelectTrigger>
-              <SelectValue />
+            <SelectTrigger className="w-45">
+              <SelectValue placeholder="Select a type" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="all">All Admission Types</SelectItem>
-                <SelectItem value="Emergency">Emergency</SelectItem>
-                <SelectItem value="ER">ER</SelectItem>
-                <SelectItem value="Inpatient">Inpatient</SelectItem>
-                <SelectItem value="Observation">Observation</SelectItem>
-                <SelectItem value="Post-Acute">Post-Acute</SelectItem>
-                <SelectItem value="Readmission">Readmission</SelectItem>
+                <SelectLabel>Type</SelectLabel>
+                <SelectItem value="all">All Types</SelectItem>
+                {TYPE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
               </SelectGroup>
             </SelectContent>
           </Select>
