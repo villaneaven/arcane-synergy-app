@@ -21,7 +21,7 @@ export default async function Admissions() {
   const data: Admission[] = await res.json();
 
   return (
-    <div className="block px-8 py-4 min-h-screen justify-center bg-background font-sans dark:bg-black">
+    <div className="block px-8 py-4 justify-center bg-background font-sans dark:bg-black">
       <AdmissionsTableWrapper initialData={data} />
     </div>
   );

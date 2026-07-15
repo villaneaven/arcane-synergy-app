@@ -8,8 +8,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background dark:bg-black">
         <AppSidebar />
-        <main className="flex-1 overflow-auto">
-          {children}
+        <main className="flex flex-1 flex-col overflow-auto">
+          <div className="flex-1">{children}</div>
           <Footer />
         </main>
         <Toaster />
