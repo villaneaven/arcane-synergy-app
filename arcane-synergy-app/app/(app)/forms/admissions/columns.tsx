@@ -1,6 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
 import { MoreHorizontal, ArrowUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -339,6 +340,16 @@ export const createColumns = (
               admission={admission}
               onAdmissionUpdated={onDataChange}
             />
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link href={`/forms/patients/${admission.patientID}`}>
+                View patient
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link href={`/forms/admissions/${admission.admissionId}`}>
+                View transfers
+              </Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       );
