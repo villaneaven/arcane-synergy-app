@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import {
@@ -53,7 +53,6 @@ export function DashboardChart({
 }) {
   const [chartData, setChartData] = useState<MonthlyAdmissionCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const accessToken = session?.access_token;
 
   const queryString = useMemo(() => {
     const queryParams = new URLSearchParams();
@@ -73,41 +72,48 @@ export function DashboardChart({
     return queryParams.toString();
   }, [filters]);
 
-  const fetchChartData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-
-      const response = await fetch(
-        `http://localhost:5201/api/Admissions/count/monthly${
-          queryString ? `?${queryString}` : ""
-        }`,
-        {
-          cache: "no-store",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch monthly admissions count");
-      }
-
-      const data: MonthlyAdmissionCount[] = await response.json();
-      setChartData(data);
-    } catch (error) {
-      console.error("Error fetching monthly admissions count:", error);
-      setChartData([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [queryString, accessToken]);
-
   useEffect(() => {
-    if (accessToken) {
-      void fetchChartData();
+    if (!session) {
+      return;
     }
-  }, [accessToken, fetchChartData]);
+
+    let ignore = false;
+    const accessToken = session.access_token;
+
+    (async () => {
+      try {
+        setIsLoading(true);
+
+        const response = await fetch(
+          `http://localhost:5201/api/Admissions/count/monthly${
+            queryString ? `?${queryString}` : ""
+          }`,
+          {
+            cache: "no-store",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch monthly admissions count");
+        }
+
+        const data: MonthlyAdmissionCount[] = await response.json();
+        if (!ignore) setChartData(data);
+      } catch (error) {
+        console.error("Error fetching monthly admissions count:", error);
+        if (!ignore) setChartData([]);
+      } finally {
+        if (!ignore) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      ignore = true;
+    };
+  }, [session, queryString]);
 
   useEffect(() => {
     onLoadingChange?.(isLoading);
