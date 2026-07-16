@@ -141,9 +141,6 @@ export const createColumns = (
                 View patient
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">
-              View admissions
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       );

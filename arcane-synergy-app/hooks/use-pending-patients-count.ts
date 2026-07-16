@@ -25,9 +25,9 @@ export function usePendingPatientsCount(
     number | null
   >(null);
   const [isLoading, setIsLoading] = useState(true);
+  const accessToken = session?.access_token;
 
   const fetchPendingPatients = useCallback(async () => {
-    const accessToken = session?.access_token;
     const queryParams = new URLSearchParams();
 
     if (filters.group !== "all") queryParams.set("group", filters.group);
@@ -69,13 +69,13 @@ export function usePendingPatientsCount(
     } finally {
       setIsLoading(false);
     }
-  }, [session, filters]);
+  }, [accessToken, filters]);
 
   useEffect(() => {
-    if (session) {
+    if (accessToken) {
       void fetchPendingPatients();
     }
-  }, [session, fetchPendingPatients]);
+  }, [accessToken, fetchPendingPatients]);
 
   return { isLoading, pendingPatientsCount };
 }

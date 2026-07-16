@@ -53,6 +53,7 @@ export function DashboardChart({
 }) {
   const [chartData, setChartData] = useState<MonthlyAdmissionCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const accessToken = session?.access_token;
 
   const queryString = useMemo(() => {
     const queryParams = new URLSearchParams();
@@ -124,36 +125,36 @@ export function DashboardChart({
     admissions: item.count,
   }));
 
+  if (isLoading) {
+    return <Skeleton className="h-70 w-full" />;
+  }
+
   return (
     <ChartContainer config={chartConfig} className="min-h-50 max-h-70 w-full">
-      {isLoading ? (
-        <Skeleton className="h-full w-full rounded-md bg-muted" />
-      ) : (
-        <LineChart accessibilityLayer data={chartRows}>
-          <CartesianGrid vertical={false} />
-          <XAxis
-            dataKey="month"
-            tickLine={false}
-            tickMargin={10}
-            axisLine={false}
-          />
-          <YAxis
-            dataKey="admissions"
-            tickLine={false}
-            tickMargin={10}
-            axisLine={false}
-            label={{ value: "Count", angle: -90, position: "insideLeft" }}
-          />
-          <ChartTooltip content={<ChartTooltipContent />} />
-          <ChartLegend content={<ChartLegendContent />} />
-          <Line
-            dataKey="admissions"
-            fill="var(--color-admissions)"
-            stroke="var(--color-admissions)"
-            radius={4}
-          />
-        </LineChart>
-      )}
+      <LineChart accessibilityLayer data={chartRows}>
+        <CartesianGrid vertical={false} />
+        <XAxis
+          dataKey="month"
+          tickLine={false}
+          tickMargin={10}
+          axisLine={false}
+        />
+        <YAxis
+          dataKey="admissions"
+          tickLine={false}
+          tickMargin={10}
+          axisLine={false}
+          label={{ value: "Count", angle: -90, position: "insideLeft" }}
+        />
+        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartLegend content={<ChartLegendContent />} />
+        <Line
+          dataKey="admissions"
+          fill="var(--color-admissions)"
+          stroke="var(--color-admissions)"
+          radius={4}
+        />
+      </LineChart>
     </ChartContainer>
   );
 }

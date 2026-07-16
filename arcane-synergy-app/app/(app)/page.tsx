@@ -58,8 +58,8 @@ export default function Home() {
   const isDashboardLoading = isLoading || isPendingLoading || isChartLoading;
 
   return (
-    <div className="min-h-screen w-full bg-background font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full flex-col gap-8 bg-white dark:bg-black">
+    <div className="w-full bg-background font-sans dark:bg-black">
+      <main className="flex w-full flex-col gap-8 bg-white dark:bg-black pb-8">
         <header className="relative flex w-full items-start bg-accent px-4 py-4 pl-14 dark:bg-accent-dark sm:px-8 sm:pl-16">
           <SidebarTrigger className="absolute left-0 top-0" />
           <div className="flex flex-col items-start gap-4 w-full py-4">
@@ -185,7 +185,7 @@ export default function Home() {
               <TrendingUpDown />
               <CardTitle>Admissions Trend</CardTitle>
               {isDashboardLoading ? (
-                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-6 w-40" />
               ) : (
                 <p className="text-sm text-muted-foreground">
                   {chartStartDate?.toLocaleDateString()} -{" "}
@@ -193,7 +193,7 @@ export default function Home() {
                 </p>
               )}
             </CardHeader>
-            <CardContent className="w-full">
+            <CardContent className="w-full py-6">
               <DashboardChart
                 session={session as Parameters<typeof useAdmissionsCount>[0]}
                 filters={filters}
