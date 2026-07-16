@@ -9,6 +9,7 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -20,6 +21,12 @@ import { useAdmissionsCount } from "@/hooks/use-admissions-count";
 import { usePendingPatientsCount } from "@/hooks/use-pending-patients-count";
 import { useSession } from "next-auth/react";
 import { Eye, TrendingUpDown, Users } from "lucide-react";
+import { TYPE_OPTIONS } from "@/lib/admission-options";
+import {
+  CLINIC_OPTIONS,
+  GROUP_OPTIONS,
+  INSURANCE_OPTIONS,
+} from "@/lib/patient-options";
 
 export default function Home() {
   const { data: session } = useSession();
@@ -70,13 +77,24 @@ export default function Home() {
             <div className="flex w-full flex-wrap items-center gap-4">
               <Field className="w-full max-w-48">
                 <FieldLabel>Group</FieldLabel>
-                <Select value={group} onValueChange={setGroup}>
-                  <SelectTrigger>
-                    <SelectValue />
+                <Select
+                  value={group}
+                  onValueChange={(value) => {
+                    setGroup(value);
+                  }}
+                >
+                  <SelectTrigger className="w-45">
+                    <SelectValue placeholder="Select a group" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
+                      <SelectLabel>Group</SelectLabel>
                       <SelectItem value="all">All Groups</SelectItem>
+                      {GROUP_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -84,12 +102,18 @@ export default function Home() {
               <Field className="w-full max-w-48">
                 <FieldLabel>Insurance</FieldLabel>
                 <Select value={insurance} onValueChange={setInsurance}>
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger className="w-45">
+                    <SelectValue placeholder="Select an insurance" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectItem value="all">All Insurance</SelectItem>
+                      <SelectLabel>Insurance</SelectLabel>
+                      <SelectItem value="all">All Insurances</SelectItem>
+                      {INSURANCE_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -97,23 +121,18 @@ export default function Home() {
               <Field className="w-full max-w-48">
                 <FieldLabel>Clinic</FieldLabel>
                 <Select value={clinic} onValueChange={setClinic}>
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger className="w-45">
+                    <SelectValue placeholder="Select a clinic" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
+                      <SelectLabel>Clinics</SelectLabel>
                       <SelectItem value="all">All Clinics</SelectItem>
-                      <SelectItem value="EMC">EMC</SelectItem>
-                      <SelectItem value="VFC">VFC</SelectItem>
-                      <SelectItem value="RGVAIMS-WES">RGVAIMS-WES</SelectItem>
-                      <SelectItem value="DMC">DMC</SelectItem>
-                      <SelectItem value="RGVAIMS-MER">RGVAIMS-MER</SelectItem>
-                      <SelectItem value="MVFPA">MVFPA</SelectItem>
-                      <SelectItem value="MCACC">MCACC</SelectItem>
-                      <SelectItem value="WMC">WMC</SelectItem>
-                      <SelectItem value="KCP-HAR">KCP-HAR</SelectItem>
-                      <SelectItem value="MMC">MMC</SelectItem>
-                      <SelectItem value="DDNC">DDNC</SelectItem>
+                      {CLINIC_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -121,12 +140,18 @@ export default function Home() {
               <Field className="w-full max-w-48">
                 <FieldLabel>Type of Admission</FieldLabel>
                 <Select value={admissionType} onValueChange={setAdmissionType}>
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger className="w-45">
+                    <SelectValue placeholder="Select a type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectItem value="all">All Admission Types</SelectItem>
+                      <SelectLabel>Type</SelectLabel>
+                      <SelectItem value="all">All Types</SelectItem>
+                      {TYPE_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
