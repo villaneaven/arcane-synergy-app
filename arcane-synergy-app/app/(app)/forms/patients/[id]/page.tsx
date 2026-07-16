@@ -1,5 +1,7 @@
 import { getAccessToken } from "@/lib/auth";
 import { Patient } from "../columns";
+import { Admission } from "../../admissions/columns";
+import { PatientAdmissionsTable } from "./patient-admissions-table";
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -37,6 +39,22 @@ export default async function PatientPage({ params }: PatientPageProps) {
   }
 
   const patient: Patient = await res.json();
+
+  const admissionsRes = await fetch(
+    `http://localhost:5201/api/admissions/patient/${id}`,
+    {
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+
+  if (!admissionsRes.ok) {
+    throw new Error("Failed to fetch admissions");
+  }
+
+  const admissions: Admission[] = await admissionsRes.json();
 
   return (
     <main className="mx-auto max-w-5xl p-6">
@@ -105,6 +123,18 @@ export default async function PatientPage({ params }: PatientPageProps) {
           </div>
         </section>
       </div>
+
+      <section
+        id="admissions"
+        className="mt-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-background p-6 shadow-sm"
+      >
+        <h2 className="text-lg font-semibold text-black dark:text-zinc-50">
+          Admissions
+        </h2>
+        <div className="mt-4">
+          <PatientAdmissionsTable admissions={admissions} />
+        </div>
+      </section>
     </main>
   );
 }
