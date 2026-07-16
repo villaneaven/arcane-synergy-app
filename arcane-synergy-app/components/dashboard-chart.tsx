@@ -53,7 +53,6 @@ export function DashboardChart({
 }) {
   const [chartData, setChartData] = useState<MonthlyAdmissionCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const accessToken = session?.access_token;
 
   const queryString = useMemo(() => {
     const queryParams = new URLSearchParams();
