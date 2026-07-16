@@ -2,6 +2,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import Footer from "@/components/footer";
 import { Toaster } from "@/components/ui/sonner";
+import { SessionExpiredAlert } from "@/components/session-expired-alert";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -13,6 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Footer />
         </main>
         <Toaster />
+        <SessionExpiredAlert />
       </div>
     </SidebarProvider>
   );

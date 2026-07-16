@@ -1,12 +1,13 @@
 import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { Session } from "next-auth";
 
-interface SessionWithAccessToken extends Session {
-  access_token: string;
-}
+export async function getAccessToken(): Promise<string> {
+  const session = await getServerSession(authOptions);
 
-export async function getAccessToken(): Promise<string | null> {
-  const session = (await getServerSession(authOptions)) as SessionWithAccessToken | null;
-  return session?.access_token ?? null;
+  if (!session?.access_token || session.error === "RefreshAccessTokenError") {
+    redirect("/api/auth/signin?callbackUrl=%2F");
+  }
+
+  return session.access_token;
 }
