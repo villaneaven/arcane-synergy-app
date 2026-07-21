@@ -18,8 +18,17 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  HOME_PAGE_TYPES,
+  HOME_PAGE_TYPE_LABELS,
+  useHomePageType,
+} from "@/components/home-page-provider";
 import {
   Sidebar,
   SidebarContent,
@@ -51,6 +60,7 @@ const handleLogOutClick = async () => {
 export function AppSidebar() {
   const { setTheme } = useTheme();
   const { collapsibleOpen, setCollapsibleOpen } = useSidebar();
+  const { homePageType, setHomePageType } = useHomePageType();
 
   return (
     <Sidebar collapsible="icon">
@@ -145,7 +155,29 @@ export function AppSidebar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleLogOutClick}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <DropdownMenuItem>Default page</DropdownMenuItem>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuRadioGroup
+                      value={homePageType}
+                      onValueChange={(value) =>
+                        setHomePageType(value as typeof homePageType)
+                      }
+                    >
+                      {HOME_PAGE_TYPES.map((type) => (
+                        <DropdownMenuRadioItem key={type} value={type}>
+                          {HOME_PAGE_TYPE_LABELS[type]}
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <DropdownMenuItem
+                  onClick={handleLogOutClick}
+                  className="text-destructive"
+                >
                   Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
