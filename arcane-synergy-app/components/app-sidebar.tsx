@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   LayoutDashboard,
@@ -38,6 +39,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
+  SidebarMenuSubButton,
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -48,6 +50,9 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
+const ACTIVE_ITEM_CLASS =
+  "data-[active=true]:bg-blue-600/20! data-[active=true]:text-white! data-[active=true]:hover:bg-blue-700/40! data-[active=true]:text-blue-500!";
+
 const handleLogOutClick = async () => {
   try {
     signOut();
@@ -57,6 +62,7 @@ const handleLogOutClick = async () => {
 };
 
 export function AppSidebar() {
+  const pathname = usePathname();
   const { setTheme } = useTheme();
   const { collapsibleOpen, setCollapsibleOpen } = useSidebar();
   const { homePageType, setHomePageType } = useHomePageType();
@@ -68,7 +74,11 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem key={"Dashboard"}>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === "/"}
+                  className={ACTIVE_ITEM_CLASS}
+                >
                   <Link href={"/"}>
                     <LayoutDashboard />
                     <span>{"Dashboard"}</span>
@@ -83,36 +93,49 @@ export function AppSidebar() {
               >
                 <SidebarMenuItem key={"Forms"}>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="cursor-pointer">
+                    <SidebarMenuButton
+                      isActive={pathname.startsWith("/forms")}
+                      className={ACTIVE_ITEM_CLASS}
+                    >
                       <Form />
                       <span>{"Forms"}</span>
                       {collapsibleOpen ? <ChevronUp /> : <ChevronDown />}
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <SidebarMenuSub>
+                    <SidebarMenuSub className="py-1">
                       <SidebarMenuSubItem key={`Patients`}>
-                        <Link
-                          href={`/forms/patients`}
-                          className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 outline-hidden focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={pathname === "/forms/patients"}
+                          className={ACTIVE_ITEM_CLASS}
                         >
-                          <span>{`Patients`}</span>
-                        </Link>
+                          <Link href={`/forms/patients`}>
+                            <span>{`Patients`}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem key={`Admissions`}>
-                        <Link
-                          href={`/forms/admissions`}
-                          className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 outline-hidden focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={pathname === "/forms/admissions"}
+                          className={ACTIVE_ITEM_CLASS}
                         >
-                          <span>{`Admissions`}</span>
-                        </Link>
+                          <Link href={`/forms/admissions`}>
+                            <span>{`Admissions`}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
               <SidebarMenuItem key={"Reports"}>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith("/reports")}
+                  className={ACTIVE_ITEM_CLASS}
+                >
                   <Link href={"/reports"}>
                     <ClipboardCheck />
                     <span>{"Reports"}</span>
