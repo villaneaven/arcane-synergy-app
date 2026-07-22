@@ -63,6 +63,7 @@ export function PatientForm({
   }) => Promise<void>;
   onCancel?: () => void;
   initialValues?: {
+    patientID?: string;
     firstName?: string;
     lastName?: string;
     dob?: string;
@@ -90,8 +91,11 @@ export function PatientForm({
     initialValues?.clinic ?? "",
   );
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [prevInitialValues, setPrevInitialValues] =
+    React.useState(initialValues);
 
-  React.useEffect(() => {
+  if (initialValues !== prevInitialValues) {
+    setPrevInitialValues(initialValues);
     const nextDate = initialValues?.dob
       ? new Date(initialValues.dob)
       : new Date("1990-01-01T00:00:00");
@@ -102,7 +106,7 @@ export function PatientForm({
     setInsurance(initialValues?.insurance ?? "");
     setPcp(initialValues?.pcp ?? "");
     setClinic(initialValues?.clinic ?? "");
-  }, [initialValues]);
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -144,8 +148,6 @@ export function PatientForm({
       setGroup("");
       setInsurance("");
       setPcp("");
-    } catch (error) {
-      // Error is already handled in the onSubmit callback
     } finally {
       setIsSubmitting(false);
     }
