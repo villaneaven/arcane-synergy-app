@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Popover,
   PopoverContent,
@@ -107,15 +107,16 @@ export function PatientSearchInput({
     [session],
   );
 
-  const debouncedSearch = React.useMemo(() => {
-    let timeoutId: NodeJS.Timeout;
-    return (query: string) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
+  const timeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined);
+  const debouncedSearch = React.useCallback(
+    (query: string) => {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
         searchPatients(query);
       }, 500);
-    };
-  }, [searchPatients]);
+    },
+    [searchPatients],
+  );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -140,27 +141,32 @@ export function PatientSearchInput({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Input
-          ref={inputRef}
-          id={id}
-          name={name}
-          type="text"
-          placeholder="Search patients by name or MRN..."
-          value={searchQuery}
-          onChange={handleInputChange}
-          required={required}
-          onFocus={() => {
-            setOpen(true);
-            inputRef.current?.focus();
-          }}
-          onBlur={() => {
-            if (results.length > 0 || isLoading) {
-              setTimeout(() => inputRef.current?.focus(), 0);
-            } else {
-              setOpen(false);
-            }
-          }}
-        />
+        <div className="relative w-full">
+          <Input
+            ref={inputRef}
+            id={id}
+            name={name}
+            type="text"
+            placeholder="Search patients by name or MRN..."
+            value={searchQuery}
+            onChange={handleInputChange}
+            required={required}
+            onFocus={() => {
+              setOpen(true);
+              inputRef.current?.focus();
+            }}
+            onBlur={() => {
+              if (results.length > 0 || isLoading) {
+                setTimeout(() => inputRef.current?.focus(), 0);
+              } else {
+                setOpen(false);
+              }
+            }}
+          />
+          {isLoading && (
+            <Spinner className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          )}
+        </div>
       </PopoverTrigger>
       {results.length > 0 && (
         <PopoverContent className="w-96 p-0" align="center">
