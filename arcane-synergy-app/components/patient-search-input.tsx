@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useSession } from "next-auth/react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -142,12 +143,14 @@ export function PatientSearchInput({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <div className="relative w-full">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             ref={inputRef}
             id={id}
             name={name}
             type="text"
             placeholder="Search patients by name or MRN..."
+            className="pl-9"
             value={searchQuery}
             onChange={handleInputChange}
             required={required}
