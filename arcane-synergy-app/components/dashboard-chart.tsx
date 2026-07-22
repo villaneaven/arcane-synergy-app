@@ -72,13 +72,14 @@ export function DashboardChart({
     return queryParams.toString();
   }, [filters]);
 
+  const accessToken = session?.access_token;
+
   useEffect(() => {
-    if (!session) {
+    if (!accessToken) {
       return;
     }
 
     let ignore = false;
-    const accessToken = session.access_token;
 
     (async () => {
       try {
@@ -113,7 +114,7 @@ export function DashboardChart({
     return () => {
       ignore = true;
     };
-  }, [session, queryString]);
+  }, [accessToken, queryString]);
 
   useEffect(() => {
     onLoadingChange?.(isLoading);
