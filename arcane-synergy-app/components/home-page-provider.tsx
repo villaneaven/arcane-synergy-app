@@ -2,13 +2,13 @@
 
 import * as React from "react";
 
-export const HOME_PAGE_TYPES = ["analytics", "welcome"] as const;
+export const HOME_PAGE_TYPES = ["analytics", "search"] as const;
 
 export type HomePageType = (typeof HOME_PAGE_TYPES)[number];
 
 export const HOME_PAGE_TYPE_LABELS: Record<HomePageType, string> = {
   analytics: "Analytics",
-  welcome: "Welcome",
+  search: "Search",
 };
 
 const HOME_PAGE_TYPE_STORAGE_KEY = "home-page-type";
