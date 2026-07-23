@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import {
   normalizeGroupBreakdown,
   type NormalizedGroupCount,
@@ -29,7 +29,7 @@ export function useAdmissionsCount(
   const [admissionsCountByGroup, setAdmissionsCountByGroup] = useState<
     NormalizedGroupCount[]
   >([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, startTransition] = useTransition();
   const accessToken = session?.access_token;
 
   const fetchAdmissionsCount = useCallback(async () => {
@@ -47,8 +47,6 @@ export function useAdmissionsCount(
     }
 
     try {
-      setIsLoading(true);
-
       const response = await fetch(
         `http://localhost:5201/api/Admissions/count${
           queryParams.toString() ? `?${queryParams.toString()}` : ""
@@ -73,14 +71,12 @@ export function useAdmissionsCount(
       console.error("Error fetching admissions count:", error);
       setAdmissionsCount(null);
       setAdmissionsCountByGroup([]);
-    } finally {
-      setIsLoading(false);
     }
   }, [accessToken, filters]);
 
   useEffect(() => {
     if (accessToken) {
-      void fetchAdmissionsCount();
+      startTransition(fetchAdmissionsCount);
     }
   }, [accessToken, fetchAdmissionsCount]);
 
