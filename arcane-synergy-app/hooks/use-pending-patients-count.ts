@@ -1,6 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  normalizeGroupBreakdown,
+  type NormalizedGroupCount,
+  type RawGroupCount,
+} from "@/lib/group-breakdown";
 
 type SessionWithAccessToken =
   | {
@@ -10,7 +15,6 @@ type SessionWithAccessToken =
   | undefined;
 
 type AdmissionsCountFilters = {
-  group: string;
   insurance: string;
   clinic: string;
   admissionType: string;
@@ -24,13 +28,14 @@ export function usePendingPatientsCount(
   const [pendingPatientsCount, setPendingPatientsCount] = useState<
     number | null
   >(null);
+  const [pendingPatientsCountByGroup, setPendingPatientsCountByGroup] =
+    useState<NormalizedGroupCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const accessToken = session?.access_token;
 
   const fetchPendingPatients = useCallback(async () => {
     const queryParams = new URLSearchParams();
 
-    if (filters.group !== "all") queryParams.set("group", filters.group);
     if (filters.insurance !== "all") {
       queryParams.set("insurance", filters.insurance);
     }
@@ -61,11 +66,14 @@ export function usePendingPatientsCount(
         throw new Error("Failed to fetch pending patients count");
       }
 
-      const data: { count: number } = await response.json();
-      setPendingPatientsCount(data.count);
+      const data: { total: number; byGroup: RawGroupCount[] } =
+        await response.json();
+      setPendingPatientsCount(data.total);
+      setPendingPatientsCountByGroup(normalizeGroupBreakdown(data.byGroup));
     } catch (error) {
       console.error("Error fetching pending patients count:", error);
       setPendingPatientsCount(null);
+      setPendingPatientsCountByGroup([]);
     } finally {
       setIsLoading(false);
     }
@@ -77,5 +85,5 @@ export function usePendingPatientsCount(
     }
   }, [accessToken, fetchPendingPatients]);
 
-  return { isLoading, pendingPatientsCount };
+  return { isLoading, pendingPatientsCount, pendingPatientsCountByGroup };
 }

@@ -22,16 +22,11 @@ import { usePendingPatientsCount } from "@/hooks/use-pending-patients-count";
 import { useSession } from "next-auth/react";
 import { Eye, TrendingUpDown, Users } from "lucide-react";
 import { TYPE_OPTIONS } from "@/lib/admission-options";
-import {
-  CLINIC_OPTIONS,
-  GROUP_OPTIONS,
-  INSURANCE_OPTIONS,
-} from "@/lib/patient-options";
+import { CLINIC_OPTIONS, INSURANCE_OPTIONS } from "@/lib/patient-options";
 
 export default function Home() {
   const { data: session } = useSession();
   const [isChartLoading, setIsChartLoading] = useState(true);
-  const [group, setGroup] = useState("all");
   const [insurance, setInsurance] = useState("all");
   const [clinic, setClinic] = useState("all");
   const [admissionType, setAdmissionType] = useState("all");
@@ -47,20 +42,24 @@ export default function Home() {
   }, [lastMonths]);
 
   const filters = useMemo(
-    () => ({ group, insurance, clinic, admissionType, lastMonths }),
-    [group, insurance, clinic, admissionType, lastMonths],
+    () => ({ insurance, clinic, admissionType, lastMonths }),
+    [insurance, clinic, admissionType, lastMonths],
   );
 
-  const { admissionsCount, isLoading } = useAdmissionsCount(
-    session as Parameters<typeof useAdmissionsCount>[0],
-    filters,
-  );
-
-  const { pendingPatientsCount, isLoading: isPendingLoading } =
-    usePendingPatientsCount(
-      session as Parameters<typeof usePendingPatientsCount>[0],
+  const { admissionsCount, admissionsCountByGroup, isLoading } =
+    useAdmissionsCount(
+      session as Parameters<typeof useAdmissionsCount>[0],
       filters,
     );
+
+  const {
+    pendingPatientsCount,
+    pendingPatientsCountByGroup,
+    isLoading: isPendingLoading,
+  } = usePendingPatientsCount(
+    session as Parameters<typeof usePendingPatientsCount>[0],
+    filters,
+  );
 
   const isDashboardLoading = isLoading || isPendingLoading || isChartLoading;
 
@@ -75,30 +74,6 @@ export default function Home() {
             </h1>
             <Separator className="w-full" />
             <div className="flex w-full flex-wrap items-center gap-4">
-              <Field className="w-full max-w-48">
-                <FieldLabel>Group</FieldLabel>
-                <Select
-                  value={group}
-                  onValueChange={(value) => {
-                    setGroup(value);
-                  }}
-                >
-                  <SelectTrigger className="w-45">
-                    <SelectValue placeholder="Select a group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Group</SelectLabel>
-                      <SelectItem value="all">All Groups</SelectItem>
-                      {GROUP_OPTIONS.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
               <Field className="w-full max-w-48">
                 <FieldLabel>Insurance</FieldLabel>
                 <Select value={insurance} onValueChange={setInsurance}>
@@ -186,7 +161,16 @@ export default function Home() {
               {isDashboardLoading ? (
                 <Skeleton className="h-6 w-20" />
               ) : (
-                <p>{admissionsCount}</p>
+                <div className="flex flex-col gap-1">
+                  <p className="text-2xl font-semibold">{admissionsCount}</p>
+                  <ul className="text-sm text-muted-foreground">
+                    {admissionsCountByGroup.map((entry) => (
+                      <li key={entry.group}>
+                        {entry.group}: {entry.count}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -199,7 +183,18 @@ export default function Home() {
               {isDashboardLoading ? (
                 <Skeleton className="h-6 w-20" />
               ) : (
-                <p>{pendingPatientsCount}</p>
+                <div className="flex flex-col gap-1">
+                  <p className="text-2xl font-semibold">
+                    {pendingPatientsCount}
+                  </p>
+                  <ul className="text-sm text-muted-foreground">
+                    {pendingPatientsCountByGroup.map((entry) => (
+                      <li key={entry.group}>
+                        {entry.group}: {entry.count}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </CardContent>
           </Card>
