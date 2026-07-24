@@ -56,41 +56,55 @@ public class AdmissionsController : ControllerBase
 
     [HttpGet("count")]
     public async Task<IActionResult> GetAdmissionCount(
-        [FromQuery] string? group = "",
         [FromQuery] string? insurance = "",
         [FromQuery] string? clinic = "",
         [FromQuery] string? admissionType = "",
         [FromQuery] int? lastMonths = null)
     {
-        var query = ApplyAdmissionFilters(group, insurance, clinic, admissionType, lastMonths);
+        var query = ApplyAdmissionFilters(insurance, clinic, admissionType, lastMonths);
 
-        var count = await query.CountAsync();
-        return Ok(new { count });
+        var byGroup = await query
+            .GroupBy(a => a.Patient != null ? a.Patient.Group : null)
+            .Select(g => new { group = g.Key, count = g.Count() })
+            .ToListAsync();
+
+        var total = byGroup.Sum(g => g.count);
+
+        return Ok(new { total, byGroup });
     }
 
     [HttpGet("pending/count")]
     public async Task<IActionResult> GetPendingPatientsCount(
-        [FromQuery] string? group = "",
         [FromQuery] string? insurance = "",
         [FromQuery] string? clinic = "",
         [FromQuery] string? admissionType = "",
         [FromQuery] int? lastMonths = null)
     {
-        var query = ApplyAdmissionFilters(group, insurance, clinic, admissionType, lastMonths);
+        var query = ApplyAdmissionFilters(insurance, clinic, admissionType, lastMonths);
 
         // Pending patients: admissions with a FinalDischargeDate but no DateSeen.
-        var pendingCount = await query
+        var pendingPatients = await query
             .Where(a => a.FinalDischargeDate.HasValue && a.DateSeen == null)
-            .Select(a => a.PatientID)
+            .Select(a => new
+            {
+                a.PatientID,
+                Group = a.Patient != null ? a.Patient.Group : null
+            })
             .Distinct()
-            .CountAsync();
+            .ToListAsync();
 
-        return Ok(new { count = pendingCount });
+        var byGroup = pendingPatients
+            .GroupBy(p => p.Group)
+            .Select(g => new { group = g.Key, count = g.Count() })
+            .ToList();
+
+        var total = pendingPatients.Count;
+
+        return Ok(new { total, byGroup });
     }
 
     [HttpGet("count/monthly")]
     public async Task<IActionResult> GetAdmissionCountByMonth(
-        [FromQuery] string? group = "",
         [FromQuery] string? insurance = "",
         [FromQuery] string? clinic = "",
         [FromQuery] string? admissionType = "",
@@ -106,30 +120,43 @@ public class AdmissionsController : ControllerBase
         var endMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
         var startMonth = GetStartMonth(rangeMonths);
 
-        var query = ApplyAdmissionFilters(group, insurance, clinic, admissionType, rangeMonths);
+        var query = ApplyAdmissionFilters(insurance, clinic, admissionType, rangeMonths);
 
-        var monthlyCounts = await query
-            .GroupBy(a => new { a.AdmissionDate.Year, a.AdmissionDate.Month })
+        var monthlyGroupCounts = await query
+            .GroupBy(a => new
+            {
+                a.AdmissionDate.Year,
+                a.AdmissionDate.Month,
+                Group = a.Patient != null ? a.Patient.Group : null
+            })
             .Select(g => new
             {
                 g.Key.Year,
                 g.Key.Month,
+                g.Key.Group,
                 Count = g.Count()
             })
             .ToListAsync();
 
-        var countLookup = monthlyCounts.ToDictionary(item => (item.Year, item.Month), item => item.Count);
+        var monthLookup = monthlyGroupCounts
+            .GroupBy(item => (item.Year, item.Month))
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(item => new { group = item.Group, count = item.Count }).ToList());
 
         var response = new List<object>();
         for (var month = startMonth; month <= endMonth; month = month.AddMonths(1))
         {
-            countLookup.TryGetValue((month.Year, month.Month), out var count);
+            monthLookup.TryGetValue((month.Year, month.Month), out var byGroup);
+            byGroup ??= [];
+
             response.Add(new
             {
                 month = $"{month.Year:D4}-{month.Month:D2}",
                 monthName = month.ToString("MMMM"),
                 year = month.Year,
-                count
+                total = byGroup.Sum(g => g.count),
+                byGroup
             });
         }
 
@@ -215,7 +242,6 @@ public class AdmissionsController : ControllerBase
     }
 
     private IQueryable<Admission> ApplyAdmissionFilters(
-        string? group,
         string? insurance,
         string? clinic,
         string? admissionType,
@@ -224,9 +250,6 @@ public class AdmissionsController : ControllerBase
         var query = _context.Admissions
             .Include(a => a.Patient)
             .AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(group))
-            query = query.Where(a => a.Patient != null && a.Patient.Group == group);
 
         if (!string.IsNullOrWhiteSpace(insurance))
             query = query.Where(a => a.Patient != null && a.Patient.Insurance == insurance);
