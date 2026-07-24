@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signOut } from "next-auth/react";
 import {
   LayoutDashboard,
@@ -68,10 +69,10 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem key={"Dashboard"}>
                 <SidebarMenuButton asChild>
-                  <a href={"/"}>
+                  <Link href={"/"}>
                     <LayoutDashboard />
                     <span>{"Dashboard"}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <Collapsible
@@ -91,20 +92,20 @@ export function AppSidebar() {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       <SidebarMenuSubItem key={`Patients`}>
-                        <a
+                        <Link
                           href={`/forms/patients`}
                           className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 outline-hidden focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50"
                         >
                           <span>{`Patients`}</span>
-                        </a>
+                        </Link>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem key={`Admissions`}>
-                        <a
+                        <Link
                           href={`/forms/admissions`}
                           className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 outline-hidden focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50"
                         >
                           <span>{`Admissions`}</span>
-                        </a>
+                        </Link>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
                   </CollapsibleContent>
@@ -112,10 +113,10 @@ export function AppSidebar() {
               </Collapsible>
               <SidebarMenuItem key={"Reports"}>
                 <SidebarMenuButton asChild>
-                  <a href={"/reports"}>
+                  <Link href={"/reports"}>
                     <ClipboardCheck />
                     <span>{"Reports"}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
