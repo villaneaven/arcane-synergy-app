@@ -15,7 +15,7 @@ export function AppSidebarTrigger() {
     <SidebarTrigger
       className={cn(
         "absolute top-5.5 z-20 bg-black/20",
-        isMobile ? "left-2" : "-left-3.5",
+        isMobile ? "left-2" : "left-0 -translate-x-1/2",
       )}
     />
   );
