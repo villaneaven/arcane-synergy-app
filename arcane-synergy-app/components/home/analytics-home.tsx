@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useAdmissionsCount } from "@/hooks/use-admissions-count";
@@ -66,8 +65,7 @@ export function AnalyticsHome() {
   return (
     <div className="w-full bg-background font-sans dark:bg-black">
       <main className="flex w-full flex-col gap-8 bg-white dark:bg-black pb-8">
-        <header className="relative flex w-full items-start bg-accent px-4 py-4 pl-14 dark:bg-accent-dark sm:px-8 sm:pl-16">
-          <SidebarTrigger className="absolute left-0 top-0" />
+        <header className="relative flex w-full items-start bg-accent px-14 py-4 dark:bg-accent-dark">
           <div className="flex flex-col items-start gap-4 w-full py-4">
             <h1 className="text-4xl font-bold text-black dark:text-white">
               Welcome back, {session?.user?.name || "User"}!

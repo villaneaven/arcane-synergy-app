@@ -43,6 +43,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -66,41 +67,52 @@ const handleLogOutClick = async () => {
 export function AppSidebar() {
   const pathname = usePathname();
   const { setTheme } = useTheme();
-  const { collapsibleOpen, setCollapsibleOpen, state } = useSidebar();
+  const {
+    collapsibleOpen,
+    setCollapsibleOpen,
+    state,
+    isMobile,
+    open,
+    openMobile,
+  } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const isOpen = isMobile ? openMobile : open;
   const { homePageType, setHomePageType } = useHomePageType();
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <Link href="/" className="flex w-full items-center p-2">
-          {isCollapsed ? (
-            <Image
-              src="/logo-icon.png"
-              alt="Arcane Synergy logo"
-              width={708}
-              height={376}
-              className="h-10 w-auto shrink-0 object-contain"
-            />
-          ) : (
-            <>
+        <div className="flex w-full items-center justify-between p-2">
+          <Link href="/" className="flex items-center">
+            {isCollapsed ? (
               <Image
-                src="/logo.png"
+                src="/logo-icon.png"
                 alt="Arcane Synergy logo"
-                width={2712}
-                height={704}
-                className="h-10 w-auto shrink-0 dark:hidden"
+                width={708}
+                height={376}
+                className="h-10 w-auto shrink-0 object-contain"
               />
-              <Image
-                src="/logo-dark.png"
-                alt="Arcane Synergy logo"
-                width={2712}
-                height={704}
-                className="hidden h-10 w-auto shrink-0 dark:block"
-              />
-            </>
-          )}
-        </Link>
+            ) : (
+              <>
+                <Image
+                  src="/logo.png"
+                  alt="Arcane Synergy logo"
+                  width={2712}
+                  height={704}
+                  className="h-10 w-auto shrink-0 dark:hidden"
+                />
+                <Image
+                  src="/logo-dark.png"
+                  alt="Arcane Synergy logo"
+                  width={2712}
+                  height={704}
+                  className="hidden h-10 w-auto shrink-0 dark:block"
+                />
+              </>
+            )}
+          </Link>
+          {isOpen && <SidebarTrigger className="bg-black-20" />}
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
