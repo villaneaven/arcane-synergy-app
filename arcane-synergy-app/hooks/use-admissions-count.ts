@@ -1,6 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  normalizeGroupBreakdown,
+  type NormalizedGroupCount,
+  type RawGroupCount,
+} from "@/lib/group-breakdown";
 
 type SessionWithAccessToken =
   | {
@@ -10,7 +15,6 @@ type SessionWithAccessToken =
   | undefined;
 
 type AdmissionsCountFilters = {
-  group: string;
   insurance: string;
   clinic: string;
   admissionType: string;
@@ -22,13 +26,15 @@ export function useAdmissionsCount(
   filters: AdmissionsCountFilters,
 ) {
   const [admissionsCount, setAdmissionsCount] = useState<number | null>(null);
+  const [admissionsCountByGroup, setAdmissionsCountByGroup] = useState<
+    NormalizedGroupCount[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const accessToken = session?.access_token;
 
   const fetchAdmissionsCount = useCallback(async () => {
     const queryParams = new URLSearchParams();
 
-    if (filters.group !== "all") queryParams.set("group", filters.group);
     if (filters.insurance !== "all") {
       queryParams.set("insurance", filters.insurance);
     }
@@ -59,11 +65,14 @@ export function useAdmissionsCount(
         throw new Error("Failed to fetch admissions count");
       }
 
-      const data: { count: number } = await response.json();
-      setAdmissionsCount(data.count);
+      const data: { total: number; byGroup: RawGroupCount[] } =
+        await response.json();
+      setAdmissionsCount(data.total);
+      setAdmissionsCountByGroup(normalizeGroupBreakdown(data.byGroup));
     } catch (error) {
       console.error("Error fetching admissions count:", error);
       setAdmissionsCount(null);
+      setAdmissionsCountByGroup([]);
     } finally {
       setIsLoading(false);
     }
@@ -75,5 +84,5 @@ export function useAdmissionsCount(
     }
   }, [accessToken, fetchAdmissionsCount]);
 
-  return { admissionsCount, isLoading };
+  return { admissionsCount, admissionsCountByGroup, isLoading };
 }
