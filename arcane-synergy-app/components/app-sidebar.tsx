@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -35,6 +36,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -64,11 +66,42 @@ const handleLogOutClick = async () => {
 export function AppSidebar() {
   const pathname = usePathname();
   const { setTheme } = useTheme();
-  const { collapsibleOpen, setCollapsibleOpen } = useSidebar();
+  const { collapsibleOpen, setCollapsibleOpen, state } = useSidebar();
+  const isCollapsed = state === "collapsed";
   const { homePageType, setHomePageType } = useHomePageType();
 
   return (
     <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <Link href="/" className="flex w-full items-center p-2">
+          {isCollapsed ? (
+            <Image
+              src="/logo-icon.png"
+              alt="Arcane Synergy logo"
+              width={708}
+              height={376}
+              className="h-10 w-auto shrink-0 object-contain"
+            />
+          ) : (
+            <>
+              <Image
+                src="/logo.png"
+                alt="Arcane Synergy logo"
+                width={2712}
+                height={704}
+                className="h-10 w-auto shrink-0 dark:hidden"
+              />
+              <Image
+                src="/logo-dark.png"
+                alt="Arcane Synergy logo"
+                width={2712}
+                height={704}
+                className="hidden h-10 w-auto shrink-0 dark:block"
+              />
+            </>
+          )}
+        </Link>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
