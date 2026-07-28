@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 
+import { Kbd } from "@/components/ui/kbd";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -33,6 +34,11 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import {
   Collapsible,
@@ -104,7 +110,26 @@ export function AppSidebar() {
               </>
             )}
           </Link>
-          {isOpen && <SidebarTrigger className="bg-black-20" />}
+          {isOpen && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <SidebarTrigger className="bg-black-20" />
+              </TooltipTrigger>
+              <TooltipContent
+                side="right"
+                sideOffset={8}
+                className="bg-foreground/70"
+                showArrow={false}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <span>Toggle sidebar</span>
+                  <span className="flex items-center gap-2">
+                    <Kbd>Ctrl</Kbd> + <Kbd>B</Kbd>
+                  </span>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </SidebarHeader>
       <SidebarContent>
