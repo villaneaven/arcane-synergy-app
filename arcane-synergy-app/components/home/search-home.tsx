@@ -16,7 +16,7 @@ export function SearchHome() {
         <header className="relative flex w-full items-start bg-accent px-14 py-4 dark:bg-accent-dark">
           <div className="flex flex-col items-start gap-4 w-full py-4">
             <h1 className="text-4xl font-bold text-black dark:text-white">
-              Welcome back, {session?.user?.name || "User"}!
+              Hi, {session?.user?.name || "User"}!
             </h1>
             <Separator className="w-full" />
           </div>
