@@ -99,7 +99,11 @@ export function AppSidebar() {
                     >
                       <Form />
                       <span>{"Forms"}</span>
-                      {collapsibleOpen ? <ChevronUp /> : <ChevronDown />}
+                      {collapsibleOpen ? (
+                        <ChevronUp className="group-data-[collapsible=icon]:hidden" />
+                      ) : (
+                        <ChevronDown className="group-data-[collapsible=icon]:hidden" />
+                      )}
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
@@ -148,10 +152,14 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem className="flex justify-between">
+          <SidebarMenuItem className="flex justify-between group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="group-data-[collapsible=icon]:order-2"
+                >
                   <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
                   <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
                   <span className="sr-only">Toggle theme</span>
@@ -171,7 +179,11 @@ export function AppSidebar() {
             </DropdownMenu>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="group-data-[collapsible=icon]:order-1"
+                >
                   <User />
                   <span className="sr-only">User menu</span>
                 </Button>
