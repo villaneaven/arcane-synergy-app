@@ -1,8 +1,10 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
 import {
   LayoutDashboard,
@@ -10,26 +12,11 @@ import {
   ClipboardCheck,
   ChevronDown,
   ChevronUp,
-  Moon,
-  Sun,
-  User,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  HOME_PAGE_TYPES,
-  HOME_PAGE_TYPE_LABELS,
-  useHomePageType,
-} from "@/components/home-page-provider";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Sidebar,
   SidebarContent,
@@ -52,6 +39,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { NavUser } from "./nav-user";
 
 const ACTIVE_ITEM_CLASS =
   "data-[active=true]:bg-blue-600/20! data-[active=true]:text-white! data-[active=true]:hover:bg-blue-700/40! data-[active=true]:text-blue-500!";
@@ -65,8 +53,14 @@ const handleLogOutClick = async () => {
 };
 
 export function AppSidebar() {
+  const { data: session } = useSession();
   const pathname = usePathname();
-  const { setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const {
     collapsibleOpen,
     setCollapsibleOpen,
@@ -77,7 +71,6 @@ export function AppSidebar() {
   } = useSidebar();
   const isCollapsed = state === "collapsed";
   const isOpen = isMobile ? openMobile : open;
-  const { homePageType, setHomePageType } = useHomePageType();
 
   return (
     <Sidebar collapsible="icon">
@@ -194,75 +187,39 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem key={"DarkMode"}>
+                <div className="flex items-center gap-2 p-2">
+                  <Switch
+                    id="dark-mode"
+                    checked={mounted && resolvedTheme === "dark"}
+                    onCheckedChange={(checked) =>
+                      setTheme(checked ? "dark" : "light")
+                    }
+                  />
+                  <Label
+                    htmlFor="dark-mode"
+                    className="group-data-[collapsible=icon]:hidden"
+                  >
+                    Dark Mode
+                  </Label>
+                </div>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem className="flex justify-between group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="group-data-[collapsible=icon]:order-2"
-                >
-                  <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
-                  <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
-                  <span className="sr-only">Toggle theme</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setTheme("light")}>
-                  Light
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("dark")}>
-                  Dark
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("system")}>
-                  System
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="group-data-[collapsible=icon]:order-1"
-                >
-                  <User />
-                  <span className="sr-only">User menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <DropdownMenuItem>Default page</DropdownMenuItem>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuRadioGroup
-                      value={homePageType}
-                      onValueChange={(value) =>
-                        setHomePageType(value as typeof homePageType)
-                      }
-                    >
-                      {HOME_PAGE_TYPES.map((type) => (
-                        <DropdownMenuRadioItem key={type} value={type}>
-                          {HOME_PAGE_TYPE_LABELS[type]}
-                        </DropdownMenuRadioItem>
-                      ))}
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <DropdownMenuItem
-                  onClick={handleLogOutClick}
-                  className="text-destructive"
-                >
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <NavUser
+          user={{
+            name: session?.user?.name || "User",
+            email: session?.user?.email || "user@example.com",
+            avatar: session?.user?.image || "/default-avatar.svg",
+          }}
+          onSignOut={handleLogOutClick}
+        />
       </SidebarFooter>
     </Sidebar>
   );
