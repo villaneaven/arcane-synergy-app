@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import {
   normalizeGroupBreakdown,
   type NormalizedGroupCount,
@@ -30,7 +30,7 @@ export function usePendingPatientsCount(
   >(null);
   const [pendingPatientsCountByGroup, setPendingPatientsCountByGroup] =
     useState<NormalizedGroupCount[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, startTransition] = useTransition();
   const accessToken = session?.access_token;
 
   const fetchPendingPatients = useCallback(async () => {
@@ -48,8 +48,6 @@ export function usePendingPatientsCount(
     }
 
     try {
-      setIsLoading(true);
-
       const response = await fetch(
         `http://localhost:5201/api/Admissions/pending/count${
           queryParams.toString() ? `?${queryParams.toString()}` : ""
@@ -74,14 +72,12 @@ export function usePendingPatientsCount(
       console.error("Error fetching pending patients count:", error);
       setPendingPatientsCount(null);
       setPendingPatientsCountByGroup([]);
-    } finally {
-      setIsLoading(false);
     }
   }, [accessToken, filters]);
 
   useEffect(() => {
     if (accessToken) {
-      void fetchPendingPatients();
+      startTransition(fetchPendingPatients);
     }
   }, [accessToken, fetchPendingPatients]);
 
