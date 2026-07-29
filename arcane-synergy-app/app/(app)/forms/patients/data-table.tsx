@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import {
@@ -46,13 +47,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-interface DataTableProps<TData, TValue> {
+interface DataTableProps<TData extends { patientID: string }, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   onPatientAdded?: () => void;
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends { patientID: string }, TValue>({
   columns,
   data,
   onPatientAdded,
@@ -62,6 +63,7 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
+  const router = useRouter();
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   const [columnVisibility, setColumnVisibility] =
@@ -71,15 +73,9 @@ export function DataTable<TData, TValue>({
     });
   const [rowSelection, setRowSelection] = React.useState({});
 
-  // Pass the onPatientAdded callback to columns so they can refresh data
-  const columnsWithCallbacks = React.useMemo(
-    () => (typeof columns === "function" ? columns(onPatientAdded) : columns),
-    [columns, onPatientAdded],
-  );
-
   const table = useReactTable({
     data,
-    columns: columnsWithCallbacks,
+    columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
@@ -244,6 +240,20 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  onClick={(e: React.MouseEvent) => {
+                    const target = e.target as HTMLElement | null;
+                    if (!target || !e.currentTarget.contains(target)) {
+                      return;
+                    }
+                    if (
+                      target.closest("button, a, [role=menuitem], input, label")
+                    ) {
+                      return;
+                    }
+
+                    router.push(`/forms/patients/${row.original.patientID}`);
+                  }}
+                  className="cursor-pointer"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
