@@ -216,7 +216,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem key={"DarkMode"}>
-                <div className="flex items-center gap-2 p-2">
+                <div className="flex items-center gap-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
                   <Switch
                     id="dark-mode"
                     checked={mounted && resolvedTheme === "dark"}
