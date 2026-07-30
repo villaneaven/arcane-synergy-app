@@ -39,6 +39,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import {
   Collapsible,
@@ -148,55 +154,79 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <Collapsible
-                defaultOpen
-                className="group/collapsible"
-                open={collapsibleOpen}
-                onOpenChange={setCollapsibleOpen}
-              >
+              {isCollapsed ? (
                 <SidebarMenuItem key={"Forms"}>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton
-                      isActive={pathname.startsWith("/forms")}
-                      className={ACTIVE_ITEM_CLASS}
-                    >
-                      <Form />
-                      <span>{"Forms"}</span>
-                      {collapsibleOpen ? (
-                        <ChevronUp className="group-data-[collapsible=icon]:hidden" />
-                      ) : (
-                        <ChevronDown className="group-data-[collapsible=icon]:hidden" />
-                      )}
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub className="py-1">
-                      <SidebarMenuSubItem key={`Patients`}>
-                        <SidebarMenuSubButton
-                          asChild
-                          isActive={pathname === "/forms/patients"}
-                          className={ACTIVE_ITEM_CLASS}
-                        >
-                          <Link href={`/forms/patients`}>
-                            <span>{`Patients`}</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem key={`Admissions`}>
-                        <SidebarMenuSubButton
-                          asChild
-                          isActive={pathname === "/forms/admissions"}
-                          className={ACTIVE_ITEM_CLASS}
-                        >
-                          <Link href={`/forms/admissions`}>
-                            <span>{`Admissions`}</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <SidebarMenuButton
+                        isActive={pathname.startsWith("/forms")}
+                        className={ACTIVE_ITEM_CLASS}
+                      >
+                        <Form />
+                        <span>{"Forms"}</span>
+                      </SidebarMenuButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent side="right" align="start" sideOffset={8}>
+                      <DropdownMenuItem asChild>
+                        <Link href={"/forms/patients"}>Patients</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={"/forms/admissions"}>Admissions</Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </SidebarMenuItem>
-              </Collapsible>
+              ) : (
+                <Collapsible
+                  defaultOpen
+                  className="group/collapsible"
+                  open={collapsibleOpen}
+                  onOpenChange={setCollapsibleOpen}
+                >
+                  <SidebarMenuItem key={"Forms"}>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        isActive={pathname.startsWith("/forms")}
+                        className={ACTIVE_ITEM_CLASS}
+                      >
+                        <Form />
+                        <span>{"Forms"}</span>
+                        {collapsibleOpen ? (
+                          <ChevronUp className="group-data-[collapsible=icon]:hidden" />
+                        ) : (
+                          <ChevronDown className="group-data-[collapsible=icon]:hidden" />
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub className="py-1">
+                        <SidebarMenuSubItem key={`Patients`}>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={pathname === "/forms/patients"}
+                            className={ACTIVE_ITEM_CLASS}
+                          >
+                            <Link href={`/forms/patients`}>
+                              <span>{`Patients`}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem key={`Admissions`}>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={pathname === "/forms/admissions"}
+                            className={ACTIVE_ITEM_CLASS}
+                          >
+                            <Link href={`/forms/admissions`}>
+                              <span>{`Admissions`}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
               <SidebarMenuItem key={"Reports"}>
                 <SidebarMenuButton
                   asChild
