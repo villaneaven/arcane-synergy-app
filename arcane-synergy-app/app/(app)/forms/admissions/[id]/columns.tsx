@@ -74,7 +74,9 @@ export const createColumns = (
     accessorKey: "dischargeDate",
     header: "Discharge Date",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("dischargeDate"));
+      const dischargeDate = row.getValue("dischargeDate");
+      if (!dischargeDate) return "N/A";
+      const date = new Date(dischargeDate as string);
       return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "2-digit",
