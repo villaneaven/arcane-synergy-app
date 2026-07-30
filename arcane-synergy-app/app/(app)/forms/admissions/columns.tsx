@@ -253,7 +253,9 @@ export const createColumns = (
     accessorKey: "tcmDueDate",
     header: "TCM Due Date",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("dateSeen"));
+      const tcmDueDate = row.getValue("tcmDueDate");
+      if (!tcmDueDate) return "N/A";
+      const date = new Date(tcmDueDate as string);
       return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "2-digit",
