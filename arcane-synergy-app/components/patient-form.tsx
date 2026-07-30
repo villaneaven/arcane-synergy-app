@@ -52,6 +52,7 @@ export function PatientForm({
   initialValues,
 }: {
   onSubmit: (formData: {
+    patientID?: string;
     firstName: string;
     lastName: string;
     dob: string | undefined;
