@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { useAdmissionsCount } from "@/hooks/use-admissions-count";
 import { usePendingPatientsCount } from "@/hooks/use-pending-patients-count";
+import { useGreeting } from "@/hooks/use-greeting";
 import { useSession } from "next-auth/react";
 import { Eye, TrendingUpDown, Users } from "lucide-react";
 import { TYPE_OPTIONS } from "@/lib/admission-options";
@@ -26,6 +27,7 @@ import { CLINIC_OPTIONS, INSURANCE_OPTIONS } from "@/lib/patient-options";
 
 export function AnalyticsHome() {
   const { data: session } = useSession();
+  const greeting = useGreeting();
   const [isChartLoading, setIsChartLoading] = useState(true);
   const [insurance, setInsurance] = useState("all");
   const [clinic, setClinic] = useState("all");
@@ -69,7 +71,7 @@ export function AnalyticsHome() {
         <header className="relative flex w-full items-start bg-accent px-14 py-4 dark:bg-accent-dark">
           <div className="flex flex-col items-start gap-4 w-full py-4">
             <h1 className="text-4xl font-bold text-black dark:text-white">
-              Hi, {session?.user?.name || "User"}!
+              {greeting}, {session?.user?.name?.split(" ")[0] || "User"}!
             </h1>
             <Separator className="w-full" />
             <div className="flex w-full flex-wrap items-center gap-4">
