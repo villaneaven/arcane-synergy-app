@@ -29,7 +29,7 @@ function getGreetingPool() {
 }
 
 export function useGreeting() {
-  const [greeting, setGreeting] = useState(TIME_GREETINGS.morning[0]);
+  const [greeting, setGreeting] = useState(CASUAL_GREETINGS[0]);
 
   useEffect(() => {
     const pool = getGreetingPool();
