@@ -176,6 +176,7 @@ export function DashboardChart({
           tickLine={false}
           tickMargin={10}
           axisLine={false}
+          allowDecimals={false}
           label={{
             value: "Admissions Count",
             angle: -90,
