@@ -13,7 +13,7 @@ interface PatientsResponse {
 
 export default async function Patients() {
   const accessToken = await getAccessToken();
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const pageSize = parsePageSize(cookieStore.get(PAGE_SIZE_COOKIE)?.value);
 
   const apiBaseUrl =
