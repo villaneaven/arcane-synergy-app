@@ -103,7 +103,7 @@ export function PatientsTableWrapper({
       return;
     }
     fetchPatients(pageIndex, pageSize, sorting, search);
-  }, [pageIndex, sorting]);
+  }, [fetchPatients, pageIndex, pageSize, sorting, search]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((old: SortingState) => SortingState)) => {
