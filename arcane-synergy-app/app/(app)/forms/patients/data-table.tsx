@@ -190,7 +190,8 @@ export function DataTable<TData extends { patientID: string }, TValue>({
                   variant="destructive"
                   disabled={
                     table.getSelectedRowModel().rows.length === 0 ||
-                    isDeleting
+                    isDeleting ||
+                    isLoading
                   }
                 >
                   Delete
