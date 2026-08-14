@@ -176,8 +176,6 @@ public class PatientsController : ControllerBase
         var patient = await _context.Patients.FindAsync(id);
         if (patient == null) return NotFound();
 
-        // Admissions and Transfers cascade-delete at the DB level (see ArcaneSynergyContext),
-        // so there's no need to load the related graph into memory first.
         _context.Patients.Remove(patient);
         await _context.SaveChangesAsync();
 
