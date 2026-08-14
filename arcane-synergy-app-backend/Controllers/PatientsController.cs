@@ -59,8 +59,11 @@ public class PatientsController : ControllerBase
 
         var totalCount = await query.CountAsync();
 
+        var skipLong = ((long)page - 1) * pageSize;
+        if (skipLong > int.MaxValue) return BadRequest("Requested page is too large.");
+
         var patients = await query
-            .Skip((page - 1) * pageSize)
+            .Skip((int)skipLong)
             .Take(pageSize)
             .ToListAsync();
 
