@@ -14,8 +14,13 @@ interface PatientsResponse {
 export default async function Patients() {
   const accessToken = await getAccessToken();
 
+  const apiBaseUrl =
+    process.env.API_BASE_URL ??
+    process.env.NEXT_PUBLIC_API_BASE_URL ??
+    "http://localhost:5201";
+
   const res = await fetch(
-    `http://localhost:5201/api/patients?page=1&pageSize=${PATIENTS_PAGE_SIZE}`,
+    `${apiBaseUrl}/api/patients?page=1&pageSize=${PATIENTS_PAGE_SIZE}`,
     {
       cache: "no-store",
       headers: {
