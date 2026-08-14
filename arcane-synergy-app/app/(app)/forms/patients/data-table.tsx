@@ -37,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -287,7 +288,7 @@ export function DataTable<TData extends { patientID: string }, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  Loading...
+                  <Spinner className="mx-auto" />
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows?.length ? (
