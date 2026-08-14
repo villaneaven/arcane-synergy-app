@@ -14,6 +14,18 @@ namespace arcane_synergy_app_backend.Migrations
                 name: "IX_Transfers_AdmissionId",
                 table: "Transfers");
 
+            migrationBuilder.Sql(@"
+IF EXISTS (
+    SELECT 1
+    FROM [Patients]
+    WHERE LEN([FirstName]) > 450
+       OR LEN([LastName]) > 450
+       OR ([FullName] IS NOT NULL AND LEN([FullName]) > 450)
+       OR ([MRN] IS NOT NULL AND LEN([MRN]) > 450)
+)
+    THROW 50000, 'Cannot shrink Patients columns to nvarchar(450) because existing data exceeds 450 characters.', 1;
+");
+
             migrationBuilder.AlterColumn<string>(
                 name: "MRN",
                 table: "Patients",
@@ -22,7 +34,6 @@ namespace arcane_synergy_app_backend.Migrations
                 oldClrType: typeof(string),
                 oldType: "nvarchar(max)",
                 oldNullable: true);
-
             migrationBuilder.AlterColumn<string>(
                 name: "LastName",
                 table: "Patients",
