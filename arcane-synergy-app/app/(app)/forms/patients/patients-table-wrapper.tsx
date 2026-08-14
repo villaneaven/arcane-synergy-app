@@ -43,6 +43,10 @@ export function PatientsTableWrapper({
     undefined,
   );
 
+  useEffect(() => {
+    return () => clearTimeout(searchDebounceRef.current);
+  }, []);
+
   const fetchPatients = useCallback(
     async (
       targetPageIndex: number,
