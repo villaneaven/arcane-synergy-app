@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using arcane_synergy_app_backend.Data;
 
@@ -11,9 +12,11 @@ using arcane_synergy_app_backend.Data;
 namespace arcane_synergy_app_backend.Migrations
 {
     [DbContext(typeof(ArcaneSynergyContext))]
-    partial class ArcaneSynergyContextModelSnapshot : ModelSnapshot
+    [Migration("20260812192655_AddPatientSearchIndexes")]
+    partial class AddPatientSearchIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

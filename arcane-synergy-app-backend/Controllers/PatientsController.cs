@@ -19,19 +19,66 @@ public class PatientsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetPatients()
+    public async Task<IActionResult> GetPatients(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 25,
+        [FromQuery] string? search = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortDir = "asc")
     {
-        var patients = await _context.Patients
-            .OrderBy(p => p.LastName)
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = _context.Patients.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(p =>
+                p.FirstName.Contains(term) ||
+                p.LastName.Contains(term) ||
+                (p.FullName != null && p.FullName.Contains(term)) ||
+                (p.MRN != null && p.MRN.Contains(term)));
+        }
+
+        bool descending = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+        query = sortBy?.ToLowerInvariant() switch
+        {
+            "firstname" => descending ? query.OrderByDescending(p => p.FirstName) : query.OrderBy(p => p.FirstName),
+            "fullname" => descending ? query.OrderByDescending(p => p.FullName) : query.OrderBy(p => p.FullName),
+            "dob" => descending ? query.OrderByDescending(p => p.DOB) : query.OrderBy(p => p.DOB),
+            "mrn" => descending ? query.OrderByDescending(p => p.MRN) : query.OrderBy(p => p.MRN),
+            "group" => descending ? query.OrderByDescending(p => p.Group) : query.OrderBy(p => p.Group),
+            "insurance" => descending ? query.OrderByDescending(p => p.Insurance) : query.OrderBy(p => p.Insurance),
+            "pcp" => descending ? query.OrderByDescending(p => p.PCP) : query.OrderBy(p => p.PCP),
+            "clinic" => descending ? query.OrderByDescending(p => p.Clinic) : query.OrderBy(p => p.Clinic),
+            _ => descending
+                ? query.OrderByDescending(p => p.LastName).ThenByDescending(p => p.FirstName)
+                : query.OrderBy(p => p.LastName).ThenBy(p => p.FirstName)
+        };
+
+        var totalCount = await query.CountAsync();
+
+        var patients = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        return Ok(patients);
+        return Ok(new
+        {
+            items = patients,
+            totalCount,
+            page,
+            pageSize
+        });
     }
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetPatient(int id)
     {
-        var patient = await _context.Patients.FindAsync(id);
+        var patient = await _context.Patients
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.PatientID == id);
         return patient == null ? NotFound() : Ok(patient);
     }
 
@@ -126,28 +173,11 @@ public class PatientsController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeletePatient(int id)
     {
-        var patient = await _context.Patients
-            .Include(p => p.Admissions)
-                .ThenInclude(a => a.Transfers)
-            .FirstOrDefaultAsync(p => p.PatientID == id);
-
+        var patient = await _context.Patients.FindAsync(id);
         if (patient == null) return NotFound();
 
-        var admissions = patient.Admissions?.ToList();
-        var transfers = admissions?
-            .SelectMany(admission => admission.Transfers ?? Array.Empty<Transfer>())
-            .ToList();
-
-        if (transfers?.Any() == true)
-        {
-            _context.Transfers.RemoveRange(transfers);
-        }
-
-        if (admissions?.Any() == true)
-        {
-            _context.Admissions.RemoveRange(admissions);
-        }
-
+        // Admissions and Transfers cascade-delete at the DB level (see ArcaneSynergyContext),
+        // so there's no need to load the related graph into memory first.
         _context.Patients.Remove(patient);
         await _context.SaveChangesAsync();
 

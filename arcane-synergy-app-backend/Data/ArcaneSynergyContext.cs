@@ -22,6 +22,15 @@ namespace arcane_synergy_app_backend.Data
                 .HasIndex(t => t.AdmissionId)
                 .IsUnique()
                 .HasFilter("[IsFinalDischarge] = 1");
+
+            modelBuilder.Entity<Patient>()
+                .HasIndex(p => new { p.LastName, p.FirstName });
+
+            modelBuilder.Entity<Patient>()
+                .HasIndex(p => p.FullName);
+
+            modelBuilder.Entity<Patient>()
+                .HasIndex(p => p.MRN);
         }
     }
 }
