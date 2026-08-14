@@ -59,13 +59,23 @@ IF EXISTS (
                 oldClrType: typeof(string),
                 oldType: "nvarchar(max)");
 
+            migrationBuilder.Sql(@"
+IF EXISTS (
+    SELECT 1
+    FROM [Transfers]
+    WHERE [IsFinalDischarge] = 1
+    GROUP BY [AdmissionId]
+    HAVING COUNT(*) > 1
+)
+    THROW 50000, 'Cannot create unique filtered index IX_Transfers_AdmissionId because multiple final discharge transfers exist for an admission.', 1;
+");
+
             migrationBuilder.CreateIndex(
                 name: "IX_Transfers_AdmissionId",
                 table: "Transfers",
                 column: "AdmissionId",
                 unique: true,
                 filter: "[IsFinalDischarge] = 1");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Patients_FullName",
                 table: "Patients",
