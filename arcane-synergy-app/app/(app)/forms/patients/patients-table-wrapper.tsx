@@ -66,7 +66,7 @@ export function PatientsTableWrapper({
       setIsLoading(true);
       try {
         const res = await fetch(
-          `http://localhost:5201/api/patients?${params.toString()}`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5201"}/api/patients?${params.toString()}`,
           {
             cache: "no-store",
             headers: {
