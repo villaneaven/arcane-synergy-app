@@ -21,12 +21,51 @@ public class AdmissionsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAdmissions()
+    public async Task<IActionResult> GetAdmissions(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null,
+        [FromQuery] string? admissionType = null,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortDir = "desc")
     {
-        var admissions = await _context.Admissions
-            .Include(a => a.Patient)
-            .OrderByDescending(a => a.AdmissionDate)
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = BuildAdmissionsListQuery(search, admissionType, startDate, endDate);
+        query = ApplyAdmissionsSort(query, sortBy, sortDir);
+
+        var totalCount = await query.CountAsync();
+
+        var admissions = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
+
+        return Ok(new
+        {
+            items = admissions,
+            totalCount,
+            page,
+            pageSize
+        });
+    }
+
+    [HttpGet("export")]
+    public async Task<IActionResult> GetAdmissionsForExport(
+        [FromQuery] string? search = null,
+        [FromQuery] string? admissionType = null,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortDir = "desc")
+    {
+        var query = BuildAdmissionsListQuery(search, admissionType, startDate, endDate);
+        query = ApplyAdmissionsSort(query, sortBy, sortDir);
+
+        var admissions = await query.ToListAsync();
 
         return Ok(admissions);
     }
@@ -35,6 +74,7 @@ public class AdmissionsController : ControllerBase
     public async Task<IActionResult> GetAdmission(int id)
     {
         var admission = await _context.Admissions
+            .AsNoTracking()
             .Include(a => a.Patient)
             .Include(a => a.Transfers)
             .FirstOrDefaultAsync(a => a.AdmissionId == id);
@@ -46,6 +86,7 @@ public class AdmissionsController : ControllerBase
     public async Task<IActionResult> GetAdmissionsByPatient(int patientId)
     {
         var admissions = await _context.Admissions
+            .AsNoTracking()
             .Include(a => a.Patient)
             .Where(a => a.PatientID == patientId)
             .OrderByDescending(a => a.AdmissionDate)
@@ -224,17 +265,11 @@ public class AdmissionsController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteAdmission(int id)
     {
-        var admission = await _context.Admissions
-            .Include(a => a.Transfers)
-            .FirstOrDefaultAsync(a => a.AdmissionId == id);
-
+        var admission = await _context.Admissions.FindAsync(id);
         if (admission == null) return NotFound();
 
-        if (admission.Transfers?.Any() == true)
-        {
-            _context.Transfers.RemoveRange(admission.Transfers);
-        }
-
+        // Transfers cascade-delete at the DB level (see ArcaneSynergyContext),
+        // so there's no need to load them into memory first.
         _context.Admissions.Remove(admission);
         await _context.SaveChangesAsync();
 
@@ -274,5 +309,71 @@ public class AdmissionsController : ControllerBase
     {
         var currentMonthStart = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
         return currentMonthStart.AddMonths(-(lastMonths - 1));
+    }
+
+    private IQueryable<Admission> BuildAdmissionsListQuery(
+        string? search,
+        string? admissionType,
+        DateTime? startDate,
+        DateTime? endDate)
+    {
+        var query = _context.Admissions
+            .AsNoTracking()
+            .Include(a => a.Patient)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(a =>
+                a.Patient != null &&
+                ((a.Patient.FullName != null && a.Patient.FullName.Contains(term)) ||
+                 (a.Patient.MRN != null && a.Patient.MRN.Contains(term))));
+        }
+
+        if (!string.IsNullOrWhiteSpace(admissionType))
+            query = query.Where(a => a.Type == admissionType);
+
+        if (startDate.HasValue)
+        {
+            var start = startDate.Value.Date;
+            query = query.Where(a => a.AdmissionDate >= start);
+        }
+
+        if (endDate.HasValue)
+        {
+            var end = endDate.Value.Date.AddDays(1).AddTicks(-1);
+            query = query.Where(a => a.AdmissionDate <= end);
+        }
+
+        return query;
+    }
+
+    private static IQueryable<Admission> ApplyAdmissionsSort(
+        IQueryable<Admission> query,
+        string? sortBy,
+        string? sortDir)
+    {
+        bool descending = !string.Equals(sortDir, "asc", StringComparison.OrdinalIgnoreCase);
+
+        return sortBy?.ToLowerInvariant() switch
+        {
+            "patientfullname" => descending
+                ? query.OrderByDescending(a => a.Patient != null ? a.Patient.FullName : null)
+                : query.OrderBy(a => a.Patient != null ? a.Patient.FullName : null),
+            "admissiondate" => descending
+                ? query.OrderByDescending(a => a.AdmissionDate)
+                : query.OrderBy(a => a.AdmissionDate),
+            "datenotified" => descending
+                ? query.OrderByDescending(a => a.DateNotified)
+                : query.OrderBy(a => a.DateNotified),
+            "dischargedate" => descending
+                ? query.OrderByDescending(a => a.DischargeDate)
+                : query.OrderBy(a => a.DischargeDate),
+            "type" => descending
+                ? query.OrderByDescending(a => a.Type)
+                : query.OrderBy(a => a.Type),
+            _ => query.OrderByDescending(a => a.AdmissionDate)
+        };
     }
 }
