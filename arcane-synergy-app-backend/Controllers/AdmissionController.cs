@@ -268,8 +268,6 @@ public class AdmissionsController : ControllerBase
         var admission = await _context.Admissions.FindAsync(id);
         if (admission == null) return NotFound();
 
-        // Transfers cascade-delete at the DB level (see ArcaneSynergyContext),
-        // so there's no need to load them into memory first.
         _context.Admissions.Remove(admission);
         await _context.SaveChangesAsync();
 
