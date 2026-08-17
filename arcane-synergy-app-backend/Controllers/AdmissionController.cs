@@ -354,7 +354,7 @@ public class AdmissionsController : ControllerBase
     {
         bool descending = !string.Equals(sortDir, "asc", StringComparison.OrdinalIgnoreCase);
 
-        return sortBy?.ToLowerInvariant() switch
+        IOrderedQueryable<Admission> ordered = sortBy?.ToLowerInvariant() switch
         {
             "patientfullname" => descending
                 ? query.OrderByDescending(a => a.Patient != null ? a.Patient.FullName : null)
@@ -371,7 +371,11 @@ public class AdmissionsController : ControllerBase
             "type" => descending
                 ? query.OrderByDescending(a => a.Type)
                 : query.OrderBy(a => a.Type),
-            _ => query.OrderByDescending(a => a.AdmissionDate)
+            _ => descending
+                ? query.OrderByDescending(a => a.AdmissionDate)
+                : query.OrderBy(a => a.AdmissionDate)
         };
+
+        return ordered.ThenBy(a => a.AdmissionId);
     }
 }
