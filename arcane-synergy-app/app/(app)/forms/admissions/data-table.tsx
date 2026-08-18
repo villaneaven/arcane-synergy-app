@@ -733,7 +733,7 @@ export function DataTable<
             {isLoading ? (
               <TableRow>
                 <TableCell
-                  colSpan={columnsWithCallbacks.length}
+                  colSpan={table.getVisibleLeafColumns().length}
                   className="h-24 text-center"
                 >
                   <Spinner className="mx-auto" />
