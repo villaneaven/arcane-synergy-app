@@ -111,7 +111,7 @@ namespace arcane_synergy_app_backend.Migrations
 
                     b.HasIndex("Type");
 
-                    b.ToTable("Admissions");
+                    b.ToTable("Admissions", (string)null);
                 });
 
             modelBuilder.Entity("arcane_synergy_app_backend.Models.Patient", b =>
@@ -164,7 +164,7 @@ namespace arcane_synergy_app_backend.Migrations
 
                     b.HasIndex("LastName", "FirstName");
 
-                    b.ToTable("Patients");
+                    b.ToTable("Patients", (string)null);
                 });
 
             modelBuilder.Entity("arcane_synergy_app_backend.Models.Transfer", b =>
@@ -218,7 +218,7 @@ namespace arcane_synergy_app_backend.Migrations
                         .IsUnique()
                         .HasFilter("[IsFinalDischarge] = 1");
 
-                    b.ToTable("Transfers");
+                    b.ToTable("Transfers", (string)null);
                 });
 
             modelBuilder.Entity("arcane_synergy_app_backend.Models.Admission", b =>
