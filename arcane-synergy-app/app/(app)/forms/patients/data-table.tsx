@@ -273,7 +273,7 @@ export function DataTable<TData extends { patientID: string }, TValue>({
             {isLoading ? (
               <TableRow>
                 <TableCell
-                  colSpan={table.getVisibleLeafColumns().length}
+                  colSpan={columns.length}
                   className="h-24 text-center"
                 >
                   <Spinner className="mx-auto" />
@@ -324,9 +324,8 @@ export function DataTable<TData extends { patientID: string }, TValue>({
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="text-muted-foreground flex-1 text-sm">
-          {table.getSelectedRowModel().rows.length} of{" "}
-          {table.getRowModel().rows.length} row(s) selected. {totalCount} total
-          row(s)
+          {table.getSelectedRowModel().rows.length} of {totalCount} row(s)
+          selected.
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
           Page
