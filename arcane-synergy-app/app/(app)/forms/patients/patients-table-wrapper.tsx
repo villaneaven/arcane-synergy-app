@@ -106,6 +106,7 @@ export function PatientsTableWrapper({
       isFirstRender.current = false;
       return;
     }
+    clearTimeout(searchDebounceRef.current);
     fetchPatients(pageIndex, pageSize, sorting, search);
   }, [pageIndex, sorting]);
 
