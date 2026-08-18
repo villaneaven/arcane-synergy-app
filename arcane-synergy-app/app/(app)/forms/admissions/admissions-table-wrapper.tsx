@@ -69,7 +69,8 @@ export function AdmissionsTableWrapper({
       if (targetSearch.trim()) params.set("search", targetSearch.trim());
       if (targetAdmissionType !== "all")
         params.set("admissionType", targetAdmissionType);
-      if (targetStartDate) params.set("startDate", targetStartDate.toISOString());
+      if (targetStartDate)
+        params.set("startDate", targetStartDate.toISOString());
       if (targetEndDate) params.set("endDate", targetEndDate.toISOString());
       if (targetSorting[0]) {
         params.set("sortBy", targetSorting[0].id);
@@ -115,8 +116,15 @@ export function AdmissionsTableWrapper({
       isFirstRender.current = false;
       return;
     }
-    fetchAdmissions(pageIndex, sorting, search, admissionType, startDate, endDate);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    clearTimeout(searchDebounceRef.current);
+    fetchAdmissions(
+      pageIndex,
+      sorting,
+      search,
+      admissionType,
+      startDate,
+      endDate,
+    );
   }, [pageIndex, sorting, admissionType, startDate, endDate]);
 
   const handleSortingChange = useCallback(
@@ -159,8 +167,23 @@ export function AdmissionsTableWrapper({
   }, []);
 
   const handleAdmissionAdded = useCallback(() => {
-    fetchAdmissions(pageIndex, sorting, search, admissionType, startDate, endDate);
-  }, [fetchAdmissions, pageIndex, sorting, search, admissionType, startDate, endDate]);
+    fetchAdmissions(
+      pageIndex,
+      sorting,
+      search,
+      admissionType,
+      startDate,
+      endDate,
+    );
+  }, [
+    fetchAdmissions,
+    pageIndex,
+    sorting,
+    search,
+    admissionType,
+    startDate,
+    endDate,
+  ]);
 
   const columns = useMemo(
     () => createColumns(handleAdmissionAdded),
