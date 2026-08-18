@@ -129,7 +129,6 @@ export function AdmissionsTableWrapper({
       startDate,
       endDate,
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, pageSize, sorting, admissionType, startDate, endDate]);
 
   const handleSortingChange = useCallback(
