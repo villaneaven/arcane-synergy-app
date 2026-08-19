@@ -174,7 +174,11 @@ export function AppSidebar() {
                         Forms
                       </TooltipContent>
                     </Tooltip>
-                    <DropdownMenuContent side="right" align="start" sideOffset={8}>
+                    <DropdownMenuContent
+                      side="right"
+                      align="start"
+                      sideOffset={8}
+                    >
                       <DropdownMenuItem asChild>
                         <Link href={"/forms/patients"}>Patients</Link>
                       </DropdownMenuItem>
