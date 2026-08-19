@@ -36,7 +36,7 @@ export function EditPatientDialog({
   const { data: session } = useSession();
 
   const handleSubmit = async (formData: {
-    patientID: string;
+    patientID?: string;
     firstName: string;
     lastName: string;
     dob: string | undefined;
