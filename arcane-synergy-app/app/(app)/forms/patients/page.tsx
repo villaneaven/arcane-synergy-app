@@ -1,8 +1,8 @@
+import { cookies } from "next/headers";
 import { Patient } from "./columns";
 import { PatientsTableWrapper } from "./patients-table-wrapper";
 import { getAccessToken } from "@/lib/auth";
-
-export const PATIENTS_PAGE_SIZE = 10;
+import { PAGE_SIZE_COOKIE, parsePageSize } from "./page-size";
 
 interface PatientsResponse {
   items: Patient[];
@@ -13,6 +13,8 @@ interface PatientsResponse {
 
 export default async function Patients() {
   const accessToken = await getAccessToken();
+  const cookieStore = await cookies();
+  const pageSize = parsePageSize(cookieStore.get(PAGE_SIZE_COOKIE)?.value);
 
   const apiBaseUrl =
     process.env.API_BASE_URL ??
@@ -20,7 +22,7 @@ export default async function Patients() {
     "http://localhost:5201";
 
   const res = await fetch(
-    `${apiBaseUrl}/api/patients?page=1&pageSize=${PATIENTS_PAGE_SIZE}`,
+    `${apiBaseUrl}/api/patients?page=1&pageSize=${pageSize}`,
     {
       cache: "no-store",
       headers: {
@@ -40,7 +42,7 @@ export default async function Patients() {
       <PatientsTableWrapper
         initialData={data.items}
         initialTotalCount={data.totalCount}
-        pageSize={PATIENTS_PAGE_SIZE}
+        pageSize={pageSize}
       />
     </div>
   );

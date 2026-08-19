@@ -29,6 +29,14 @@ import { ButtonLoading } from "@/components/button-loading";
 import { NewPatientDialog } from "@/components/new-patient-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import {
   DropdownMenu,
@@ -58,6 +66,8 @@ interface DataTableProps<TData extends { patientID: string }, TValue> {
   searchValue: string;
   onSearchChange: (value: string) => void;
   onPageChange: (pageIndex: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  pageSizeOptions: number[];
   onPatientAdded?: () => void;
 }
 
@@ -74,6 +84,8 @@ export function DataTable<TData extends { patientID: string }, TValue>({
   searchValue,
   onSearchChange,
   onPageChange,
+  onPageSizeChange,
+  pageSizeOptions,
   onPatientAdded,
 }: DataTableProps<TData, TValue>) {
   const { data: session } = useSession();
@@ -273,7 +285,7 @@ export function DataTable<TData extends { patientID: string }, TValue>({
             {isLoading ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={table.getVisibleLeafColumns().length}
                   className="h-24 text-center"
                 >
                   <Spinner className="mx-auto" />
@@ -324,8 +336,31 @@ export function DataTable<TData extends { patientID: string }, TValue>({
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="text-muted-foreground flex-1 text-sm">
-          {table.getSelectedRowModel().rows.length} of {totalCount} row(s)
-          selected.
+          {table.getSelectedRowModel().rows.length} of{" "}
+          {table.getRowModel().rows.length} row(s) selected. {totalCount} total
+          row(s)
+        </div>
+        <div className="hidden items-center gap-2 lg:flex">
+          <Label htmlFor="rows-per-page" className="text-sm font-medium">
+            Rows per page
+          </Label>
+          <Select
+            value={`${pageSize}`}
+            onValueChange={(value) => {
+              onPageSizeChange(Number(value));
+            }}
+          >
+            <SelectTrigger size="sm" className="w-20" id="rows-per-page">
+              <SelectValue placeholder={pageSize} />
+            </SelectTrigger>
+            <SelectContent side="top">
+              {pageSizeOptions.map((option) => (
+                <SelectItem key={option} value={`${option}`}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
           Page
