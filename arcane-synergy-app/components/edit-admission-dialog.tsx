@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { AdmissionForm } from "@/components/admission-form";
+import { API_BASE_URL } from "@/lib/api";
 
 type Admission = {
   admissionId: string;
@@ -62,7 +63,7 @@ export function EditAdmissionDialog({
 
     try {
       const response = await fetch(
-        `http://localhost:5201/api/admissions/${admission.admissionId}`,
+        `${API_BASE_URL}/api/admissions/${admission.admissionId}`,
         {
           method: "PUT",
           headers: {

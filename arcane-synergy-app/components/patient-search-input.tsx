@@ -10,6 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { API_BASE_URL } from "@/lib/api";
 
 export type PatientSearchResult = {
   patientID: number;
@@ -52,7 +53,7 @@ export function PatientSearchInput({
           const accessToken = (session as { access_token?: string })
             ?.access_token;
           const response = await fetch(
-            `http://localhost:5201/api/Patients/${value}`,
+            `${API_BASE_URL}/api/Patients/${value}`,
             {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -84,7 +85,7 @@ export function PatientSearchInput({
         const accessToken = (session as { access_token?: string })
           ?.access_token;
         const response = await fetch(
-          `http://localhost:5201/api/Patients/search?query=${encodeURIComponent(query)}`,
+          `${API_BASE_URL}/api/Patients/search?query=${encodeURIComponent(query)}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,

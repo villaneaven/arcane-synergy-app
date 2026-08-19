@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { PatientForm } from "@/components/patient-form";
+import { API_BASE_URL } from "@/lib/api";
 
 export function NewPatientDialog({
   onPatientAdded,
@@ -34,7 +35,7 @@ export function NewPatientDialog({
     const accessToken = (session as { access_token?: string })?.access_token;
 
     try {
-      const response = await fetch("http://localhost:5201/api/patients", {
+      const response = await fetch(`${API_BASE_URL}/api/patients`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

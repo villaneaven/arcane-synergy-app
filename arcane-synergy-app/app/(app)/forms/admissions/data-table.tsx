@@ -60,6 +60,7 @@ import { NewAdmissionDialog } from "@/components/new-admission-dialog";
 import { toast } from "sonner";
 import { DatePickerInput } from "@/components/date-picker-input";
 import { TYPE_OPTIONS } from "@/lib/admission-options";
+import { API_BASE_URL } from "@/lib/api";
 
 interface DataTableProps<
   TData extends {
@@ -220,7 +221,7 @@ export function DataTable<
     try {
       for (const admissionId of selectedRowIds) {
         const response = await fetch(
-          `http://localhost:5201/api/admissions/${admissionId}`,
+          `${API_BASE_URL}/api/admissions/${admissionId}`,
           {
             method: "DELETE",
             headers: {
@@ -274,7 +275,7 @@ export function DataTable<
 
     const params = buildExportQueryParams();
     const response = await fetch(
-      `http://localhost:5201/api/admissions/export${
+      `${API_BASE_URL}/api/admissions/export${
         params.toString() ? `?${params.toString()}` : ""
       }`,
       {
@@ -292,9 +293,6 @@ export function DataTable<
     return (await response.json()) as TData[];
   };
 
-  // Exported rows come from a dedicated backend endpoint (applying the same
-  // filters/sort as the table) rather than the table's own row model, since
-  // with server-side pagination `data` only ever holds the current page.
   const getExportData = (admissions: TData[]) => {
     const exportableColumns = table
       .getAllLeafColumns()
@@ -375,7 +373,7 @@ export function DataTable<
     });
 
     const response = await fetch(
-      `http://localhost:5201/api/transfers/export${
+      `${API_BASE_URL}/api/transfers/export${
         queryParams.toString() ? `?${queryParams.toString()}` : ""
       }`,
       {
@@ -795,7 +793,10 @@ export function DataTable<
           row(s)
         </div>
         <div className="hidden items-center gap-2 lg:flex">
-          <Label htmlFor="admissions-rows-per-page" className="text-sm font-medium">
+          <Label
+            htmlFor="admissions-rows-per-page"
+            className="text-sm font-medium"
+          >
             Rows per page
           </Label>
           <Select
@@ -804,7 +805,11 @@ export function DataTable<
               onPageSizeChange(Number(value));
             }}
           >
-            <SelectTrigger size="sm" className="w-20" id="admissions-rows-per-page">
+            <SelectTrigger
+              size="sm"
+              className="w-20"
+              id="admissions-rows-per-page"
+            >
               <SelectValue placeholder={pageSize} />
             </SelectTrigger>
             <SelectContent side="top">
