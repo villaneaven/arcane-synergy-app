@@ -147,6 +147,7 @@ export function AppSidebar() {
                   asChild
                   isActive={pathname === "/"}
                   className={ACTIVE_ITEM_CLASS}
+                  tooltip="Dashboard"
                 >
                   <Link href={"/"}>
                     <LayoutDashboard />
@@ -157,15 +158,22 @@ export function AppSidebar() {
               {isCollapsed ? (
                 <SidebarMenuItem key={"Forms"}>
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <SidebarMenuButton
-                        isActive={pathname.startsWith("/forms")}
-                        className={ACTIVE_ITEM_CLASS}
-                      >
-                        <Form />
-                        <span>{"Forms"}</span>
-                      </SidebarMenuButton>
-                    </DropdownMenuTrigger>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <SidebarMenuButton
+                            isActive={pathname.startsWith("/forms")}
+                            className={ACTIVE_ITEM_CLASS}
+                          >
+                            <Form />
+                            <span>{"Forms"}</span>
+                          </SidebarMenuButton>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" align="center">
+                        Forms
+                      </TooltipContent>
+                    </Tooltip>
                     <DropdownMenuContent side="right" align="start" sideOffset={8}>
                       <DropdownMenuItem asChild>
                         <Link href={"/forms/patients"}>Patients</Link>
@@ -232,6 +240,7 @@ export function AppSidebar() {
                   asChild
                   isActive={pathname.startsWith("/reports")}
                   className={ACTIVE_ITEM_CLASS}
+                  tooltip="Reports"
                 >
                   <Link href={"/reports"}>
                     <ClipboardCheck />
@@ -246,21 +255,32 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem key={"DarkMode"}>
-                <div className="flex items-center gap-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
-                  <Switch
-                    id="dark-mode"
-                    checked={mounted && resolvedTheme === "dark"}
-                    onCheckedChange={(checked) =>
-                      setTheme(checked ? "dark" : "light")
-                    }
-                  />
-                  <Label
-                    htmlFor="dark-mode"
-                    className="max-w-32 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300 ease-in-out group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0"
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
+                      <Switch
+                        id="dark-mode"
+                        checked={mounted && resolvedTheme === "dark"}
+                        onCheckedChange={(checked) =>
+                          setTheme(checked ? "dark" : "light")
+                        }
+                      />
+                      <Label
+                        htmlFor="dark-mode"
+                        className="max-w-32 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300 ease-in-out group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0"
+                      >
+                        Dark Mode
+                      </Label>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    align="center"
+                    hidden={!isCollapsed || isMobile}
                   >
                     Dark Mode
-                  </Label>
-                </div>
+                  </TooltipContent>
+                </Tooltip>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
