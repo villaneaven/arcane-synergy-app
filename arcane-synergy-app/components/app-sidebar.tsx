@@ -226,7 +226,7 @@ export function AppSidebar() {
                   />
                   <Label
                     htmlFor="dark-mode"
-                    className="group-data-[collapsible=icon]:hidden"
+                    className="max-w-32 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300 ease-in-out group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0"
                   >
                     Dark Mode
                   </Label>
