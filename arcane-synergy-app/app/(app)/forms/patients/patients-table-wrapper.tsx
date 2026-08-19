@@ -11,6 +11,7 @@ import { useSession } from "next-auth/react";
 import type { SortingState } from "@tanstack/react-table";
 import { DataTable } from "./data-table";
 import { Patient, createColumns } from "./columns";
+import { PAGE_SIZE_COOKIE, PAGE_SIZE_OPTIONS } from "./page-size";
 
 interface PatientsTableWrapperProps {
   initialData: Patient[];
@@ -28,12 +29,13 @@ interface PatientsResponse {
 export function PatientsTableWrapper({
   initialData,
   initialTotalCount,
-  pageSize,
+  pageSize: initialPageSize,
 }: PatientsTableWrapperProps) {
   const { data: session } = useSession();
   const [data, setData] = useState<Patient[]>(initialData);
   const [totalCount, setTotalCount] = useState(initialTotalCount);
   const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(initialPageSize);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -106,8 +108,9 @@ export function PatientsTableWrapper({
       isFirstRender.current = false;
       return;
     }
+    clearTimeout(searchDebounceRef.current);
     fetchPatients(pageIndex, pageSize, sorting, search);
-  }, [pageIndex, sorting]);
+  }, [pageIndex, pageSize, sorting]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((old: SortingState) => SortingState)) => {
@@ -135,6 +138,12 @@ export function PatientsTableWrapper({
     [fetchPatients, pageSize, sorting],
   );
 
+  const handlePageSizeChange = useCallback((newPageSize: number) => {
+    setPageSize(newPageSize);
+    setPageIndex(0);
+    document.cookie = `${PAGE_SIZE_COOKIE}=${newPageSize}; path=/; max-age=31536000; SameSite=Lax`;
+  }, []);
+
   const handlePatientAdded = useCallback(() => {
     fetchPatients(pageIndex, pageSize, sorting, search);
   }, [fetchPatients, pageIndex, pageSize, sorting, search]);
@@ -159,6 +168,8 @@ export function PatientsTableWrapper({
       searchValue={search}
       onSearchChange={handleSearchChange}
       onPageChange={setPageIndex}
+      onPageSizeChange={handlePageSizeChange}
+      pageSizeOptions={PAGE_SIZE_OPTIONS}
       onPatientAdded={handlePatientAdded}
     />
   );
