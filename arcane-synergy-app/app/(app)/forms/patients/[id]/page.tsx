@@ -3,6 +3,21 @@ import { Patient } from "../columns";
 import { Admission } from "../../admissions/columns";
 import { PatientAdmissionsTable } from "./patient-admissions-table";
 
+const SECTION_COLORS = {
+  personalInfo: {
+    border: "border-l-blue-500 dark:border-l-blue-400",
+    heading: "text-blue-700 dark:text-blue-400",
+  },
+  medicalSummary: {
+    border: "border-l-purple-500 dark:border-l-purple-400",
+    heading: "text-purple-700 dark:text-purple-400",
+  },
+  admissions: {
+    border: "border-l-amber-500 dark:border-l-amber-400",
+    heading: "text-amber-700 dark:text-amber-400",
+  },
+};
+
 function formatDate(value: string) {
   const date = new Date(value);
 
@@ -71,8 +86,12 @@ export default async function PatientPage({ params }: PatientPageProps) {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <section className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-background p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-black dark:text-zinc-50">
+        <section
+          className={`rounded-2xl border border-gray-200 dark:border-gray-700 border-l-4 ${SECTION_COLORS.personalInfo.border} bg-background p-6 shadow-sm`}
+        >
+          <h2
+            className={`text-lg font-semibold ${SECTION_COLORS.personalInfo.heading}`}
+          >
             Personal Information
           </h2>
           <dl className="mt-4 space-y-4 text-sm">
@@ -91,8 +110,12 @@ export default async function PatientPage({ params }: PatientPageProps) {
           </dl>
         </section>
 
-        <section className="rounded-2xl border border-gray-200 dark:border-gray-700   bg-background p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-black dark:text-zinc-50">
+        <section
+          className={`rounded-2xl border border-gray-200 dark:border-gray-700 border-l-4 ${SECTION_COLORS.medicalSummary.border} bg-background p-6 shadow-sm`}
+        >
+          <h2
+            className={`text-lg font-semibold ${SECTION_COLORS.medicalSummary.heading}`}
+          >
             Medical Summary
           </h2>
           <div className="mt-4 space-y-5 text-sm">
@@ -126,9 +149,11 @@ export default async function PatientPage({ params }: PatientPageProps) {
 
       <section
         id="admissions"
-        className="mt-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-background p-6 shadow-sm"
+        className={`mt-6 rounded-2xl border border-gray-200 dark:border-gray-700 border-l-4 ${SECTION_COLORS.admissions.border} bg-background p-6 shadow-sm`}
       >
-        <h2 className="text-lg font-semibold text-black dark:text-zinc-50">
+        <h2
+          className={`text-lg font-semibold ${SECTION_COLORS.admissions.heading}`}
+        >
           Admissions
         </h2>
         <div className="mt-4">
