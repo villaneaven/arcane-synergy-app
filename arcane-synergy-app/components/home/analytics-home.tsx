@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
+import Image from "next/image";
 import { DashboardChart } from "@/components/dashboard-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -68,84 +69,127 @@ export function AnalyticsHome() {
         <header className="relative flex w-full items-start bg-accent px-14 py-4 dark:bg-accent-dark">
           <div className="flex flex-col items-start gap-4 w-full py-4">
             <h1 className="text-4xl font-bold text-black dark:text-white">
-              Welcome back, {session?.user?.name || "User"}!
+              Hi, {session?.user?.name || "User"}!
             </h1>
             <Separator className="w-full" />
             <div className="flex w-full flex-wrap items-center gap-4">
-              <Field className="w-full max-w-48">
-                <FieldLabel>Insurance</FieldLabel>
-                <Select value={insurance} onValueChange={setInsurance}>
-                  <SelectTrigger className="w-45">
-                    <SelectValue placeholder="Select an insurance" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Insurance</SelectLabel>
-                      <SelectItem value="all">All Insurances</SelectItem>
-                      {INSURANCE_OPTIONS.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field className="w-full max-w-48">
-                <FieldLabel>Clinic</FieldLabel>
-                <Select value={clinic} onValueChange={setClinic}>
-                  <SelectTrigger className="w-45">
-                    <SelectValue placeholder="Select a clinic" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Clinics</SelectLabel>
-                      <SelectItem value="all">All Clinics</SelectItem>
-                      {CLINIC_OPTIONS.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field className="w-full max-w-48">
-                <FieldLabel>Type of Admission</FieldLabel>
-                <Select value={admissionType} onValueChange={setAdmissionType}>
-                  <SelectTrigger className="w-45">
-                    <SelectValue placeholder="Select a type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Type</SelectLabel>
-                      <SelectItem value="all">All Types</SelectItem>
-                      {TYPE_OPTIONS.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field className="w-full max-w-48">
-                <FieldLabel>Date Range</FieldLabel>
-                <Select value={lastMonths} onValueChange={setLastMonths}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="all">All Time</SelectItem>
-                      <SelectItem value="12">Last 12 Months</SelectItem>
-                      <SelectItem value="9">Last 9 Months</SelectItem>
-                      <SelectItem value="6">Last 6 Months</SelectItem>
-                      <SelectItem value="3">Last 3 Months</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
+              <div className="flex items-center gap-1">
+                <div className="relative h-10 w-10 shrink-0">
+                  <Image
+                    src="/kcp-darkblue-arrow.png"
+                    alt=""
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                <Field className="w-45 shrink-0">
+                  <FieldLabel>Insurance</FieldLabel>
+                  <Select value={insurance} onValueChange={setInsurance}>
+                    <SelectTrigger className="w-45">
+                      <SelectValue placeholder="Select an insurance" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Insurance</SelectLabel>
+                        <SelectItem value="all">All Insurances</SelectItem>
+                        {INSURANCE_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="relative h-10 w-10 shrink-0">
+                  <Image
+                    src="/kcp-green-arrow.png"
+                    alt=""
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                <Field className="w-45 shrink-0">
+                  <FieldLabel>Clinic</FieldLabel>
+                  <Select value={clinic} onValueChange={setClinic}>
+                    <SelectTrigger className="w-45">
+                      <SelectValue placeholder="Select a clinic" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Clinics</SelectLabel>
+                        <SelectItem value="all">All Clinics</SelectItem>
+                        {CLINIC_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="relative h-10 w-10 shrink-0">
+                  <Image
+                    src="/kcp-lightblue-arrow.png"
+                    alt=""
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                <Field className="w-45 shrink-0">
+                  <FieldLabel>Type of Admission</FieldLabel>
+                  <Select
+                    value={admissionType}
+                    onValueChange={setAdmissionType}
+                  >
+                    <SelectTrigger className="w-45">
+                      <SelectValue placeholder="Select a type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Type</SelectLabel>
+                        <SelectItem value="all">All Types</SelectItem>
+                        {TYPE_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="relative h-10 w-10 shrink-0">
+                  <Image
+                    src="/kcp-turquoise-arrow.png"
+                    alt=""
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                <Field className="w-45 shrink-0">
+                  <FieldLabel>Date Range</FieldLabel>
+                  <Select value={lastMonths} onValueChange={setLastMonths}>
+                    <SelectTrigger className="w-45">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="all">All Time</SelectItem>
+                        <SelectItem value="12">Last 12 Months</SelectItem>
+                        <SelectItem value="9">Last 9 Months</SelectItem>
+                        <SelectItem value="6">Last 6 Months</SelectItem>
+                        <SelectItem value="3">Last 3 Months</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
             </div>
           </div>
         </header>
