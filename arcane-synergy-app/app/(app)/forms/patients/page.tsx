@@ -1,26 +1,47 @@
-import { Patient } from "./columns"
-import { PatientsTableWrapper } from "./patients-table-wrapper"
-import { getAccessToken } from "@/lib/auth"
+import { Patient } from "./columns";
+import { PatientsTableWrapper } from "./patients-table-wrapper";
+import { getAccessToken } from "@/lib/auth";
+
+export const PATIENTS_PAGE_SIZE = 10;
+
+interface PatientsResponse {
+  items: Patient[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
 
 export default async function Patients() {
-  const accessToken = await getAccessToken()
-  
-  const res = await fetch('http://localhost:5201/api/patients', {
-    cache: 'no-store',
-    headers: {
-      Authorization: `Bearer ${accessToken}`
-    }
-  })
-  
+  const accessToken = await getAccessToken();
+
+  const apiBaseUrl =
+    process.env.API_BASE_URL ??
+    process.env.NEXT_PUBLIC_API_BASE_URL ??
+    "http://localhost:5201";
+
+  const res = await fetch(
+    `${apiBaseUrl}/api/patients?page=1&pageSize=${PATIENTS_PAGE_SIZE}`,
+    {
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+
   if (!res.ok) {
-    throw new Error('Failed to fetch patients')
+    throw new Error("Failed to fetch patients");
   }
-  
-  const data: Patient[] = await res.json()
+
+  const data: PatientsResponse = await res.json();
 
   return (
     <div className="block px-8 py-4 justify-center bg-background font-sans dark:bg-black">
-      <PatientsTableWrapper initialData={data} />
+      <PatientsTableWrapper
+        initialData={data.items}
+        initialTotalCount={data.totalCount}
+        pageSize={PATIENTS_PAGE_SIZE}
+      />
     </div>
-  )
+  );
 }

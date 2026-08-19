@@ -6,14 +6,11 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import {
   ColumnDef,
-  ColumnFiltersState,
+  OnChangeFn,
   SortingState,
   VisibilityState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 
@@ -32,6 +29,7 @@ import { ButtonLoading } from "@/components/button-loading";
 import { NewPatientDialog } from "@/components/new-patient-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -50,19 +48,35 @@ import {
 interface DataTableProps<TData extends { patientID: string }, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  pageIndex: number;
+  pageSize: number;
+  pageCount: number;
+  totalCount: number;
+  isLoading?: boolean;
+  sorting: SortingState;
+  onSortingChange: OnChangeFn<SortingState>;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  onPageChange: (pageIndex: number) => void;
   onPatientAdded?: () => void;
 }
 
 export function DataTable<TData extends { patientID: string }, TValue>({
   columns,
   data,
+  pageIndex,
+  pageSize,
+  pageCount,
+  totalCount,
+  isLoading,
+  sorting,
+  onSortingChange,
+  searchValue,
+  onSearchChange,
+  onPageChange,
   onPatientAdded,
 }: DataTableProps<TData, TValue>) {
   const { data: session } = useSession();
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    [],
-  );
   const router = useRouter();
   const [isDeleting, setIsDeleting] = React.useState(false);
 
@@ -72,23 +86,47 @@ export function DataTable<TData extends { patientID: string }, TValue>({
       lastName: false,
     });
   const [rowSelection, setRowSelection] = React.useState({});
+  const [pageInput, setPageInput] = React.useState(String(pageIndex + 1));
+
+  React.useEffect(() => {
+    setPageInput(String(pageIndex + 1));
+  }, [pageIndex]);
+
+  const commitPageInput = () => {
+    const parsed = Number(pageInput);
+    if (Number.isFinite(parsed) && parsed >= 1) {
+      const clamped = Math.min(Math.trunc(parsed), pageCount);
+      setPageInput(String(clamped));
+      if (clamped !== pageIndex + 1) {
+        onPageChange(clamped - 1);
+      }
+    } else {
+      setPageInput(String(pageIndex + 1));
+    }
+  };
 
   const table = useReactTable({
     data,
     columns,
+    pageCount,
+    manualPagination: true,
+    manualSorting: true,
+    manualFiltering: true,
+    getRowId: (row) => row.patientID,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
+    onSortingChange,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onPaginationChange: (updater) => {
+      const current = { pageIndex, pageSize };
+      const next = typeof updater === "function" ? updater(current) : updater;
+      onPageChange(next.pageIndex);
+    },
     state: {
       sorting,
-      columnFilters,
       columnVisibility,
       rowSelection,
+      pagination: { pageIndex, pageSize },
     },
   });
 
@@ -139,12 +177,8 @@ export function DataTable<TData extends { patientID: string }, TValue>({
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter names..."
-          value={
-            (table.getColumn("fullName")?.getFilterValue() as string) ?? ""
-          }
-          onChange={(event) =>
-            table.getColumn("fullName")?.setFilterValue(event.target.value)
-          }
+          value={searchValue}
+          onChange={(event) => onSearchChange(event.target.value)}
           className="max-w-sm"
         />
         <div className="flex justify-end space-x-2 ml-auto">
@@ -156,8 +190,9 @@ export function DataTable<TData extends { patientID: string }, TValue>({
                 <Button
                   variant="destructive"
                   disabled={
-                    table.getFilteredSelectedRowModel().rows.length === 0 ||
-                    isDeleting
+                    table.getSelectedRowModel().rows.length === 0 ||
+                    isDeleting ||
+                    isLoading
                   }
                 >
                   Delete
@@ -235,7 +270,16 @@ export function DataTable<TData extends { patientID: string }, TValue>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  <Spinner className="mx-auto" />
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
@@ -280,14 +324,33 @@ export function DataTable<TData extends { patientID: string }, TValue>({
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="text-muted-foreground flex-1 text-sm">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+          {table.getSelectedRowModel().rows.length} of {totalCount} row(s)
+          selected.
+        </div>
+        <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+          Page
+          <Input
+            type="number"
+            min={1}
+            max={pageCount}
+            value={pageInput}
+            onChange={(e) => setPageInput(e.target.value)}
+            onBlur={commitPageInput}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.currentTarget.blur();
+              }
+            }}
+            disabled={isLoading}
+            className="h-8 w-14 text-center"
+          />
+          of {pageCount}
         </div>
         <Button
           variant="outline"
           size="sm"
           onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
+          disabled={!table.getCanPreviousPage() || isLoading}
         >
           Previous
         </Button>
@@ -295,7 +358,7 @@ export function DataTable<TData extends { patientID: string }, TValue>({
           variant="outline"
           size="sm"
           onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
+          disabled={!table.getCanNextPage() || isLoading}
         >
           Next
         </Button>
