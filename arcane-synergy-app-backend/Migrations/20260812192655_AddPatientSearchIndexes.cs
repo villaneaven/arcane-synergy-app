@@ -10,10 +10,6 @@ namespace arcane_synergy_app_backend.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_Transfers_AdmissionId",
-                table: "Transfers");
-
             migrationBuilder.Sql(@"
 IF EXISTS (
     SELECT 1
@@ -59,23 +55,6 @@ IF EXISTS (
                 oldClrType: typeof(string),
                 oldType: "nvarchar(max)");
 
-            migrationBuilder.Sql(@"
-IF EXISTS (
-    SELECT 1
-    FROM [Transfers]
-    WHERE [IsFinalDischarge] = 1
-    GROUP BY [AdmissionId]
-    HAVING COUNT(*) > 1
-)
-    THROW 50000, 'Cannot create unique filtered index IX_Transfers_AdmissionId because multiple final discharge transfers exist for an admission.', 1;
-");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Transfers_AdmissionId",
-                table: "Transfers",
-                column: "AdmissionId",
-                unique: true,
-                filter: "[IsFinalDischarge] = 1");
             migrationBuilder.CreateIndex(
                 name: "IX_Patients_FullName",
                 table: "Patients",
@@ -95,10 +74,6 @@ IF EXISTS (
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_Transfers_AdmissionId",
-                table: "Transfers");
-
             migrationBuilder.DropIndex(
                 name: "IX_Patients_FullName",
                 table: "Patients");
@@ -144,11 +119,6 @@ IF EXISTS (
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "nvarchar(450)");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Transfers_AdmissionId",
-                table: "Transfers",
-                column: "AdmissionId");
         }
     }
 }
