@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { PatientForm } from "@/components/patient-form";
+import { API_BASE_URL } from "@/lib/api";
 
 type Patient = {
   patientID: string;
@@ -50,7 +51,7 @@ export function EditPatientDialog({
 
     try {
       const response = await fetch(
-        `http://localhost:5201/api/patients/${patient.patientID}`,
+        `${API_BASE_URL}/api/patients/${patient.patientID}`,
         {
           method: "PUT",
           headers: {

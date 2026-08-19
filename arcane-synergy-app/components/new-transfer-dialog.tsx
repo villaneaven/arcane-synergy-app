@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { TransferForm } from "@/components/transfer-form";
+import { API_BASE_URL } from "@/lib/api";
 
 export function NewTransferDialog({
   onTransferAdded,
@@ -39,7 +40,7 @@ export function NewTransferDialog({
     const accessToken = (session as { access_token?: string })?.access_token;
 
     try {
-      const response = await fetch("http://localhost:5201/api/transfers", {
+      const response = await fetch(`${API_BASE_URL}/api/transfers`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

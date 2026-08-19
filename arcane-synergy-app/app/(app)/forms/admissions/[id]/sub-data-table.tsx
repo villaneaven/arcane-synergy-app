@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/table";
 import { ButtonLoading } from "@/components/button-loading";
 import { NewTransferDialog } from "@/components/new-transfer-dialog";
+import { API_BASE_URL } from "@/lib/api";
 
 interface DataTableProps<TData, TValue> {
   columns:
@@ -106,7 +107,7 @@ export function SubDataTable<TData, TValue>({
     try {
       for (const transferId of selectedRowIds) {
         const response = await fetch(
-          `http://localhost:5201/api/transfers/${transferId}`,
+          `${API_BASE_URL}/api/transfers/${transferId}`,
           {
             method: "DELETE",
             headers: {

@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { AdmissionForm } from "@/components/admission-form";
+import { API_BASE_URL } from "@/lib/api";
 
 export function NewAdmissionDialog({
   onAdmissionAdded,
@@ -38,7 +39,7 @@ export function NewAdmissionDialog({
     const accessToken = (session as { access_token?: string })?.access_token;
 
     try {
-      const response = await fetch("http://localhost:5201/api/admissions", {
+      const response = await fetch(`${API_BASE_URL}/api/admissions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

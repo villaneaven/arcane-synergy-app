@@ -6,6 +6,7 @@ import {
   type NormalizedGroupCount,
   type RawGroupCount,
 } from "@/lib/group-breakdown";
+import { API_BASE_URL } from "@/lib/api";
 
 type SessionWithAccessToken =
   | {
@@ -49,7 +50,7 @@ export function usePendingPatientsCount(
 
     try {
       const response = await fetch(
-        `http://localhost:5201/api/Admissions/pending/count${
+        `${API_BASE_URL}/api/Admissions/pending/count${
           queryParams.toString() ? `?${queryParams.toString()}` : ""
         }`,
         {

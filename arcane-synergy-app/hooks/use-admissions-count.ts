@@ -6,6 +6,7 @@ import {
   type NormalizedGroupCount,
   type RawGroupCount,
 } from "@/lib/group-breakdown";
+import { API_BASE_URL } from "@/lib/api";
 
 type SessionWithAccessToken =
   | {
@@ -48,7 +49,7 @@ export function useAdmissionsCount(
 
     try {
       const response = await fetch(
-        `http://localhost:5201/api/Admissions/count${
+        `${API_BASE_URL}/api/Admissions/count${
           queryParams.toString() ? `?${queryParams.toString()}` : ""
         }`,
         {

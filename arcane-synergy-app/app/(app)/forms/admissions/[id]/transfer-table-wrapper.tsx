@@ -4,6 +4,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { SubDataTable } from "./sub-data-table";
 import { Transfer, createColumns } from "./columns";
+import { API_BASE_URL } from "@/lib/api";
 
 interface TransferTableWrapperProps {
   initialData: Transfer[];
@@ -22,7 +23,7 @@ export function TransferTableWrapper({
 
     try {
       const res = await fetch(
-        `http://localhost:5201/api/transfers/admission/${admissionId}`,
+        `${API_BASE_URL}/api/transfers/admission/${admissionId}`,
         {
           cache: "no-store",
           headers: {

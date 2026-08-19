@@ -3,6 +3,7 @@ import { Patient } from "./columns";
 import { PatientsTableWrapper } from "./patients-table-wrapper";
 import { getAccessToken } from "@/lib/auth";
 import { PAGE_SIZE_COOKIE, parsePageSize } from "./page-size";
+import { getServerApiBaseUrl } from "@/lib/api";
 
 interface PatientsResponse {
   items: Patient[];
@@ -16,13 +17,8 @@ export default async function Patients() {
   const cookieStore = await cookies();
   const pageSize = parsePageSize(cookieStore.get(PAGE_SIZE_COOKIE)?.value);
 
-  const apiBaseUrl =
-    process.env.API_BASE_URL ??
-    process.env.NEXT_PUBLIC_API_BASE_URL ??
-    "http://localhost:5201";
-
   const res = await fetch(
-    `${apiBaseUrl}/api/patients?page=1&pageSize=${pageSize}`,
+    `${getServerApiBaseUrl()}/api/patients?page=1&pageSize=${pageSize}`,
     {
       cache: "no-store",
       headers: {
