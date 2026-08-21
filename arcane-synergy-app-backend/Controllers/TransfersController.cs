@@ -109,13 +109,7 @@ public class TransfersController : ControllerBase
 
 		if (transfer.IsFinalDischarge)
 		{
-			var admission = await _context.Admissions
-				.FirstOrDefaultAsync(a => a.AdmissionId == transfer.AdmissionId);
-			if (admission != null)
-			{
-				admission.FinalDischargeDate = transfer.DischargeDate;
-				admission.UpdateCalculatedFields();
-			}
+			await SetAdmissionFinalDischargeDateAsync(transfer.AdmissionId, transfer.DischargeDate);
 		}
 
 		try
@@ -138,6 +132,12 @@ public class TransfersController : ControllerBase
         if (id != transfer.TransferId)
             return BadRequest("TransferId mismatch");
 
+		var existingTransfer = await _context.Transfers.FindAsync(id);
+		if (existingTransfer == null)
+		{
+			return NotFound();
+		}
+
 		if (transfer.IsFinalDischarge)
 		{
 			var hasFinalTransfer = await _context.Transfers
@@ -147,12 +147,6 @@ public class TransfersController : ControllerBase
 			{
 				return Conflict("This admission already has a final transfer.");
 			}
-		}
-
-		var existingTransfer = await _context.Transfers.FindAsync(id);
-		if (existingTransfer == null)
-		{
-			return NotFound();
 		}
 
 		var originalAdmissionId = existingTransfer.AdmissionId;
@@ -174,24 +168,12 @@ public class TransfersController : ControllerBase
 
 		if (wasFinalDischarge && (admissionChanged || !transfer.IsFinalDischarge))
 		{
-			var originalAdmission = await _context.Admissions
-				.FirstOrDefaultAsync(a => a.AdmissionId == originalAdmissionId);
-			if (originalAdmission != null)
-			{
-				originalAdmission.FinalDischargeDate = null;
-				originalAdmission.UpdateCalculatedFields();
-			}
+			await SetAdmissionFinalDischargeDateAsync(originalAdmissionId, null);
 		}
 
 		if (transfer.IsFinalDischarge)
 		{
-			var targetAdmission = await _context.Admissions
-				.FirstOrDefaultAsync(a => a.AdmissionId == transfer.AdmissionId);
-			if (targetAdmission != null)
-			{
-				targetAdmission.FinalDischargeDate = transfer.DischargeDate;
-				targetAdmission.UpdateCalculatedFields();
-			}
+			await SetAdmissionFinalDischargeDateAsync(transfer.AdmissionId, transfer.DischargeDate);
 		}
 
 		try
@@ -218,17 +200,22 @@ public class TransfersController : ControllerBase
 
 		if (transfer.IsFinalDischarge)
 		{
-			var admission = await _context.Admissions
-				.FirstOrDefaultAsync(a => a.AdmissionId == transfer.AdmissionId);
-			if (admission != null)
-			{
-				admission.FinalDischargeDate = null;
-				admission.UpdateCalculatedFields();
-			}
+			await SetAdmissionFinalDischargeDateAsync(transfer.AdmissionId, null);
 		}
 
 		await _context.SaveChangesAsync();
 		return NoContent();
+	}
+
+	private async Task SetAdmissionFinalDischargeDateAsync(int admissionId, DateTime? finalDischargeDate)
+	{
+		var admission = await _context.Admissions
+			.FirstOrDefaultAsync(a => a.AdmissionId == admissionId);
+		if (admission != null)
+		{
+			admission.FinalDischargeDate = finalDischargeDate;
+			admission.UpdateCalculatedFields();
+		}
 	}
 
 	private static IQueryable<Transfer> ApplyTransfersSort(
