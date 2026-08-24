@@ -2,6 +2,7 @@ using arcane_synergy_app_backend.Data;
 using arcane_synergy_app_backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace arcane_synergy_app_backend.Controllers;
@@ -116,7 +117,7 @@ public class TransfersController : ControllerBase
 		{
 			await _context.SaveChangesAsync();
 		}
-		catch (DbUpdateException)
+		catch (DbUpdateException ex) when (IsFinalDischargeUniqueViolation(ex))
 		{
 			return Conflict("This admission already has a final transfer.");
 		}
@@ -180,7 +181,7 @@ public class TransfersController : ControllerBase
 		{
 			await _context.SaveChangesAsync();
 		}
-		catch (DbUpdateException)
+		catch (DbUpdateException ex) when (IsFinalDischargeUniqueViolation(ex))
 		{
 			return Conflict("This admission already has a final transfer.");
 		}
@@ -216,6 +217,12 @@ public class TransfersController : ControllerBase
 			admission.FinalDischargeDate = finalDischargeDate;
 			admission.UpdateCalculatedFields();
 		}
+	}
+
+	private static bool IsFinalDischargeUniqueViolation(DbUpdateException ex)
+	{
+		return ex.InnerException is SqlException sqlEx
+			&& (sqlEx.Number == 2601 || sqlEx.Number == 2627);
 	}
 
 	private static IQueryable<Transfer> ApplyTransfersSort(
