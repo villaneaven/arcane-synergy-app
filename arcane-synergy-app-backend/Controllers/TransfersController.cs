@@ -108,10 +108,11 @@ public class TransfersController : ControllerBase
 
 		_context.Transfers.Add(transfer);
 
-		if (transfer.IsFinalDischarge)
-		{
-			await SetAdmissionFinalDischargeDateAsync(transfer.AdmissionId, transfer.DischargeDate);
-		}
+		await AdjustAdmissionAsync(
+			transfer.AdmissionId,
+			transferCountDelta: 1,
+			updateFinalDischargeDate: transfer.IsFinalDischarge,
+			finalDischargeDate: transfer.DischargeDate);
 
 		try
 		{
@@ -167,14 +168,27 @@ public class TransfersController : ControllerBase
         existingTransfer.DateNotified = transfer.DateNotified;
         existingTransfer.DischargeTo = transfer.DischargeTo;
 
-		if (wasFinalDischarge && (admissionChanged || !transfer.IsFinalDischarge))
+		if (admissionChanged)
 		{
-			await SetAdmissionFinalDischargeDateAsync(originalAdmissionId, null);
-		}
+			await AdjustAdmissionAsync(
+				originalAdmissionId,
+				transferCountDelta: -1,
+				updateFinalDischargeDate: wasFinalDischarge,
+				finalDischargeDate: null);
 
-		if (transfer.IsFinalDischarge)
+			await AdjustAdmissionAsync(
+				transfer.AdmissionId,
+				transferCountDelta: 1,
+				updateFinalDischargeDate: transfer.IsFinalDischarge,
+				finalDischargeDate: transfer.DischargeDate);
+		}
+		else if (wasFinalDischarge || transfer.IsFinalDischarge)
 		{
-			await SetAdmissionFinalDischargeDateAsync(transfer.AdmissionId, transfer.DischargeDate);
+			await AdjustAdmissionAsync(
+				transfer.AdmissionId,
+				transferCountDelta: 0,
+				updateFinalDischargeDate: true,
+				finalDischargeDate: transfer.IsFinalDischarge ? transfer.DischargeDate : null);
 		}
 
 		try
@@ -199,24 +213,40 @@ public class TransfersController : ControllerBase
 
 		_context.Transfers.Remove(transfer);
 
-		if (transfer.IsFinalDischarge)
-		{
-			await SetAdmissionFinalDischargeDateAsync(transfer.AdmissionId, null);
-		}
+		await AdjustAdmissionAsync(
+			transfer.AdmissionId,
+			transferCountDelta: -1,
+			updateFinalDischargeDate: transfer.IsFinalDischarge,
+			finalDischargeDate: null);
 
 		await _context.SaveChangesAsync();
 		return NoContent();
 	}
 
-	private async Task SetAdmissionFinalDischargeDateAsync(int admissionId, DateTime? finalDischargeDate)
+	private async Task AdjustAdmissionAsync(
+		int admissionId,
+		int transferCountDelta,
+		bool updateFinalDischargeDate,
+		DateTime? finalDischargeDate)
 	{
+		if (transferCountDelta == 0 && !updateFinalDischargeDate)
+		{
+			return;
+		}
+
 		var admission = await _context.Admissions
 			.FirstOrDefaultAsync(a => a.AdmissionId == admissionId);
-		if (admission != null)
+		if (admission == null)
+		{
+			return;
+		}
+
+		admission.CountOfTransfers += transferCountDelta;
+		if (updateFinalDischargeDate)
 		{
 			admission.FinalDischargeDate = finalDischargeDate;
-			admission.UpdateCalculatedFields();
 		}
+		admission.UpdateCalculatedFields();
 	}
 
 	private static bool IsFinalDischargeUniqueViolation(DbUpdateException ex)
