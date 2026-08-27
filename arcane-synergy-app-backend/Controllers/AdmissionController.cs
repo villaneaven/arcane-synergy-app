@@ -244,7 +244,6 @@ public class AdmissionsController : ControllerBase
         existing.DischargeTo = admission.DischargeTo;
         existing.DateSeen = admission.DateSeen;
         existing.SeenBy = admission.SeenBy;
-        existing.Status = admission.Status;
 
         existing.UpdateCalculatedFields();
         await _context.SaveChangesAsync();
