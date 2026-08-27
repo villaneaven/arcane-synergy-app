@@ -244,18 +244,6 @@ public class AdmissionsController : ControllerBase
         existing.DischargeTo = admission.DischargeTo;
         existing.DateSeen = admission.DateSeen;
         existing.SeenBy = admission.SeenBy;
-        existing.Status = admission.Status;
-
-        existing.TotalERVisits = admission.TotalERVisits;
-        existing.TotalADMVisits = admission.TotalADMVisits;
-        existing.DayOfWeekAdmitted = admission.DayOfWeekAdmitted;
-        existing.MonthAdmitted = admission.MonthAdmitted;
-        existing.TCMDueDate = admission.TCMDueDate;
-        existing.PatientEngagement = admission.PatientEngagement;
-        existing.ReadmissionFlag = admission.ReadmissionFlag;
-        existing.NextAdmissionDate = admission.NextAdmissionDate;
-        existing.FinalDischargeDate = admission.FinalDischargeDate;
-        existing.CountOfTransfers = admission.CountOfTransfers;
 
         existing.UpdateCalculatedFields();
         await _context.SaveChangesAsync();
