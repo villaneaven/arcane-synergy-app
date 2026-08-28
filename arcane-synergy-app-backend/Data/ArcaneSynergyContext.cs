@@ -32,6 +32,11 @@ namespace arcane_synergy_app_backend.Data
             modelBuilder.Entity<Patient>()
                 .HasIndex(p => p.MRN);
 
+            modelBuilder.Entity<Patient>()
+                .HasIndex(p => new { p.MRN, p.Group })
+                .IsUnique()
+                .HasFilter("[MRN] IS NOT NULL");
+
             modelBuilder.Entity<Admission>()
                 .HasIndex(a => a.AdmissionDate);
 

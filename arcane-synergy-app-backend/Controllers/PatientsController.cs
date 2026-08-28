@@ -2,6 +2,7 @@
 using arcane_synergy_app_backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace arcane_synergy_app_backend.Controllers;
@@ -135,7 +136,15 @@ public class PatientsController : ControllerBase
         }
 
         _context.Patients.Add(patient);
-        await _context.SaveChangesAsync();
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (IsMrnGroupUniqueViolation(ex))
+        {
+            return Conflict("A patient with the same MRN already exists in this group.");
+        }
 
         return CreatedAtAction(nameof(GetPatient), new { id = patient.PatientID }, patient);
     }
@@ -170,9 +179,23 @@ public class PatientsController : ControllerBase
         existing.Clinic = patient.Clinic;
 
         existing.UpdateCalculatedFields();
-        await _context.SaveChangesAsync();
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (IsMrnGroupUniqueViolation(ex))
+        {
+            return Conflict("Another patient in the same group has the same MRN.");
+        }
 
         return NoContent();
+    }
+
+    private static bool IsMrnGroupUniqueViolation(DbUpdateException ex)
+    {
+        return ex.InnerException is SqlException sqlEx
+            && (sqlEx.Number == 2601 || sqlEx.Number == 2627);
     }
 
     [HttpDelete("{id:int}")]
