@@ -31,6 +31,12 @@ namespace arcane_synergy_app_backend.Data
 
             modelBuilder.Entity<Patient>()
                 .HasIndex(p => p.MRN);
+
+            modelBuilder.Entity<Admission>()
+                .HasIndex(a => a.AdmissionDate);
+
+            modelBuilder.Entity<Admission>()
+                .HasIndex(a => a.Type);
         }
     }
 }
