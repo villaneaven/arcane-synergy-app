@@ -2,27 +2,41 @@ import { Admission } from "./columns";
 import { AdmissionsTableWrapper } from "./admissions-table-wrapper";
 import { getAccessToken } from "@/lib/auth";
 
+export const ADMISSIONS_PAGE_SIZE = 10;
+
+interface AdmissionsResponse {
+  items: Admission[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
 export default async function Admissions() {
   const accessToken = await getAccessToken();
 
-  console.log("Access token in Admissions page:", accessToken);
-
-  const res = await fetch("http://localhost:5201/api/admissions", {
-    cache: "no-store",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
+  const res = await fetch(
+    `http://localhost:5201/api/admissions?page=1&pageSize=${ADMISSIONS_PAGE_SIZE}`,
+    {
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
     },
-  });
+  );
 
   if (!res.ok) {
     throw new Error("Failed to fetch admissions");
   }
 
-  const data: Admission[] = await res.json();
+  const data: AdmissionsResponse = await res.json();
 
   return (
     <div className="block px-8 py-4 justify-center bg-background font-sans dark:bg-black">
-      <AdmissionsTableWrapper initialData={data} />
+      <AdmissionsTableWrapper
+        initialData={data.items}
+        initialTotalCount={data.totalCount}
+        pageSize={ADMISSIONS_PAGE_SIZE}
+      />
     </div>
   );
 }
