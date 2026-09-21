@@ -12,6 +12,7 @@ namespace arcane_synergy_app_backend.Models
         public Patient? Patient { get; set; }
         public string? FacilityType { get; set; }
         public string? Facility { get; set; }
+        [MaxLength(450)]
         public required string Type { get; set; }
         public DateTime? TimeOfAdmission { get; set; }
         public string? DX { get; set; }
