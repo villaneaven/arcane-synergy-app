@@ -90,6 +90,8 @@ interface DataTableProps<
   searchValue: string;
   onSearchChange: (value: string) => void;
   onPageChange: (pageIndex: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  pageSizeOptions: number[];
   onAdmissionAdded?: () => void;
   admissionType: string;
   onAdmissionTypeChange: (value: string) => void;
@@ -126,6 +128,8 @@ export function DataTable<
   searchValue,
   onSearchChange,
   onPageChange,
+  onPageSizeChange,
+  pageSizeOptions,
   onAdmissionAdded,
   admissionType,
   onAdmissionTypeChange,
@@ -789,6 +793,28 @@ export function DataTable<
           {table.getSelectedRowModel().rows.length} of{" "}
           {table.getRowModel().rows.length} row(s) selected. {totalCount} total
           row(s)
+        </div>
+        <div className="hidden items-center gap-2 lg:flex">
+          <Label htmlFor="admissions-rows-per-page" className="text-sm font-medium">
+            Rows per page
+          </Label>
+          <Select
+            value={`${pageSize}`}
+            onValueChange={(value) => {
+              onPageSizeChange(Number(value));
+            }}
+          >
+            <SelectTrigger size="sm" className="w-20" id="admissions-rows-per-page">
+              <SelectValue placeholder={pageSize} />
+            </SelectTrigger>
+            <SelectContent side="top">
+              {pageSizeOptions.map((option) => (
+                <SelectItem key={option} value={`${option}`}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
           Page

@@ -11,6 +11,7 @@ import { useSession } from "next-auth/react";
 import type { SortingState } from "@tanstack/react-table";
 import { DataTable } from "./data-table";
 import { Admission, createColumns } from "./columns";
+import { PAGE_SIZE_COOKIE, PAGE_SIZE_OPTIONS } from "./page-size";
 
 interface AdmissionsTableWrapperProps {
   initialData: Admission[];
@@ -28,12 +29,13 @@ interface AdmissionsResponse {
 export function AdmissionsTableWrapper({
   initialData,
   initialTotalCount,
-  pageSize,
+  pageSize: initialPageSize,
 }: AdmissionsTableWrapperProps) {
   const { data: session } = useSession();
   const [data, setData] = useState<Admission[]>(initialData);
   const [totalCount, setTotalCount] = useState(initialTotalCount);
   const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(initialPageSize);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState("");
   const [admissionType, setAdmissionType] = useState("all");
@@ -53,6 +55,7 @@ export function AdmissionsTableWrapper({
   const fetchAdmissions = useCallback(
     async (
       targetPageIndex: number,
+      targetPageSize: number,
       targetSorting: SortingState,
       targetSearch: string,
       targetAdmissionType: string,
@@ -64,7 +67,7 @@ export function AdmissionsTableWrapper({
 
       const params = new URLSearchParams({
         page: String(targetPageIndex + 1),
-        pageSize: String(pageSize),
+        pageSize: String(targetPageSize),
       });
       if (targetSearch.trim()) params.set("search", targetSearch.trim());
       if (targetAdmissionType !== "all")
@@ -108,7 +111,7 @@ export function AdmissionsTableWrapper({
         setIsLoading(false);
       }
     },
-    [session, pageSize],
+    [session],
   );
 
   useEffect(() => {
@@ -119,13 +122,14 @@ export function AdmissionsTableWrapper({
     clearTimeout(searchDebounceRef.current);
     fetchAdmissions(
       pageIndex,
+      pageSize,
       sorting,
       search,
       admissionType,
       startDate,
       endDate,
     );
-  }, [pageIndex, sorting, admissionType, startDate, endDate]);
+  }, [pageIndex, pageSize, sorting, admissionType, startDate, endDate]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((old: SortingState) => SortingState)) => {
@@ -145,10 +149,18 @@ export function AdmissionsTableWrapper({
       setPageIndex(0);
       clearTimeout(searchDebounceRef.current);
       searchDebounceRef.current = setTimeout(() => {
-        fetchAdmissions(0, sorting, value, admissionType, startDate, endDate);
+        fetchAdmissions(
+          0,
+          pageSize,
+          sorting,
+          value,
+          admissionType,
+          startDate,
+          endDate,
+        );
       }, 400);
     },
-    [fetchAdmissions, sorting, admissionType, startDate, endDate],
+    [fetchAdmissions, pageSize, sorting, admissionType, startDate, endDate],
   );
 
   const handleAdmissionTypeChange = useCallback((value: string) => {
@@ -166,9 +178,16 @@ export function AdmissionsTableWrapper({
     setPageIndex(0);
   }, []);
 
+  const handlePageSizeChange = useCallback((newPageSize: number) => {
+    setPageSize(newPageSize);
+    setPageIndex(0);
+    document.cookie = `${PAGE_SIZE_COOKIE}=${newPageSize}; path=/; max-age=31536000; SameSite=Lax`;
+  }, []);
+
   const handleAdmissionAdded = useCallback(() => {
     fetchAdmissions(
       pageIndex,
+      pageSize,
       sorting,
       search,
       admissionType,
@@ -178,6 +197,7 @@ export function AdmissionsTableWrapper({
   }, [
     fetchAdmissions,
     pageIndex,
+    pageSize,
     sorting,
     search,
     admissionType,
@@ -205,6 +225,8 @@ export function AdmissionsTableWrapper({
       searchValue={search}
       onSearchChange={handleSearchChange}
       onPageChange={setPageIndex}
+      onPageSizeChange={handlePageSizeChange}
+      pageSizeOptions={PAGE_SIZE_OPTIONS}
       onAdmissionAdded={handleAdmissionAdded}
       admissionType={admissionType}
       onAdmissionTypeChange={handleAdmissionTypeChange}
