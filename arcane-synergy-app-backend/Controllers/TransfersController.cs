@@ -39,16 +39,39 @@ public class TransfersController : ControllerBase
 
 
 	[HttpGet]
-	public async Task<IActionResult> GetTransfers()
+	public async Task<IActionResult> GetTransfers(
+		[FromQuery] int page = 1,
+		[FromQuery] int pageSize = 10,
+		[FromQuery] string? sortBy = null,
+		[FromQuery] string? sortDir = "desc")
 	{
-		var transfers = await _context.Transfers.ToListAsync();
-		return Ok(transfers);
+		page = Math.Max(page, 1);
+		pageSize = Math.Clamp(pageSize, 1, 100);
+
+		var query = ApplyTransfersSort(_context.Transfers.AsNoTracking(), sortBy, sortDir);
+
+		var totalCount = await query.CountAsync();
+
+		var transfers = await query
+			.Skip((page - 1) * pageSize)
+			.Take(pageSize)
+			.ToListAsync();
+
+		return Ok(new
+		{
+			items = transfers,
+			totalCount,
+			page,
+			pageSize
+		});
 	}
 
 	[HttpGet("{id}")]
 	public async Task<IActionResult> GetTransfer(int id)
 	{
-		var transfer = await _context.Transfers.FindAsync(id);
+		var transfer = await _context.Transfers
+			.AsNoTracking()
+			.FirstOrDefaultAsync(t => t.TransferId == id);
 		if (transfer == null)
 		{
 			return NotFound();
@@ -60,7 +83,10 @@ public class TransfersController : ControllerBase
 	public async Task<IActionResult> GetTransfersByAdmissionId(int admissionId)
 	{
 		var transfers = await _context.Transfers
+			.AsNoTracking()
 			.Where(t => t.AdmissionId == admissionId)
+			.OrderBy(t => t.AdmissionDate)
+			.ThenBy(t => t.TransferId)
 			.ToListAsync();
 		return Ok(transfers);
 	}
@@ -167,6 +193,29 @@ public class TransfersController : ControllerBase
 		await SyncAdmissionFinalDischargeDateAsync(transfer.AdmissionId);
 		await _context.SaveChangesAsync();
 		return NoContent();
+	}
+
+	private static IQueryable<Transfer> ApplyTransfersSort(
+		IQueryable<Transfer> query,
+		string? sortBy,
+		string? sortDir)
+	{
+		bool descending = !string.Equals(sortDir, "asc", StringComparison.OrdinalIgnoreCase);
+
+		IOrderedQueryable<Transfer> ordered = sortBy?.ToLowerInvariant() switch
+		{
+			"dischargedate" => descending
+				? query.OrderByDescending(t => t.DischargeDate)
+				: query.OrderBy(t => t.DischargeDate),
+			"type" => descending
+				? query.OrderByDescending(t => t.Type)
+				: query.OrderBy(t => t.Type),
+			_ => descending
+				? query.OrderByDescending(t => t.AdmissionDate)
+				: query.OrderBy(t => t.AdmissionDate)
+		};
+
+		return ordered.ThenBy(t => t.TransferId);
 	}
 
 	private async Task SyncAdmissionFinalDischargeDateAsync(int admissionId)
