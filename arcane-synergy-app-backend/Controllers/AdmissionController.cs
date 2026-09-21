@@ -325,8 +325,8 @@ public class AdmissionsController : ControllerBase
             var term = search.Trim();
             query = query.Where(a =>
                 a.Patient != null &&
-                ((a.Patient.FullName != null && a.Patient.FullName.Contains(term)) ||
-                 (a.Patient.MRN != null && a.Patient.MRN.Contains(term))));
+                ((a.Patient.FullName != null && a.Patient.FullName.StartsWith(term)) ||
+                 (a.Patient.MRN != null && a.Patient.MRN.StartsWith(term))));
         }
 
         if (!string.IsNullOrWhiteSpace(admissionType))

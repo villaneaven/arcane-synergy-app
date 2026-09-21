@@ -35,14 +35,14 @@ public class PatientsController : ControllerBase
         {
             var term = search.Trim();
             query = query.Where(p =>
-                p.FirstName.Contains(term) ||
-                p.LastName.Contains(term) ||
-                (p.FullName != null && p.FullName.Contains(term)) ||
-                (p.MRN != null && p.MRN.Contains(term)));
+                p.FirstName.StartsWith(term) ||
+                p.LastName.StartsWith(term) ||
+                (p.FullName != null && p.FullName.StartsWith(term)) ||
+                (p.MRN != null && p.MRN.StartsWith(term)));
         }
 
         bool descending = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
-        query = sortBy?.ToLowerInvariant() switch
+        IOrderedQueryable<Patient> orderedQuery = sortBy?.ToLowerInvariant() switch
         {
             "firstname" => descending ? query.OrderByDescending(p => p.FirstName) : query.OrderBy(p => p.FirstName),
             "fullname" => descending ? query.OrderByDescending(p => p.FullName) : query.OrderBy(p => p.FullName),
@@ -56,6 +56,8 @@ public class PatientsController : ControllerBase
                 ? query.OrderByDescending(p => p.LastName).ThenByDescending(p => p.FirstName)
                 : query.OrderBy(p => p.LastName).ThenBy(p => p.FirstName)
         };
+
+        query = orderedQuery.ThenBy(p => p.PatientID);
 
         var totalCount = await query.CountAsync();
 
@@ -96,10 +98,10 @@ public class PatientsController : ControllerBase
         var patients = await _context.Patients
             .AsNoTracking()
             .Where(p =>
-                p.FirstName.Contains(query) ||
-                p.LastName.Contains(query) ||
-                (p.FullName != null && p.FullName.Contains(query)) ||
-                (p.MRN != null && p.MRN.Contains(query))
+                p.FirstName.StartsWith(query) ||
+                p.LastName.StartsWith(query) ||
+                (p.FullName != null && p.FullName.StartsWith(query)) ||
+                (p.MRN != null && p.MRN.StartsWith(query))
             )
             .OrderBy(p => p.LastName)
             .ThenBy(p => p.FirstName)
