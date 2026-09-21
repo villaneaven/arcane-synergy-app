@@ -1,6 +1,7 @@
 import { Transfer } from "./columns";
 import { TransferTableWrapper } from "./transfer-table-wrapper";
 import { getAccessToken } from "@/lib/auth";
+import { getServerApiBaseUrl } from "@/lib/api";
 
 export default async function Transfers({
   params,
@@ -11,7 +12,7 @@ export default async function Transfers({
   const { id } = await params;
 
   const res = await fetch(
-    `http://localhost:5201/api/transfers/admission/${id}`,
+    `${getServerApiBaseUrl()}/api/transfers/admission/${id}`,
     {
       cache: "no-store",
       headers: {

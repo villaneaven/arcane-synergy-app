@@ -52,6 +52,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { API_BASE_URL } from "@/lib/api";
 
 interface DataTableProps<TData extends { patientID: string }, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -152,7 +153,7 @@ export function DataTable<TData extends { patientID: string }, TValue>({
     try {
       for (const patientId of selectedRowIds) {
         const response = await fetch(
-          `http://localhost:5201/api/patients/${patientId}`,
+          `${API_BASE_URL}/api/patients/${patientId}`,
           {
             method: "DELETE",
             headers: {

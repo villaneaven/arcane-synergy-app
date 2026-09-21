@@ -3,6 +3,7 @@ import { Admission } from "./columns";
 import { AdmissionsTableWrapper } from "./admissions-table-wrapper";
 import { getAccessToken } from "@/lib/auth";
 import { PAGE_SIZE_COOKIE, parsePageSize } from "./page-size";
+import { getServerApiBaseUrl } from "@/lib/api";
 
 interface AdmissionsResponse {
   items: Admission[];
@@ -17,7 +18,7 @@ export default async function Admissions() {
   const pageSize = parsePageSize(cookieStore.get(PAGE_SIZE_COOKIE)?.value);
 
   const res = await fetch(
-    `http://localhost:5201/api/admissions?page=1&pageSize=${pageSize}`,
+    `${getServerApiBaseUrl()}/api/admissions?page=1&pageSize=${pageSize}`,
     {
       cache: "no-store",
       headers: {

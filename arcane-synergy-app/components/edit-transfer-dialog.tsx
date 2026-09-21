@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { TransferForm } from "@/components/transfer-form";
+import { API_BASE_URL } from "@/lib/api";
 
 type Transfer = {
   transferId: string;
@@ -61,7 +62,7 @@ export function EditTransferDialog({
 
     try {
       const response = await fetch(
-        `http://localhost:5201/api/transfers/${transfer.transferId}`,
+        `${API_BASE_URL}/api/transfers/${transfer.transferId}`,
         {
           method: "PUT",
           headers: {

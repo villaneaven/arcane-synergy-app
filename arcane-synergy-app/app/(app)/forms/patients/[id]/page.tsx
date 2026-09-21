@@ -2,6 +2,7 @@ import { getAccessToken } from "@/lib/auth";
 import { Patient } from "../columns";
 import { Admission } from "../../admissions/columns";
 import { PatientAdmissionsTable } from "./patient-admissions-table";
+import { getServerApiBaseUrl } from "@/lib/api";
 
 const SECTION_COLORS = {
   personalInfo: {
@@ -42,7 +43,7 @@ export default async function PatientPage({ params }: PatientPageProps) {
   const accessToken = await getAccessToken();
   const { id } = await params;
 
-  const res = await fetch(`http://localhost:5201/api/Patients/${id}`, {
+  const res = await fetch(`${getServerApiBaseUrl()}/api/Patients/${id}`, {
     cache: "no-store",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -56,7 +57,7 @@ export default async function PatientPage({ params }: PatientPageProps) {
   const patient: Patient = await res.json();
 
   const admissionsRes = await fetch(
-    `http://localhost:5201/api/admissions/patient/${id}`,
+    `${getServerApiBaseUrl()}/api/admissions/patient/${id}`,
     {
       cache: "no-store",
       headers: {

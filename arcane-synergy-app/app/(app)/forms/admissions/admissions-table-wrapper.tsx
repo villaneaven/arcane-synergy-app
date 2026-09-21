@@ -12,6 +12,7 @@ import type { SortingState } from "@tanstack/react-table";
 import { DataTable } from "./data-table";
 import { Admission, createColumns } from "./columns";
 import { PAGE_SIZE_COOKIE, PAGE_SIZE_OPTIONS } from "./page-size";
+import { API_BASE_URL } from "@/lib/api";
 
 interface AdmissionsTableWrapperProps {
   initialData: Admission[];
@@ -83,7 +84,7 @@ export function AdmissionsTableWrapper({
       setIsLoading(true);
       try {
         const res = await fetch(
-          `http://localhost:5201/api/admissions?${params.toString()}`,
+          `${API_BASE_URL}/api/admissions?${params.toString()}`,
           {
             cache: "no-store",
             headers: {

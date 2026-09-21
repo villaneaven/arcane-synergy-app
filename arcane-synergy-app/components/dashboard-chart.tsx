@@ -18,6 +18,7 @@ import {
   UNASSIGNED_GROUP,
   type RawGroupCount,
 } from "@/lib/group-breakdown";
+import { API_BASE_URL } from "@/lib/api";
 
 type SessionWithAccessToken =
   | {
@@ -95,7 +96,7 @@ export function DashboardChart({
         setIsLoading(true);
 
         const response = await fetch(
-          `http://localhost:5201/api/Admissions/count/monthly${
+          `${API_BASE_URL}/api/Admissions/count/monthly${
             queryString ? `?${queryString}` : ""
           }`,
           {
