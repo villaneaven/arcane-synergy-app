@@ -29,6 +29,13 @@ jobs:
           npm install
           npm run build --if-present
           npm run test --if-present
+        env:
+          AZURE_AD_CLIENT_ID: "placeholder-build-value"
+          AZURE_AD_CLIENT_SECRET: "placeholder-build-value"
+          AZURE_AD_TENANT_ID: "placeholder-build-value"
+          AZURE_AD_API_SCOPE: "placeholder-build-value"
+          AZURE_AD_API_ID_URI: "placeholder-build-value"
+          NEXTAUTH_SECRET: "placeholder-build-value"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
