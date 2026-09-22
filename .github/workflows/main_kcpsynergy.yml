@@ -69,4 +69,5 @@ jobs:
         with:
           app-name: "kcpsynergy"
           slot-name: "Production"
+          startup-command: "npm install --omit=dev --no-audit --no-fund && npm start"
           package: .
