@@ -41,7 +41,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: arcane-synergy-app
+          path: arcane-synergy-app/
+          include-hidden-files: true
 
   deploy:
     runs-on: ubuntu-latest
@@ -55,6 +56,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
+          path: .
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -69,5 +71,5 @@ jobs:
         with:
           app-name: "kcpsynergy"
           slot-name: "Production"
-          startup-command: "npm install --omit=dev --no-audit --no-fund && npm start"
+          startup-command: "npm start"
           package: .
