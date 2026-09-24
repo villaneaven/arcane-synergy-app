@@ -64,15 +64,29 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_32B71B8AC31E47088BDB9F07EDC2AF3E }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_6A8B89D2DB5543688BA52990A6B0D173 }}
 
+      - name: "Configure Azure App Service Settings"
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: "kcpsynergy"
+          app-settings-json: |
+            [
+              {
+                "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+                "value": "false",
+                "slotSetting": false
+              },
+              {
+                "name": "WEBSITE_WEBDEPLOY_USE_SCM",
+                "value": "true",
+                "slotSetting": false
+              }
+            ]
+
       - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: "kcpsynergy"
           slot-name: "Production"
-          # Tells Azure to strictly run our uploaded artifact build as-is
-          app-settings: |
-            SCM_DO_BUILD_DURING_DEPLOYMENT=false
-            WEBSITE_WEBDEPLOY_USE_SCM=true
           startup-command: "npm start"
           package: ./deploy-package
