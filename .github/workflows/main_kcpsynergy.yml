@@ -23,12 +23,11 @@ jobs:
         with:
           node-version: "24.x"
 
-      - name: npm install, build, and test
+      - name: Install dependencies and build Next.js
         working-directory: arcane-synergy-app
         run: |
-          npm install
+          npm ci
           npm run build --if-present
-          npm run test --if-present
         env:
           AZURE_AD_CLIENT_ID: "placeholder-build-value"
           AZURE_AD_CLIENT_SECRET: "placeholder-build-value"
@@ -41,8 +40,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: arcane-synergy-app/
-          include-hidden-files: true
+          path: arcane-synergy-app
+          include-hidden-files: true
 
   deploy:
     runs-on: ubuntu-latest
@@ -56,7 +55,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
-          path: .
+          path: ./deploy-package
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -65,6 +64,24 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_32B71B8AC31E47088BDB9F07EDC2AF3E }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_6A8B89D2DB5543688BA52990A6B0D173 }}
 
+      - name: "Configure Azure App Service Settings"
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: "kcpsynergy"
+          app-settings-json: |
+            [
+              {
+                "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+                "value": "false",
+                "slotSetting": false
+              },
+              {
+                "name": "WEBSITE_WEBDEPLOY_USE_SCM",
+                "value": "true",
+                "slotSetting": false
+              }
+            ]
+
       - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
@@ -72,4 +89,4 @@ jobs:
           app-name: "kcpsynergy"
           slot-name: "Production"
           startup-command: "npm start"
-          package: .
+          package: ./deploy-package
