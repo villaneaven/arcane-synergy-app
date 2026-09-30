@@ -185,6 +185,9 @@ export function AppSidebar() {
                       <DropdownMenuItem asChild>
                         <Link href={"/forms/admissions"}>Admissions</Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={"/forms/gaps"}>Gaps</Link>
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </SidebarMenuItem>
@@ -231,6 +234,17 @@ export function AppSidebar() {
                           >
                             <Link href={`/forms/admissions`}>
                               <span>{`Admissions`}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem key={`Gaps`}>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={pathname === "/forms/gaps"}
+                            className={ACTIVE_ITEM_CLASS}
+                          >
+                            <Link href={`/forms/gaps`}>
+                              <span>{`Gaps`}</span>
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
