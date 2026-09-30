@@ -13,10 +13,25 @@ namespace arcane_synergy_app_backend.Data
         public DbSet<Patient> Patients { get; set; } = null!;
         public DbSet<Admission> Admissions { get; set; } = null!;
         public DbSet<Transfer> Transfers { get; set; } = null!;
+        public DbSet<GapWorklistItem> GapWorklist { get; set; } = null!;
+        public DbSet<GapWorkStatus> GapWorkStatuses { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<GapWorklistItem>(e =>
+            {
+                e.HasNoKey();
+                e.ToView("GapWorklist");
+            });
+
+            // Table is owned outside EF migrations; never create or alter it from here.
+            modelBuilder.Entity<GapWorkStatus>(e =>
+            {
+                e.ToTable("GapWorkStatus", t => t.ExcludeFromMigrations());
+                e.HasKey(s => new { s.Insurance, s.MemberId, s.MetricType });
+            });
 
             modelBuilder.Entity<Transfer>()
                 .HasIndex(t => t.AdmissionId)
