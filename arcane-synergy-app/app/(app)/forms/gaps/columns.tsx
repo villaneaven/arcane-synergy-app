@@ -54,7 +54,6 @@ export const DEFAULT_GAP_FILTERS: GapFilters = {
   teamStatus: "all",
 };
 
-// Select values must be strings, so a provider/insurance pair is encoded as JSON.
 export const encodeProviderInsurance = (pair: ProviderInsurance) =>
   JSON.stringify([pair.providerName, pair.insurance]);
 
