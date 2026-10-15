@@ -12,12 +12,15 @@ import {
 } from "@tanstack/react-table";
 
 import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -36,7 +39,55 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { COLUMN_LABELS, Gap, HIDDEN_BY_DEFAULT, gapKey } from "./columns";
+import {
+  COLUMN_LABELS,
+  Gap,
+  GapFilterOptions,
+  GapFilters,
+  HIDDEN_BY_DEFAULT,
+  gapKey,
+} from "./columns";
+
+interface FilterSelectProps {
+  label: string;
+  allLabel: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}
+
+function FilterSelect({
+  label,
+  allLabel,
+  value,
+  options,
+  onChange,
+}: FilterSelectProps) {
+  return (
+    <Field className="w-full max-w-48">
+      <FieldLabel>{label}</FieldLabel>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-45">
+          <SelectValue placeholder={allLabel} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectLabel>{label}</SelectLabel>
+            <SelectItem value="all">{allLabel}</SelectItem>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </Field>
+  );
+}
+
+const toOptions = (values: string[]) =>
+  values.map((value) => ({ value, label: value }));
 
 interface DataTableProps<TValue> {
   columns: ColumnDef<Gap, TValue>[];
@@ -50,6 +101,9 @@ interface DataTableProps<TValue> {
   onSortingChange: OnChangeFn<SortingState>;
   searchValue: string;
   onSearchChange: (value: string) => void;
+  filters: GapFilters;
+  filterOptions: GapFilterOptions;
+  onFilterChange: (key: keyof GapFilters, value: string) => void;
   onPageChange: (pageIndex: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   pageSizeOptions: number[];
@@ -67,6 +121,9 @@ export function DataTable<TValue>({
   onSortingChange,
   searchValue,
   onSearchChange,
+  filters,
+  filterOptions,
+  onFilterChange,
   onPageChange,
   onPageSizeChange,
   pageSizeOptions,
@@ -119,6 +176,39 @@ export function DataTable<TValue>({
 
   return (
     <div>
+      <div className="flex w-full flex-wrap items-center gap-4">
+        <FilterSelect
+          label="Insurance"
+          allLabel="All Insurances"
+          value={filters.insurance}
+          options={toOptions(filterOptions.insurances)}
+          onChange={(value) => onFilterChange("insurance", value)}
+        />
+        <FilterSelect
+          label="Provider"
+          allLabel="All Providers"
+          value={filters.providerName}
+          options={toOptions(filterOptions.providers)}
+          onChange={(value) => onFilterChange("providerName", value)}
+        />
+        <FilterSelect
+          label="Metric Type"
+          allLabel="All Metric Types"
+          value={filters.metricType}
+          options={toOptions(filterOptions.metricTypes)}
+          onChange={(value) => onFilterChange("metricType", value)}
+        />
+        <FilterSelect
+          label="Status"
+          allLabel="All Statuses"
+          value={filters.teamStatus}
+          options={[
+            ...toOptions(filterOptions.teamStatuses),
+            { value: "none", label: "No Status" },
+          ]}
+          onChange={(value) => onFilterChange("teamStatus", value)}
+        />
+      </div>
       <div className="flex items-center py-4">
         <Input
           placeholder="Search name, member ID, metric, provider..."

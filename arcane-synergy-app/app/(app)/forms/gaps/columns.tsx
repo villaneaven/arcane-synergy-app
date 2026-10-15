@@ -31,6 +31,27 @@ export type GapStatusUpdate = Pick<
   "teamStatus" | "statusDate" | "updatedAt" | "updatedBy"
 >;
 
+export type GapFilterOptions = {
+  insurances: string[];
+  providers: string[];
+  metricTypes: string[];
+  teamStatuses: string[];
+};
+
+export type GapFilters = {
+  insurance: string;
+  providerName: string;
+  metricType: string;
+  teamStatus: string;
+};
+
+export const DEFAULT_GAP_FILTERS: GapFilters = {
+  insurance: "all",
+  providerName: "all",
+  metricType: "all",
+  teamStatus: "all",
+};
+
 export const gapKey = (
   gap: Pick<Gap, "insurance" | "memberId" | "metricType">,
 ) => `${gap.insurance}|${gap.memberId}|${gap.metricType}`;
