@@ -45,6 +45,7 @@ import {
   GapFilterOptions,
   GapFilters,
   HIDDEN_BY_DEFAULT,
+  encodeProviderInsurance,
   gapKey,
 } from "./columns";
 
@@ -178,18 +179,14 @@ export function DataTable<TValue>({
     <div>
       <div className="flex w-full flex-wrap items-center gap-4">
         <FilterSelect
-          label="Insurance"
-          allLabel="All Insurances"
-          value={filters.insurance}
-          options={toOptions(filterOptions.insurances)}
-          onChange={(value) => onFilterChange("insurance", value)}
-        />
-        <FilterSelect
-          label="Provider"
+          label="Provider / Insurance"
           allLabel="All Providers"
-          value={filters.providerName}
-          options={toOptions(filterOptions.providers)}
-          onChange={(value) => onFilterChange("providerName", value)}
+          value={filters.providerInsurance}
+          options={filterOptions.providerInsurances.map((pair) => ({
+            value: encodeProviderInsurance(pair),
+            label: `${pair.providerName} / ${pair.insurance}`,
+          }))}
+          onChange={(value) => onFilterChange("providerInsurance", value)}
         />
         <FilterSelect
           label="Metric Type"

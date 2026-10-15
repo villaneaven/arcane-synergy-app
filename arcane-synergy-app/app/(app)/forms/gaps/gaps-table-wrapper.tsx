@@ -17,6 +17,7 @@ import {
   GapFilters,
   GapStatusUpdate,
   createColumns,
+  decodeProviderInsurance,
   gapKey,
 } from "./columns";
 import { PAGE_SIZE_COOKIE, PAGE_SIZE_OPTIONS } from "./page-size";
@@ -77,9 +78,15 @@ export function GapsTableWrapper({
         pageSize: String(targetPageSize),
       });
       if (targetSearch.trim()) params.set("search", targetSearch.trim());
-      for (const [key, value] of Object.entries(targetFilters)) {
-        if (value !== "all") params.set(key, value);
+      const { providerInsurance, metricType, teamStatus } = targetFilters;
+      if (providerInsurance !== "all") {
+        const { providerName, insurance } =
+          decodeProviderInsurance(providerInsurance);
+        params.set("providerName", providerName);
+        params.set("insurance", insurance);
       }
+      if (metricType !== "all") params.set("metricType", metricType);
+      if (teamStatus !== "all") params.set("teamStatus", teamStatus);
       if (targetSorting[0]) {
         params.set("sortBy", targetSorting[0].id);
         params.set("sortDir", targetSorting[0].desc ? "desc" : "asc");
