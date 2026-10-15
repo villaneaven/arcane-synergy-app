@@ -14,7 +14,6 @@ namespace arcane_synergy_app_backend.Controllers;
 public class GapsController : ControllerBase
 {
     private static readonly string[] AllowedTeamStatuses = { "Submitted", "Pending" };
-    // Sentinel teamStatus filter value for gaps that have no status yet.
     private const string NoTeamStatus = "none";
     private static readonly TimeZoneInfo StaffTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Chicago");
 
