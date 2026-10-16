@@ -36,6 +36,7 @@ export type GapFilterOptions = {
   insurances: string[];
   groups: string[];
   providers: string[];
+  providersByGroup: Record<string, string[]>;
   metricTypes: string[];
   teamStatuses: string[];
 };
@@ -55,6 +56,14 @@ export const DEFAULT_GAP_FILTERS: GapFilters = {
   metricType: "all",
   teamStatus: "all",
 };
+
+export const providersForGroup = (
+  options: GapFilterOptions,
+  groupName: string,
+) =>
+  groupName === "all"
+    ? options.providers
+    : (options.providersByGroup[groupName] ?? []);
 
 export const gapKey = (
   gap: Pick<Gap, "insurance" | "memberId" | "metricType">,

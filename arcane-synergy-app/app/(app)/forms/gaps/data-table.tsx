@@ -46,6 +46,7 @@ import {
   GapFilters,
   HIDDEN_BY_DEFAULT,
   gapKey,
+  providersForGroup,
 } from "./columns";
 
 interface FilterSelectProps {
@@ -195,7 +196,9 @@ export function DataTable<TValue>({
           label="Provider"
           allLabel="All Providers"
           value={filters.providerName}
-          options={toOptions(filterOptions.providers)}
+          options={toOptions(
+            providersForGroup(filterOptions, filters.groupName),
+          )}
           onChange={(value) => onFilterChange("providerName", value)}
         />
         <FilterSelect
