@@ -14,6 +14,7 @@ namespace arcane_synergy_app_backend.Controllers;
 public class GapsController : ControllerBase
 {
     private static readonly string[] AllowedTeamStatuses = { "Submitted", "Pending" };
+    private const string NoTeamStatus = "none";
     private static readonly TimeZoneInfo StaffTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Chicago");
 
     private readonly ArcaneSynergyContext _context;
@@ -29,7 +30,11 @@ public class GapsController : ControllerBase
         [FromQuery] int pageSize = 25,
         [FromQuery] string? search = null,
         [FromQuery] string? sortBy = null,
-        [FromQuery] string? sortDir = "asc")
+        [FromQuery] string? sortDir = "asc",
+        [FromQuery] string? insurance = null,
+        [FromQuery] string? providerName = null,
+        [FromQuery] string? metricType = null,
+        [FromQuery] string? teamStatus = null)
     {
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -44,6 +49,19 @@ public class GapsController : ControllerBase
                 g.MemberId.StartsWith(term) ||
                 g.MetricType.Contains(term) ||
                 (g.ProviderName != null && g.ProviderName.Contains(term)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(insurance))
+            query = query.Where(g => g.Insurance == insurance);
+        if (!string.IsNullOrWhiteSpace(providerName))
+            query = query.Where(g => g.ProviderName == providerName);
+        if (!string.IsNullOrWhiteSpace(metricType))
+            query = query.Where(g => g.MetricType == metricType);
+        if (!string.IsNullOrWhiteSpace(teamStatus))
+        {
+            query = string.Equals(teamStatus, NoTeamStatus, StringComparison.OrdinalIgnoreCase)
+                ? query.Where(g => g.TeamStatus == null)
+                : query.Where(g => g.TeamStatus == teamStatus);
         }
 
         bool descending = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
@@ -82,6 +100,37 @@ public class GapsController : ControllerBase
             totalCount,
             page,
             pageSize
+        });
+    }
+
+    [HttpGet("filters")]
+    public async Task<IActionResult> GetFilterOptions()
+    {
+        var gaps = _context.GapWorklist.AsNoTracking();
+
+        var insurances = await gaps
+            .Select(g => g.Insurance)
+            .Distinct()
+            .OrderBy(v => v)
+            .ToListAsync();
+        var providers = await gaps
+            .Where(g => g.ProviderName != null && g.ProviderName != "")
+            .Select(g => g.ProviderName!)
+            .Distinct()
+            .OrderBy(v => v)
+            .ToListAsync();
+        var metricTypes = await gaps
+            .Select(g => g.MetricType)
+            .Distinct()
+            .OrderBy(v => v)
+            .ToListAsync();
+
+        return Ok(new
+        {
+            insurances,
+            providers,
+            metricTypes,
+            teamStatuses = AllowedTeamStatuses
         });
     }
 
