@@ -10,7 +10,15 @@ import React, {
 import { useSession } from "next-auth/react";
 import type { SortingState } from "@tanstack/react-table";
 import { DataTable } from "./data-table";
-import { Gap, GapStatusUpdate, createColumns, gapKey } from "./columns";
+import {
+  DEFAULT_GAP_FILTERS,
+  Gap,
+  GapFilterOptions,
+  GapFilters,
+  GapStatusUpdate,
+  createColumns,
+  gapKey,
+} from "./columns";
 import { PAGE_SIZE_COOKIE, PAGE_SIZE_OPTIONS } from "./page-size";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -18,6 +26,7 @@ interface GapsTableWrapperProps {
   initialData: Gap[];
   initialTotalCount: number;
   pageSize: number;
+  filterOptions: GapFilterOptions;
 }
 
 interface GapsResponse {
@@ -31,6 +40,7 @@ export function GapsTableWrapper({
   initialData,
   initialTotalCount,
   pageSize: initialPageSize,
+  filterOptions,
 }: GapsTableWrapperProps) {
   const { data: session } = useSession();
   const [data, setData] = useState<Gap[]>(initialData);
@@ -39,6 +49,7 @@ export function GapsTableWrapper({
   const [pageSize, setPageSize] = useState(initialPageSize);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<GapFilters>(DEFAULT_GAP_FILTERS);
   const [isLoading, setIsLoading] = useState(false);
 
   const isFirstRender = useRef(true);
@@ -56,6 +67,7 @@ export function GapsTableWrapper({
       targetPageSize: number,
       targetSorting: SortingState,
       targetSearch: string,
+      targetFilters: GapFilters,
     ) => {
       const accessToken = (session as { access_token?: string })?.access_token;
       if (!accessToken) return;
@@ -65,6 +77,9 @@ export function GapsTableWrapper({
         pageSize: String(targetPageSize),
       });
       if (targetSearch.trim()) params.set("search", targetSearch.trim());
+      for (const [key, value] of Object.entries(targetFilters)) {
+        if (value !== "all") params.set(key, value);
+      }
       if (targetSorting[0]) {
         params.set("sortBy", targetSorting[0].id);
         params.set("sortDir", targetSorting[0].desc ? "desc" : "asc");
@@ -110,8 +125,8 @@ export function GapsTableWrapper({
       return;
     }
     clearTimeout(searchDebounceRef.current);
-    fetchGaps(pageIndex, pageSize, sorting, search);
-  }, [pageIndex, pageSize, sorting]);
+    fetchGaps(pageIndex, pageSize, sorting, search, filters);
+  }, [pageIndex, pageSize, sorting, filters]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((old: SortingState) => SortingState)) => {
@@ -131,10 +146,18 @@ export function GapsTableWrapper({
       setPageIndex(0);
       clearTimeout(searchDebounceRef.current);
       searchDebounceRef.current = setTimeout(() => {
-        fetchGaps(0, pageSize, sorting, value);
+        fetchGaps(0, pageSize, sorting, value, filters);
       }, 400);
     },
-    [fetchGaps, pageSize, sorting],
+    [fetchGaps, pageSize, sorting, filters],
+  );
+
+  const handleFilterChange = useCallback(
+    (key: keyof GapFilters, value: string) => {
+      setFilters((old) => ({ ...old, [key]: value }));
+      setPageIndex(0);
+    },
+    [],
   );
 
   const handlePageSizeChange = useCallback((newPageSize: number) => {
@@ -169,6 +192,9 @@ export function GapsTableWrapper({
       onSortingChange={handleSortingChange}
       searchValue={search}
       onSearchChange={handleSearchChange}
+      filters={filters}
+      filterOptions={filterOptions}
+      onFilterChange={handleFilterChange}
       onPageChange={setPageIndex}
       onPageSizeChange={handlePageSizeChange}
       pageSizeOptions={PAGE_SIZE_OPTIONS}
