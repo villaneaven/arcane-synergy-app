@@ -18,6 +18,7 @@ import {
   GapStatusUpdate,
   createColumns,
   gapKey,
+  providersForGroup,
 } from "./columns";
 import { PAGE_SIZE_COOKIE, PAGE_SIZE_OPTIONS } from "./page-size";
 import { API_BASE_URL } from "@/lib/api";
@@ -154,10 +155,20 @@ export function GapsTableWrapper({
 
   const handleFilterChange = useCallback(
     (key: keyof GapFilters, value: string) => {
-      setFilters((old) => ({ ...old, [key]: value }));
+      setFilters((old) => {
+        const next = { ...old, [key]: value };
+        if (
+          key === "groupName" &&
+          next.providerName !== "all" &&
+          !providersForGroup(filterOptions, value).includes(next.providerName)
+        ) {
+          next.providerName = "all";
+        }
+        return next;
+      });
       setPageIndex(0);
     },
-    [],
+    [filterOptions],
   );
 
   const handlePageSizeChange = useCallback((newPageSize: number) => {

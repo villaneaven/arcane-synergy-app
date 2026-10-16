@@ -129,6 +129,14 @@ public class GapsController : ControllerBase
             .Distinct()
             .OrderBy(v => v)
             .ToListAsync();
+        var groupProviders = await gaps
+            .Where(g => g.GroupName != null && g.GroupName != "" && g.ProviderName != null && g.ProviderName != "")
+            .Select(g => new { GroupName = g.GroupName!, ProviderName = g.ProviderName! })
+            .Distinct()
+            .ToListAsync();
+        var providersByGroup = groupProviders
+            .GroupBy(p => p.GroupName)
+            .ToDictionary(g => g.Key, g => g.Select(p => p.ProviderName).OrderBy(v => v).ToList());
         var metricTypes = await gaps
             .Select(g => g.MetricType)
             .Distinct()
@@ -140,6 +148,7 @@ public class GapsController : ControllerBase
             insurances,
             groups,
             providers,
+            providersByGroup,
             metricTypes,
             teamStatuses = AllowedTeamStatuses
         });
