@@ -108,16 +108,12 @@ public class GapsController : ControllerBase
     {
         var gaps = _context.GapWorklist.AsNoTracking();
 
-        var insurances = await gaps
-            .Select(g => g.Insurance)
-            .Distinct()
-            .OrderBy(v => v)
-            .ToListAsync();
-        var providers = await gaps
+        var providerInsurances = await gaps
             .Where(g => g.ProviderName != null && g.ProviderName != "")
-            .Select(g => g.ProviderName!)
+            .Select(g => new { providerName = g.ProviderName!, insurance = g.Insurance })
             .Distinct()
-            .OrderBy(v => v)
+            .OrderBy(p => p.providerName)
+            .ThenBy(p => p.insurance)
             .ToListAsync();
         var metricTypes = await gaps
             .Select(g => g.MetricType)
@@ -127,8 +123,7 @@ public class GapsController : ControllerBase
 
         return Ok(new
         {
-            insurances,
-            providers,
+            providerInsurances,
             metricTypes,
             teamStatuses = AllowedTeamStatuses
         });
