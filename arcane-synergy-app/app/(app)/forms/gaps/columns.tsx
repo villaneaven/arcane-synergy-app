@@ -14,6 +14,7 @@ export type Gap = {
   dob: string | null;
   providerName: string | null;
   providerNpi: string | null;
+  groupName: string | null;
   phone: string | null;
   rosterDate: string | null;
   workItemType: string | null;
@@ -33,6 +34,7 @@ export type GapStatusUpdate = Pick<
 
 export type GapFilterOptions = {
   insurances: string[];
+  groups: string[];
   providers: string[];
   metricTypes: string[];
   teamStatuses: string[];
@@ -40,6 +42,7 @@ export type GapFilterOptions = {
 
 export type GapFilters = {
   insurance: string;
+  groupName: string;
   providerName: string;
   metricType: string;
   teamStatus: string;
@@ -47,6 +50,7 @@ export type GapFilters = {
 
 export const DEFAULT_GAP_FILTERS: GapFilters = {
   insurance: "all",
+  groupName: "all",
   providerName: "all",
   metricType: "all",
   teamStatus: "all",
@@ -64,6 +68,7 @@ export const COLUMN_LABELS: Record<string, string> = {
   metricType: "Metric Type",
   providerName: "Provider",
   providerNpi: "Provider NPI",
+  groupName: "Group Name",
   phone: "Phone",
   rosterDate: "Roster Date",
   workItemType: "Work Item Type",
@@ -117,6 +122,7 @@ export const createColumns = (
   { accessorKey: "metricType", header: sortableHeader("Metric Type") },
   { accessorKey: "providerName", header: sortableHeader("Provider") },
   { accessorKey: "providerNpi", header: "Provider NPI", enableSorting: false },
+  { accessorKey: "groupName", header: sortableHeader("Group Name") },
   { accessorKey: "phone", header: "Phone", enableSorting: false },
   {
     accessorKey: "rosterDate",

@@ -32,6 +32,7 @@ public class GapsController : ControllerBase
         [FromQuery] string? sortBy = null,
         [FromQuery] string? sortDir = "asc",
         [FromQuery] string? insurance = null,
+        [FromQuery] string? groupName = null,
         [FromQuery] string? providerName = null,
         [FromQuery] string? metricType = null,
         [FromQuery] string? teamStatus = null)
@@ -53,6 +54,8 @@ public class GapsController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(insurance))
             query = query.Where(g => g.Insurance == insurance);
+        if (!string.IsNullOrWhiteSpace(groupName))
+            query = query.Where(g => g.GroupName == groupName);
         if (!string.IsNullOrWhiteSpace(providerName))
             query = query.Where(g => g.ProviderName == providerName);
         if (!string.IsNullOrWhiteSpace(metricType))
@@ -72,6 +75,7 @@ public class GapsController : ControllerBase
             "memberid" => descending ? query.OrderByDescending(g => g.MemberId) : query.OrderBy(g => g.MemberId),
             "metrictype" => descending ? query.OrderByDescending(g => g.MetricType) : query.OrderBy(g => g.MetricType),
             "providername" => descending ? query.OrderByDescending(g => g.ProviderName) : query.OrderBy(g => g.ProviderName),
+            "groupname" => descending ? query.OrderByDescending(g => g.GroupName) : query.OrderBy(g => g.GroupName),
             "workitemtype" => descending ? query.OrderByDescending(g => g.WorkItemType) : query.OrderBy(g => g.WorkItemType),
             "lastseendate" => descending ? query.OrderByDescending(g => g.LastSeenDate) : query.OrderBy(g => g.LastSeenDate),
             "teamstatus" => descending ? query.OrderByDescending(g => g.TeamStatus) : query.OrderBy(g => g.TeamStatus),
@@ -113,6 +117,12 @@ public class GapsController : ControllerBase
             .Distinct()
             .OrderBy(v => v)
             .ToListAsync();
+        var groups = await gaps
+            .Where(g => g.GroupName != null && g.GroupName != "")
+            .Select(g => g.GroupName!)
+            .Distinct()
+            .OrderBy(v => v)
+            .ToListAsync();
         var providers = await gaps
             .Where(g => g.ProviderName != null && g.ProviderName != "")
             .Select(g => g.ProviderName!)
@@ -128,6 +138,7 @@ public class GapsController : ControllerBase
         return Ok(new
         {
             insurances,
+            groups,
             providers,
             metricTypes,
             teamStatuses = AllowedTeamStatuses

@@ -16,6 +16,8 @@ namespace arcane_synergy_app_backend.Models
         public string? ProviderName { get; set; }
         [Column("Provider_NPI")]
         public string? ProviderNpi { get; set; }
+        [Column("Group_Name")]
+        public string? GroupName { get; set; }
         public string? Phone { get; set; }
         [Column("Roster_Date")]
         public DateOnly? RosterDate { get; set; }
