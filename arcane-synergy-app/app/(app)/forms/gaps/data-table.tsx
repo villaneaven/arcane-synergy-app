@@ -185,6 +185,13 @@ export function DataTable<TValue>({
           onChange={(value) => onFilterChange("insurance", value)}
         />
         <FilterSelect
+          label="Group"
+          allLabel="All Groups"
+          value={filters.groupName}
+          options={toOptions(filterOptions.groups)}
+          onChange={(value) => onFilterChange("groupName", value)}
+        />
+        <FilterSelect
           label="Provider"
           allLabel="All Providers"
           value={filters.providerName}
