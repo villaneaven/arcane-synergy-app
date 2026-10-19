@@ -31,35 +31,25 @@ export type GapStatusUpdate = Pick<
   "teamStatus" | "statusDate" | "updatedAt" | "updatedBy"
 >;
 
-export type ProviderInsurance = {
-  providerName: string;
-  insurance: string;
-};
-
 export type GapFilterOptions = {
-  providerInsurances: ProviderInsurance[];
+  insurances: string[];
+  providers: string[];
   metricTypes: string[];
   teamStatuses: string[];
 };
 
 export type GapFilters = {
-  providerInsurance: string;
+  insurance: string;
+  providerName: string;
   metricType: string;
   teamStatus: string;
 };
 
 export const DEFAULT_GAP_FILTERS: GapFilters = {
-  providerInsurance: "all",
+  insurance: "all",
+  providerName: "all",
   metricType: "all",
   teamStatus: "all",
-};
-
-export const encodeProviderInsurance = (pair: ProviderInsurance) =>
-  JSON.stringify([pair.providerName, pair.insurance]);
-
-export const decodeProviderInsurance = (value: string): ProviderInsurance => {
-  const [providerName, insurance] = JSON.parse(value) as [string, string];
-  return { providerName, insurance };
 };
 
 export const gapKey = (
