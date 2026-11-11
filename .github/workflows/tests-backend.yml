@@ -1,0 +1,49 @@
+name: Backend tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch supersedes an in-flight run.
+concurrency:
+  group: backend-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: xUnit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # This is required for actions/checkout
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore arcane-synergy-app-backend.Tests/arcane-synergy-app-backend.Tests.csproj
+
+      # The tests run against an EF Core in-memory database, so no SQL Server
+      # instance or connection string is needed here.
+      - name: Test
+        run: >-
+          dotnet test arcane-synergy-app-backend.Tests/arcane-synergy-app-backend.Tests.csproj
+          --configuration Release
+          --no-restore
+          --logger "trx;LogFileName=backend-tests.trx"
+          --results-directory TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: TestResults/*.trx
+          if-no-files-found: ignore
