@@ -63,6 +63,12 @@ namespace arcane_synergy_app_backend.Data
                 .HasConversion(
                     v => v,
                     v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
+
+            modelBuilder.Entity<Transfer>()
+                .Property(t => t.LastEditedAt)
+                .HasConversion(
+                    v => v,
+                    v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
         }
     }
 }
