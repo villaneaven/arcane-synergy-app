@@ -28,6 +28,7 @@ type Admission = {
   dischargeTo?: string;
   dateSeen?: string | undefined;
   seenBy?: string;
+  notes?: string;
 };
 
 export function EditAdmissionDialog({
@@ -53,6 +54,7 @@ export function EditAdmissionDialog({
     dischargeTo?: string;
     dateSeen?: string | undefined;
     seenBy?: string;
+    notes?: string;
   }) => {
     const admissionData = {
       ...formData,
@@ -124,6 +126,7 @@ export function EditAdmissionDialog({
             dischargeTo: admission.dischargeTo ?? undefined,
             dateSeen: admission.dateSeen ?? undefined,
             seenBy: admission.seenBy ?? undefined,
+            notes: admission.notes ?? undefined,
           }}
         />
       </DialogContent>

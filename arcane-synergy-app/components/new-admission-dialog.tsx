@@ -35,6 +35,7 @@ export function NewAdmissionDialog({
     dischargeTo?: string;
     dateSeen?: string | undefined;
     seenBy?: string;
+    notes?: string;
   }) => {
     const accessToken = (session as { access_token?: string })?.access_token;
 

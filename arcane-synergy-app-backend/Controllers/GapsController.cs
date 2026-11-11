@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using arcane_synergy_app_backend.Data;
+using arcane_synergy_app_backend.Extensions;
 using arcane_synergy_app_backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -170,7 +170,7 @@ public class GapsController : ControllerBase
             g.MetricType == request.MetricType);
         if (!gapExists) return NotFound();
 
-        var updatedBy = GetCurrentUserName();
+        var updatedBy = User.GetUserName();
         if (updatedBy == null) return Forbid();
 
         var now = DateTime.UtcNow;
@@ -207,17 +207,5 @@ public class GapsController : ControllerBase
             status.UpdatedAt,
             status.UpdatedBy
         });
-    }
-
-    private string? GetCurrentUserName()
-    {
-        string[] claimTypes =
-        {
-            "preferred_username", "upn", ClaimTypes.Upn, "unique_name", ClaimTypes.Name, "email", ClaimTypes.Email, "name"
-        };
-        var value = claimTypes
-            .Select(t => User.FindFirst(t)?.Value)
-            .FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
-        return value?.Length > 255 ? value[..255] : value;
     }
 }

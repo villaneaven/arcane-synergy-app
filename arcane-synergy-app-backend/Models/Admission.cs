@@ -23,6 +23,12 @@ namespace arcane_synergy_app_backend.Models
         public string? DischargeTo { get; set; }
         public DateTime? DateSeen { get; set; }
         public string? SeenBy { get; set; }
+        [MaxLength(2000)]
+        public string? Notes { get; set; }
+
+        [MaxLength(255)]
+        public string? LastEditedBy { get; set; }
+        public DateTime? LastEditedAt { get; set; }
 
         //these will be calculated
         public int TotalERVisits { get; set; }
