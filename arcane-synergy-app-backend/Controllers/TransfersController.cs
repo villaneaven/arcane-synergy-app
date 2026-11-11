@@ -216,6 +216,60 @@ public class TransfersController : ControllerBase
 		return Ok(existingTransfer);
 	}
 
+	[HttpPost("{id}/move-to-admission")]
+	public async Task<IActionResult> MoveTransferToAdmission(int id)
+	{
+		var editedBy = User.GetUserName();
+		if (editedBy == null) return Forbid();
+
+		var transfer = await _context.Transfers
+			.Include(t => t.Admission)
+			.FirstOrDefaultAsync(t => t.TransferId == id);
+
+		if (transfer == null)
+		{
+			return NotFound();
+		}
+
+		if (transfer.Admission == null)
+		{
+			return NotFound("The admission this transfer belongs to no longer exists.");
+		}
+
+		var admission = new Admission
+		{
+			PatientID = transfer.Admission.PatientID,
+			FacilityType = transfer.FacilityType,
+			Facility = transfer.Facility,
+			Type = transfer.Type,
+			TimeOfAdmission = transfer.TimeOfAdmission,
+			DX = transfer.DX,
+			NotificationSource = transfer.NotificationSource,
+			DateNotified = transfer.DateNotified,
+			AdmissionDate = transfer.AdmissionDate,
+			DischargeDate = transfer.DischargeDate,
+			DischargeTo = transfer.DischargeTo,
+			Notes = transfer.Notes,
+			LastEditedBy = editedBy,
+			LastEditedAt = DateTime.UtcNow
+		};
+
+		admission.UpdateCalculatedFields();
+
+		_context.Admissions.Add(admission);
+		_context.Transfers.Remove(transfer);
+
+		await AdjustAdmissionAsync(
+			transfer.AdmissionId,
+			transferCountDelta: -1,
+			updateFinalDischargeDate: transfer.IsFinalDischarge,
+			finalDischargeDate: null);
+
+		await _context.SaveChangesAsync();
+
+		return Ok(admission);
+	}
+
 	[HttpDelete("{id}")]
 	public async Task<IActionResult> Delete(int id)
 	{
