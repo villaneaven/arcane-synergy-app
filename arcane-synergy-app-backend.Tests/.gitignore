@@ -1,0 +1,13 @@
+# .NET
+bin/
+obj/
+
+# Test results
+TestResults/
+*.trx
+coverage.*
+
+# Visual Studio
+.vs/
+*.user
+*.suo
