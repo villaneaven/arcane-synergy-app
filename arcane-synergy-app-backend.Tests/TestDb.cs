@@ -1,5 +1,8 @@
+using System.Security.Claims;
 using arcane_synergy_app_backend.Data;
 using arcane_synergy_app_backend.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace arcane_synergy_app_backend.Tests;
@@ -69,6 +72,31 @@ internal static class TestDb
 
         admission.UpdateCalculatedFields();
         return admission;
+    }
+
+    /// <summary>
+    /// Gives the controller the authenticated principal that the real request
+    /// pipeline would supply. Actions that stamp audit fields read
+    /// <c>User.GetUserName()</c>, and <c>ControllerBase.User</c> is null until a
+    /// <see cref="ControllerContext"/> exists. Pass <c>null</c> to simulate a
+    /// token that carries none of the recognised username claims.
+    /// </summary>
+    public static T WithUser<T>(this T controller, string? userName = "test.user@example.com")
+        where T : ControllerBase
+    {
+        var claims = userName is null
+            ? Array.Empty<Claim>()
+            : new[] { new Claim("preferred_username", userName) };
+
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth")),
+            },
+        };
+
+        return controller;
     }
 
     /// <summary>First day of the month, <paramref name="monthsAgo"/> months back.</summary>
