@@ -28,6 +28,7 @@ type Transfer = {
   notificationSource?: string;
   dateNotified: string;
   dischargeTo?: string;
+  notes?: string;
 };
 
 export function EditTransferDialog({
@@ -52,6 +53,7 @@ export function EditTransferDialog({
     notificationSource?: string;
     dateNotified: string;
     dischargeTo?: string;
+    notes?: string;
   }) => {
     const transferData = {
       ...formData,
@@ -132,6 +134,7 @@ export function EditTransferDialog({
             notificationSource: transfer.notificationSource,
             dateNotified: transfer.dateNotified,
             dischargeTo: transfer.dischargeTo,
+            notes: transfer.notes ?? undefined,
           }}
         />
       </DialogContent>
