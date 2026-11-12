@@ -1,0 +1,6 @@
+# Test output written at the repository root by `dotnet test --results-directory`
+TestResults/
+
+# OS
+.DS_Store
+Thumbs.db

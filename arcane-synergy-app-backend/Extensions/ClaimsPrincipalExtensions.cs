@@ -11,6 +11,8 @@ public static class ClaimsPrincipalExtensions
 
     public static string? GetUserName(this ClaimsPrincipal user)
     {
+        if (user is null) return null;
+
         var value = UserNameClaimTypes
             .Select(t => user.FindFirst(t)?.Value)
             .FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
