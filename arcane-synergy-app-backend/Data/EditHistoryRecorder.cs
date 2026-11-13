@@ -59,8 +59,6 @@ internal static class EditHistoryRecorder
             switch (entry.State)
             {
                 case EntityState.Added:
-                    // The key is database-generated, so it is only known once
-                    // the insert has been saved.
                     pending.Add(new PendingEditHistory(
                         entry,
                         NewRecord(entry, EditHistory.ChangeTypes.Insert, changedBy, changedAt),
@@ -99,8 +97,6 @@ internal static class EditHistoryRecorder
             var oldValue = Format(property.OriginalValue);
             var newValue = Format(property.CurrentValue);
 
-            // Controllers copy every field from the request body, so most
-            // "modified" properties were assigned their current value.
             if (string.Equals(oldValue, newValue, StringComparison.Ordinal))
                 continue;
 

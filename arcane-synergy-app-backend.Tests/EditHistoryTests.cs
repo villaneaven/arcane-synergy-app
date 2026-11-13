@@ -64,8 +64,6 @@ public class EditHistoryTests
 
         var admission = await context.Admissions.FirstAsync(a => a.AdmissionId == 1);
 
-        // What a PUT does: copy every field off the request body, most of which
-        // the user left alone.
         admission.Type = admission.Type;
         admission.Facility = admission.Facility;
         admission.AdmissionDate = admission.AdmissionDate;
@@ -85,7 +83,7 @@ public class EditHistoryTests
         admission.AdmissionDate = new DateTime(2025, 2, 20);
         admission.LastEditedBy = "someone.else@example.com";
         admission.LastEditedAt = DateTime.UtcNow;
-        admission.UpdateCalculatedFields(); // rewrites DayOfWeekAdmitted / MonthAdmitted
+        admission.UpdateCalculatedFields();
         await context.SaveChangesAsync();
 
         var fields = await context.EditHistory.Select(h => h.FieldName).ToListAsync();
@@ -201,9 +199,7 @@ public class EditHistoryTests
         Assert.Equal(2, payload.Int("totalCount"));
         var items = payload.Array("items");
         Assert.Equal(2, items.Count);
-        // ApiResultExtensions serializes the payload as declared, so the
-        // property names here are the CLR ones rather than the camelCase the
-        // API emits at runtime.
+
         Assert.Equal("C", items[0]!["NewValue"]!.GetValue<string>());
         Assert.Equal("B", items[1]!["NewValue"]!.GetValue<string>());
     }
