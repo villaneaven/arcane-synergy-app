@@ -1,5 +1,6 @@
 using arcane_synergy_app_backend.Data;
 using arcane_synergy_app_backend.Models;
+using arcane_synergy_app_backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
@@ -65,6 +66,9 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found.");
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserAccessor, HttpContextCurrentUserAccessor>();
 
 builder.Services.AddDbContext<ArcaneSynergyContext>(options =>
     options.UseSqlServer(connectionString));

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using arcane_synergy_app_backend.Data;
 using arcane_synergy_app_backend.Models;
+using arcane_synergy_app_backend.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,13 +14,26 @@ namespace arcane_synergy_app_backend.Tests;
 /// </summary>
 internal static class TestDb
 {
-    public static ArcaneSynergyContext CreateContext()
+    public const string DefaultUserName = "test.user@example.com";
+
+    /// <param name="userName">
+    /// User the context attributes edit history to. Null stands in for a save
+    /// made outside a request, which is recorded as "system".
+    /// </param>
+    public static ArcaneSynergyContext CreateContext(string? userName = null)
     {
         var options = new DbContextOptionsBuilder<ArcaneSynergyContext>()
             .UseInMemoryDatabase($"test-{Guid.NewGuid()}")
             .Options;
 
-        return new ArcaneSynergyContext(options);
+        return new ArcaneSynergyContext(options, new StubCurrentUserAccessor(userName));
+    }
+
+    private sealed class StubCurrentUserAccessor : ICurrentUserAccessor
+    {
+        public StubCurrentUserAccessor(string? userName) => UserName = userName;
+
+        public string? UserName { get; }
     }
 
     public static Patient Patient(
@@ -81,7 +95,7 @@ internal static class TestDb
     /// <see cref="ControllerContext"/> exists. Pass <c>null</c> to simulate a
     /// token that carries none of the recognised username claims.
     /// </summary>
-    public static T WithUser<T>(this T controller, string? userName = "test.user@example.com")
+    public static T WithUser<T>(this T controller, string? userName = DefaultUserName)
         where T : ControllerBase
     {
         var claims = userName is null

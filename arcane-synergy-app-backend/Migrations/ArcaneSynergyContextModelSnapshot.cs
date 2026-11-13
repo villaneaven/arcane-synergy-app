@@ -126,6 +126,58 @@ namespace arcane_synergy_app_backend.Migrations
                     b.ToTable("Admissions");
                 });
 
+            modelBuilder.Entity("arcane_synergy_app_backend.Models.EditHistory", b =>
+                {
+                    b.Property<long>("EditHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("EditHistoryId"));
+
+                    b.Property<string>("ChangeType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ChangedBy")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FieldName")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("NewValue")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("OldValue")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.HasKey("EditHistoryId");
+
+                    b.HasIndex("ChangedAt");
+
+                    b.HasIndex("EntityType", "EntityId", "ChangedAt");
+
+                    b.ToTable("EditHistory", (string)null);
+                });
+
             modelBuilder.Entity("arcane_synergy_app_backend.Models.GapWorkStatus", b =>
                 {
                     b.Property<string>("Insurance")
