@@ -63,11 +63,22 @@ namespace arcane_synergy_app_backend.Migrations
                     b.Property<DateTime?>("FinalDischargeDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("LastEditedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastEditedBy")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<string>("MonthAdmitted")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("NextAdmissionDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<string>("NotificationSource")
                         .HasColumnType("nvarchar(max)");
@@ -113,6 +124,121 @@ namespace arcane_synergy_app_backend.Migrations
                     b.HasIndex("Type");
 
                     b.ToTable("Admissions");
+                });
+
+            modelBuilder.Entity("arcane_synergy_app_backend.Models.GapWorkStatus", b =>
+                {
+                    b.Property<string>("Insurance")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("MemberId")
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("Member_ID");
+
+                    b.Property<string>("MetricType")
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("Metric_Type");
+
+                    b.Property<DateOnly?>("StatusDate")
+                        .HasColumnType("date")
+                        .HasColumnName("Status_Date");
+
+                    b.Property<string>("TeamStatus")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Team_Status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("Updated_At");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Updated_By");
+
+                    b.HasKey("Insurance", "MemberId", "MetricType");
+
+                    b.ToTable("GapWorkStatus", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+                });
+
+            modelBuilder.Entity("arcane_synergy_app_backend.Models.GapWorklistItem", b =>
+                {
+                    b.Property<DateOnly?>("DOB")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("FirstSeenDate")
+                        .HasColumnType("date")
+                        .HasColumnName("First_Seen_Date");
+
+                    b.Property<string>("GroupName")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Group_Name");
+
+                    b.Property<string>("Insurance")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateOnly>("LastSeenDate")
+                        .HasColumnType("date")
+                        .HasColumnName("Last_Seen_Date");
+
+                    b.Property<string>("MemberId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Member_ID");
+
+                    b.Property<string>("MetricType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Metric_Type");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProviderName")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Provider_Name");
+
+                    b.Property<string>("ProviderNpi")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Provider_NPI");
+
+                    b.Property<DateOnly?>("RosterDate")
+                        .HasColumnType("date")
+                        .HasColumnName("Roster_Date");
+
+                    b.Property<string>("SourceReviewStatus")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Source_Review_Status");
+
+                    b.Property<DateOnly?>("StatusDate")
+                        .HasColumnType("date")
+                        .HasColumnName("Status_Date");
+
+                    b.Property<string>("TeamStatus")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Team_Status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("Updated_At");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Updated_By");
+
+                    b.Property<string>("WorkItemType")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Work_Item_Type");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("GapWorklist", (string)null);
                 });
 
             modelBuilder.Entity("arcane_synergy_app_backend.Models.Patient", b =>

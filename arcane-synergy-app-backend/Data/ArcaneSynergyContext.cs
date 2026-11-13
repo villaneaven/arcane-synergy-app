@@ -57,6 +57,12 @@ namespace arcane_synergy_app_backend.Data
 
             modelBuilder.Entity<Admission>()
                 .HasIndex(a => a.Type);
+
+            modelBuilder.Entity<Admission>()
+                .Property(a => a.LastEditedAt)
+                .HasConversion(
+                    v => v,
+                    v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
         }
     }
 }

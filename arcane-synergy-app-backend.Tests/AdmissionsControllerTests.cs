@@ -318,7 +318,7 @@ public class AdmissionsControllerTests
         context.Patients.Add(TestDb.Patient(1));
         await context.SaveChangesAsync();
 
-        var controller = new AdmissionsController(context);
+        var controller = new AdmissionsController(context).WithUser("nurse@example.com");
         var admission = new Admission
         {
             PatientID = 1,
@@ -333,7 +333,24 @@ public class AdmissionsControllerTests
         var saved = Assert.IsType<Admission>(created.Value);
         Assert.Equal("Monday", saved.DayOfWeekAdmitted);
         Assert.Equal("March", saved.MonthAdmitted);
+        Assert.Equal("nurse@example.com", saved.LastEditedBy);
+        Assert.NotNull(saved.LastEditedAt);
         Assert.Equal(1, await context.Admissions.CountAsync());
+    }
+
+    [Fact]
+    public async Task AddAdmission_ForbidsWhenPrincipalHasNoUserName()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context).WithUser(null);
+
+        var result = await controller.AddAdmission(TestDb.Admission(1, 1, new DateTime(2025, 3, 10)));
+
+        Assert.IsType<ForbidResult>(result);
+        Assert.Equal(0, await context.Admissions.CountAsync());
     }
 
     [Fact]
@@ -355,7 +372,7 @@ public class AdmissionsControllerTests
         context.Admissions.Add(TestDb.Admission(1, 1, new DateTime(2025, 1, 10), type: "ADM"));
         await context.SaveChangesAsync();
 
-        var controller = new AdmissionsController(context);
+        var controller = new AdmissionsController(context).WithUser("doctor@example.com");
         var update = TestDb.Admission(1, 1, new DateTime(2025, 3, 10), type: "ER");
         update.SeenBy = "Dr. Ride";
 
@@ -366,6 +383,25 @@ public class AdmissionsControllerTests
         Assert.Equal("ER", saved.Type);
         Assert.Equal("Dr. Ride", saved.SeenBy);
         Assert.Equal("March", saved.MonthAdmitted);
+        Assert.Equal("doctor@example.com", saved.LastEditedBy);
+        Assert.NotNull(saved.LastEditedAt);
+    }
+
+    [Fact]
+    public async Task UpdateAdmission_ForbidsWhenPrincipalHasNoUserName()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        context.Admissions.Add(TestDb.Admission(1, 1, new DateTime(2025, 1, 10), type: "ADM"));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context).WithUser(null);
+        var update = TestDb.Admission(1, 1, new DateTime(2025, 3, 10), type: "ER");
+
+        Assert.IsType<ForbidResult>(await controller.UpdateAdmission(1, update));
+
+        var saved = await context.Admissions.AsNoTracking().FirstAsync(a => a.AdmissionId == 1);
+        Assert.Equal("ADM", saved.Type);
     }
 
     [Fact]

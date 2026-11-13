@@ -1,4 +1,5 @@
 using arcane_synergy_app_backend.Data;
+using arcane_synergy_app_backend.Extensions;
 using arcane_synergy_app_backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -209,6 +210,12 @@ public class AdmissionsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> AddAdmission([FromBody] Admission admission)
     {
+        var editedBy = User.GetUserName();
+        if (editedBy == null) return Forbid();
+
+        admission.Notes = string.IsNullOrWhiteSpace(admission.Notes) ? null : admission.Notes.Trim();
+        admission.LastEditedBy = editedBy;
+        admission.LastEditedAt = DateTime.UtcNow;
         admission.UpdateCalculatedFields();
 
         _context.Admissions.Add(admission);
@@ -232,6 +239,9 @@ public class AdmissionsController : ControllerBase
 
         if (existing == null) return NotFound();
 
+        var editedBy = User.GetUserName();
+        if (editedBy == null) return Forbid();
+
         existing.FacilityType = admission.FacilityType;
         existing.Facility = admission.Facility;
         existing.Type = admission.Type;
@@ -244,6 +254,9 @@ public class AdmissionsController : ControllerBase
         existing.DischargeTo = admission.DischargeTo;
         existing.DateSeen = admission.DateSeen;
         existing.SeenBy = admission.SeenBy;
+        existing.Notes = string.IsNullOrWhiteSpace(admission.Notes) ? null : admission.Notes.Trim();
+        existing.LastEditedBy = editedBy;
+        existing.LastEditedAt = DateTime.UtcNow;
 
         existing.UpdateCalculatedFields();
         await _context.SaveChangesAsync();

@@ -9,6 +9,7 @@ import { PatientSearchInput } from "@/components/patient-search-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -52,6 +53,7 @@ export function AdmissionForm({
     dischargeTo?: string;
     dateSeen?: string | undefined;
     seenBy?: string;
+    notes?: string;
   }) => Promise<void>;
   onCancel?: () => void;
   initialValues?: {
@@ -67,6 +69,7 @@ export function AdmissionForm({
     dischargeTo?: string;
     dateSeen?: string;
     seenBy?: string;
+    notes?: string;
   };
 }) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -127,6 +130,7 @@ export function AdmissionForm({
       dischargeTo?: string;
       dateSeen?: string | undefined;
       seenBy?: string;
+      notes?: string;
     } = {
       patientID: patientID?.toString() || "",
       facilityType: facilityType,
@@ -140,6 +144,7 @@ export function AdmissionForm({
       dischargeTo: formData.get("discharge-to") as string,
       dateSeen: dateSeen ? dateSeen.toISOString() : undefined,
       seenBy: formData.get("seen-by") as string,
+      notes: formData.get("notes") as string,
     };
 
     try {
@@ -330,6 +335,16 @@ export function AdmissionForm({
             id="seen-by"
             name="seen-by"
             defaultValue={initialValues?.seenBy ?? ""}
+          />
+        </div>
+        <div className="grid gap-3">
+          <Label htmlFor="notes">Notes</Label>
+          <Textarea
+            id="notes"
+            name="notes"
+            rows={4}
+            maxLength={2000}
+            defaultValue={initialValues?.notes ?? ""}
           />
         </div>
       </div>
