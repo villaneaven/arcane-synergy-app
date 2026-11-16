@@ -337,6 +337,17 @@ namespace arcane_synergy_app_backend.Migrations
                     b.Property<bool>("IsFinalDischarge")
                         .HasColumnType("bit");
 
+                    b.Property<DateTime?>("LastEditedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastEditedBy")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
                     b.Property<string>("NotificationSource")
                         .HasColumnType("nvarchar(max)");
 

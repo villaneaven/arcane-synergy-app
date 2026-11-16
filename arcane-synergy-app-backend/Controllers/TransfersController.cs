@@ -1,4 +1,5 @@
 using arcane_synergy_app_backend.Data;
+using arcane_synergy_app_backend.Extensions;
 using arcane_synergy_app_backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -95,6 +96,13 @@ public class TransfersController : ControllerBase
 	[HttpPost]
 	public async Task<IActionResult> AddTransfer([FromBody] Transfer transfer)
 	{
+		var editedBy = User.GetUserName();
+		if (editedBy == null) return Forbid();
+
+		transfer.Notes = string.IsNullOrWhiteSpace(transfer.Notes) ? null : transfer.Notes.Trim();
+		transfer.LastEditedBy = editedBy;
+		transfer.LastEditedAt = DateTime.UtcNow;
+
 		if (transfer.IsFinalDischarge)
 		{
 			var hasFinalTransfer = await _context.Transfers
@@ -140,6 +148,9 @@ public class TransfersController : ControllerBase
 			return NotFound();
 		}
 
+		var editedBy = User.GetUserName();
+		if (editedBy == null) return Forbid();
+
 		if (transfer.IsFinalDischarge)
 		{
 			var hasFinalTransfer = await _context.Transfers
@@ -167,6 +178,9 @@ public class TransfersController : ControllerBase
         existingTransfer.NotificationSource = transfer.NotificationSource;
         existingTransfer.DateNotified = transfer.DateNotified;
         existingTransfer.DischargeTo = transfer.DischargeTo;
+        existingTransfer.Notes = string.IsNullOrWhiteSpace(transfer.Notes) ? null : transfer.Notes.Trim();
+        existingTransfer.LastEditedBy = editedBy;
+        existingTransfer.LastEditedAt = DateTime.UtcNow;
 
 		if (admissionChanged)
 		{

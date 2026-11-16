@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace arcane_synergy_app_backend.Models
 {
@@ -19,5 +20,11 @@ namespace arcane_synergy_app_backend.Models
         public string? NotificationSource { get; set; }
         public required DateTime DateNotified { get; set; }
         public string? DischargeTo { get; set; }
+        [MaxLength(2000)]
+        public string? Notes { get; set; }
+
+        [MaxLength(255)]
+        public string? LastEditedBy { get; set; }
+        public DateTime? LastEditedAt { get; set; }
     }
 }

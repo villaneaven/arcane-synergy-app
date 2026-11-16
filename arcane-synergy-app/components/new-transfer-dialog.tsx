@@ -36,6 +36,7 @@ export function NewTransferDialog({
     notificationSource?: string;
     dateNotified: string;
     dischargeTo?: string;
+    notes?: string;
   }) => {
     const accessToken = (session as { access_token?: string })?.access_token;
 

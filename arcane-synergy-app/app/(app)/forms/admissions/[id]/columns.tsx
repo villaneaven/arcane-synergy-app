@@ -31,6 +31,9 @@ export type Transfer = {
   notificationSource: string | undefined;
   dateNotified: string;
   dischargeTo: string | undefined;
+  notes: string | undefined;
+  lastEditedBy: string | undefined;
+  lastEditedAt: string | undefined;
 };
 
 export const createColumns = (
@@ -164,6 +167,44 @@ export const createColumns = (
       const dischargeTo = row.getValue("dischargeTo");
       if (!dischargeTo) return "N/A";
       return dischargeTo;
+    },
+  },
+  {
+    accessorKey: "notes",
+    header: "Notes",
+    cell: ({ row }) => {
+      const notes = row.getValue("notes") as string | undefined;
+      if (!notes) return "N/A";
+      return (
+        <div className="max-w-64 truncate" title={notes}>
+          {notes}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "lastEditedBy",
+    header: "Last Edited By",
+    cell: ({ row }) => {
+      const lastEditedBy = row.getValue("lastEditedBy");
+      if (!lastEditedBy) return "N/A";
+      return lastEditedBy;
+    },
+  },
+  {
+    accessorKey: "lastEditedAt",
+    header: "Last Edited At",
+    cell: ({ row }) => {
+      const lastEditedAt = row.getValue("lastEditedAt");
+      if (!lastEditedAt) return "N/A";
+      const date = new Date(lastEditedAt as string);
+      return date.toLocaleString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     },
   },
   {

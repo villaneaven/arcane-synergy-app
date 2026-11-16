@@ -353,6 +353,9 @@ export function DataTable<
     "transferNotificationSource",
     "transferDateNotified",
     "transferDischargeTo",
+    "transferNotes",
+    "transferLastEditedBy",
+    "transferLastEditedAt",
   ];
 
   const fetchTransfersForExport = async (admissionIds: string[]) => {
@@ -402,6 +405,9 @@ export function DataTable<
       notificationSource?: string | null;
       dateNotified?: string;
       dischargeTo?: string | null;
+      notes?: string | null;
+      lastEditedBy?: string | null;
+      lastEditedAt?: string | null;
     }>;
   };
 
@@ -452,6 +458,9 @@ export function DataTable<
         transfer.notificationSource ?? "",
         transfer.dateNotified ?? "",
         transfer.dischargeTo ?? "",
+        transfer.notes ?? "",
+        transfer.lastEditedBy ?? "",
+        transfer.lastEditedAt ?? "",
       ]);
     });
 

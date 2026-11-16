@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -51,6 +52,7 @@ export function TransferForm({
     notificationSource?: string;
     dateNotified: string;
     dischargeTo?: string;
+    notes?: string;
   }) => Promise<void>;
   onCancel?: () => void;
   initialValues?: {
@@ -65,6 +67,7 @@ export function TransferForm({
     notificationSource?: string;
     dateNotified?: string;
     dischargeTo?: string;
+    notes?: string;
   };
 }) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -116,6 +119,7 @@ export function TransferForm({
       notificationSource?: string;
       dateNotified: string;
       dischargeTo?: string;
+      notes?: string;
     } = {
       facilityType: facilityType,
       facility: facility,
@@ -127,6 +131,7 @@ export function TransferForm({
       dischargeDate: dischargeDate ? dischargeDate.toISOString() : undefined,
       isFinalDischarge: formData.get("is-final-discharge") === "on",
       dischargeTo: formData.get("discharge-to") as string,
+      notes: formData.get("notes") as string,
     };
 
     try {
@@ -296,6 +301,16 @@ export function TransferForm({
             id="discharge-to"
             name="discharge-to"
             defaultValue={initialValues?.dischargeTo ?? ""}
+          />
+        </div>
+        <div className="grid gap-3">
+          <Label htmlFor="notes">Notes</Label>
+          <Textarea
+            id="notes"
+            name="notes"
+            rows={4}
+            maxLength={2000}
+            defaultValue={initialValues?.notes ?? ""}
           />
         </div>
       </div>
