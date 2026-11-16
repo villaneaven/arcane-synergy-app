@@ -231,14 +231,9 @@ public class TransfersController : ControllerBase
 			return NotFound();
 		}
 
-		if (transfer.Admission == null)
-		{
-			return NotFound("The admission this transfer belongs to no longer exists.");
-		}
-
 		var admission = new Admission
 		{
-			PatientID = transfer.Admission.PatientID,
+			PatientID = transfer.Admission!.PatientID,
 			FacilityType = transfer.FacilityType,
 			Facility = transfer.Facility,
 			Type = transfer.Type,

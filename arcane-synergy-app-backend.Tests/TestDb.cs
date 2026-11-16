@@ -70,7 +70,8 @@ internal static class TestDb
         DateTime? dateNotified = null,
         DateTime? dischargeDate = null,
         DateTime? finalDischargeDate = null,
-        DateTime? dateSeen = null)
+        DateTime? dateSeen = null,
+        int countOfTransfers = 0)
     {
         var admission = new Admission
         {
@@ -82,10 +83,34 @@ internal static class TestDb
             DischargeDate = dischargeDate,
             FinalDischargeDate = finalDischargeDate,
             DateSeen = dateSeen,
+            CountOfTransfers = countOfTransfers,
         };
 
         admission.UpdateCalculatedFields();
         return admission;
+    }
+
+    public static Transfer Transfer(
+        int id,
+        int admissionId,
+        DateTime admissionDate,
+        string type = "ADM",
+        DateTime? dateNotified = null,
+        DateTime? dischargeDate = null,
+        bool isFinalDischarge = false,
+        string? facility = null)
+    {
+        return new Transfer
+        {
+            TransferId = id,
+            AdmissionId = admissionId,
+            Type = type,
+            AdmissionDate = admissionDate,
+            DateNotified = dateNotified ?? admissionDate,
+            DischargeDate = dischargeDate,
+            IsFinalDischarge = isFinalDischarge,
+            Facility = facility,
+        };
     }
 
     /// <summary>
