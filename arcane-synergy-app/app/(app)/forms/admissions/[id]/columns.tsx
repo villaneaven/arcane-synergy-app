@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Admission } from "../columns";
 import { EditTransferDialog } from "@/components/edit-transfer-dialog";
+import { MoveTransferToAdmissionDialog } from "@/components/move-transfer-to-admission-dialog";
 
 export type Transfer = {
   transferId: string;
@@ -231,6 +232,10 @@ export const createColumns = (
             <EditTransferDialog
               transfer={transfer}
               onTransferUpdated={onDataChange}
+            />
+            <MoveTransferToAdmissionDialog
+              transferId={transfer.transferId}
+              onTransferMoved={onDataChange}
             />
           </DropdownMenuContent>
         </DropdownMenu>
