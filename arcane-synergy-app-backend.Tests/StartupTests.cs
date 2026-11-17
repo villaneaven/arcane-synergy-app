@@ -1,10 +1,12 @@
 using System.Net;
 using arcane_synergy_app_backend.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace arcane_synergy_app_backend.Tests;
 
@@ -119,6 +121,13 @@ public class StartupTests : IClassFixture<StartupTests.AppFactory>
         {
             builder.UseEnvironment("Testing");
 
+            builder.UseContentRoot(EmptyContentRoot);
+
+            builder.UseSetting("AzureAd:Instance", "https://login.microsoftonline.com/");
+            builder.UseSetting("AzureAd:TenantId", TestTenantId);
+            builder.UseSetting("AzureAd:ClientId", TestClientId);
+            builder.UseSetting("AzureAd:Audience", TestClientId);
+
             builder.UseSetting(
                 "ConnectionStrings:DefaultConnection",
                 "Server=invalid.localhost;Database=none;Connect Timeout=1");
@@ -131,9 +140,20 @@ public class StartupTests : IClassFixture<StartupTests.AppFactory>
                 services.RemoveAll<DbContextOptions>();
                 services.AddDbContext<ArcaneSynergyContext>(options =>
                     options.UseInMemoryDatabase(_databaseName));
+
+                services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+                {
+                    options.Configuration = new OpenIdConnectConfiguration();
+                });
             });
         }
     }
+
+    private const string TestTenantId = "00000000-0000-0000-0000-00000000aaaa";
+    private const string TestClientId = "00000000-0000-0000-0000-00000000bbbb";
+
+    private static readonly string EmptyContentRoot =
+        Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "arcane-startup-tests-content-root")).FullName;
 
     /// <summary>A developer who has opted into demo data.</summary>
     public sealed class SeedingAppFactory : AppFactory
