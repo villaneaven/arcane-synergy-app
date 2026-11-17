@@ -485,8 +485,6 @@ public class AdmissionsControllerTests
 
         await controller.UpdateAdmission(1, update);
 
-        // Blank means "clear it", not "keep what is there": a note the user
-        // deleted must not reappear on the next read.
         Assert.Null((await ReloadAsync(context)).Notes);
     }
 
@@ -507,8 +505,6 @@ public class AdmissionsControllerTests
 
         await controller.AddAdmission(admission);
 
-        // The body is client input. The signed-in principal decides both audit
-        // fields, or an edit could be attributed to anyone the caller names.
         var saved = await SingleAdmissionAsync(context);
         Assert.Equal("nurse@example.com", saved.LastEditedBy);
         Assert.NotEqual(stale, saved.LastEditedAt);
@@ -548,13 +544,6 @@ public class AdmissionsControllerTests
         await controller.AddAdmission(NewAdmission());
         var after = DateTime.UtcNow;
 
-        // A regression to DateTime.Now would stamp the host's local time, which
-        // shows up as hours of clock skew in the UI and in edit history. The
-        // window check is the load-bearing assertion, since SQL Server's
-        // datetime2 does not persist Kind even though the in-memory provider
-        // hands back the same CLR value. On a host already running in UTC the
-        // window cannot tell the two calls apart, which is why Kind is checked
-        // as well.
         var saved = await SingleAdmissionAsync(context);
         Assert.NotNull(saved.LastEditedAt);
         Assert.InRange(saved.LastEditedAt!.Value, before, after);
@@ -570,9 +559,6 @@ public class AdmissionsControllerTests
 
         var controller = new AdmissionsController(context).WithUser(null);
 
-        // Pinning current behaviour: the POST and PUT both Forbid a principal
-        // with no username claim, but the delete never asks, so the removal is
-        // filed under "system" with no route back to a person.
         Assert.IsType<NoContentResult>(await controller.DeleteAdmission(1));
 
         var entry = Assert.Single(await context.EditHistory.ToListAsync());
@@ -599,8 +585,6 @@ public class AdmissionsControllerTests
 
         Assert.IsType<NoContentResult>(await controller.UpdateAdmission(1, update));
 
-        // An edit must not move a clinical record onto a different chart, so
-        // PatientID is not among the fields the PUT writes.
         Assert.Equal(1, (await ReloadAsync(context)).PatientID);
     }
 
@@ -621,9 +605,6 @@ public class AdmissionsControllerTests
 
         await controller.UpdateAdmission(1, update);
 
-        // TransfersController owns these two and keeps them in step with the
-        // rows in Transfers. An admission PUT that wrote them would silently
-        // desync the transfer count and the pending-patients figures.
         var saved = await ReloadAsync(context);
         Assert.Equal(3, saved.CountOfTransfers);
         Assert.Equal(finalDischarge, saved.FinalDischargeDate);
@@ -697,8 +678,6 @@ public class AdmissionsControllerTests
 
         await controller.UpdateAdmission(1, update);
 
-        // The flag is derived, and from the stored dates rather than the posted
-        // ones, so clearing it in the request body cannot hide a readmission.
         Assert.True((await ReloadAsync(context)).ReadmissionFlag);
     }
 
@@ -715,11 +694,6 @@ public class AdmissionsControllerTests
 
         await controller.AddAdmission(admission);
 
-        // Pinning current behaviour rather than endorsing it: unlike the PUT,
-        // the POST persists the whole body, so a caller can create an admission
-        // that already claims five transfers and a final discharge with no
-        // Transfer rows behind it. That pair is what the pending-patients count
-        // reads, so the figure can be skewed at creation time.
         var saved = await SingleAdmissionAsync(context);
         Assert.Equal(5, saved.CountOfTransfers);
         Assert.Equal(new DateTime(2025, 1, 20), saved.FinalDischargeDate);
