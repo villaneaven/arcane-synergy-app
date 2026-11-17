@@ -6,7 +6,7 @@ import {
   gapKey,
   providersForGroup,
   type GapFilterOptions,
-} from "./columns";
+} from "@/app/(app)/forms/gaps/columns";
 
 const OPTIONS = {
   providers: ["Dr. A", "Dr. B", "Dr. C"],

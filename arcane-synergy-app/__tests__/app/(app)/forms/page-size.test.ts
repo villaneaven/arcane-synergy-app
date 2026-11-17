@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import * as admissions from "./admissions/page-size";
-import * as gaps from "./gaps/page-size";
-import * as patients from "./patients/page-size";
+import * as admissions from "@/app/(app)/forms/admissions/page-size";
+import * as gaps from "@/app/(app)/forms/gaps/page-size";
+import * as patients from "@/app/(app)/forms/patients/page-size";
 
 /**
  * Each table remembers its page size in its own cookie. The server reads the

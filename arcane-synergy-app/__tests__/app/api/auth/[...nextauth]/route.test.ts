@@ -19,7 +19,7 @@ function stubAzureEnv() {
 /** The route reads its env at module load, so each test re-imports it. */
 async function importRoute() {
   vi.resetModules();
-  return import("./route");
+  return import("@/app/api/auth/[...nextauth]/route");
 }
 
 async function callbacks() {
