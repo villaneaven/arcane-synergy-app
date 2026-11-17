@@ -75,6 +75,16 @@ export const createColumns = (
     enableHiding: false,
   },
   {
+    id: "group",
+    accessorFn: (row) => row.patient?.group ?? "",
+    header: "Group",
+    cell: ({ row }) => {
+      const group = row.getValue("group");
+      if (!group) return "N/A";
+      return group;
+    },
+  },
+  {
     id: "patientFullName",
     accessorFn: (row) => row.patient?.fullName ?? "",
     header: ({ column }) => {

@@ -60,6 +60,7 @@ import { NewAdmissionDialog } from "@/components/new-admission-dialog";
 import { toast } from "sonner";
 import { DatePickerInput } from "@/components/date-picker-input";
 import { TYPE_OPTIONS } from "@/lib/admission-options";
+import { GROUP_OPTIONS } from "@/lib/patient-options";
 import { API_BASE_URL } from "@/lib/api";
 
 interface DataTableProps<
@@ -96,6 +97,8 @@ interface DataTableProps<
   onAdmissionAdded?: () => void;
   admissionType: string;
   onAdmissionTypeChange: (value: string) => void;
+  group: string;
+  onGroupChange: (value: string) => void;
   startDate?: Date;
   onStartDateChange: (date: Date | undefined) => void;
   endDate?: Date;
@@ -134,6 +137,8 @@ export function DataTable<
   onAdmissionAdded,
   admissionType,
   onAdmissionTypeChange,
+  group,
+  onGroupChange,
   startDate,
   onStartDateChange,
   endDate,
@@ -257,6 +262,7 @@ export function DataTable<
     const params = new URLSearchParams();
     if (searchValue.trim()) params.set("search", searchValue.trim());
     if (admissionType !== "all") params.set("admissionType", admissionType);
+    if (group !== "all") params.set("group", group);
     if (startDate) params.set("startDate", startDate.toISOString());
     if (endDate) params.set("endDate", endDate.toISOString());
     if (sorting[0]) {
@@ -588,6 +594,25 @@ export function DataTable<
                 <SelectLabel>Type</SelectLabel>
                 <SelectItem value="all">All Types</SelectItem>
                 {TYPE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field className="w-full max-w-48">
+          <FieldLabel>Group</FieldLabel>
+          <Select value={group} onValueChange={onGroupChange}>
+            <SelectTrigger className="w-45">
+              <SelectValue placeholder="Select a group" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Group</SelectLabel>
+                <SelectItem value="all">All Groups</SelectItem>
+                {GROUP_OPTIONS.map((option) => (
                   <SelectItem key={option} value={option}>
                     {option}
                   </SelectItem>
