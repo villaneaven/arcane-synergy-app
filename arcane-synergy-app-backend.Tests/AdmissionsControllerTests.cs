@@ -92,6 +92,31 @@ public class AdmissionsControllerTests
     }
 
     [Fact]
+    public async Task GetAdmissions_FiltersByPatientGroup()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(
+            TestDb.Patient(1, group: "DMC"),
+            TestDb.Patient(2, group: "PJP"));
+        context.Admissions.AddRange(
+            TestDb.Admission(1, 1, new DateTime(2025, 1, 10)),
+            TestDb.Admission(2, 1, new DateTime(2025, 1, 11)),
+            TestDb.Admission(3, 2, new DateTime(2025, 1, 12)));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context);
+
+        var dmc = (await controller.GetAdmissions(group: "DMC")).OkJson();
+        Assert.Equal(2, dmc.Int("totalCount"));
+
+        var pjp = (await controller.GetAdmissions(group: "PJP")).OkJson();
+        Assert.Equal(1, pjp.Int("totalCount"));
+
+        var all = (await controller.GetAdmissions()).OkJson();
+        Assert.Equal(3, all.Int("totalCount"));
+    }
+
+    [Fact]
     public async Task GetAdmissions_SortsByRequestedColumnAndDirection()
     {
         using var context = TestDb.CreateContext();
