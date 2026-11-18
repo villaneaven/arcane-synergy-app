@@ -83,9 +83,6 @@ namespace arcane_synergy_app_backend.Migrations
                     b.Property<string>("NotificationSource")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("PatientEngagement")
-                        .HasColumnType("int");
-
                     b.Property<int>("PatientID")
                         .HasColumnType("int");
 

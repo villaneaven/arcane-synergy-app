@@ -82,6 +82,41 @@ public class CalculatedFieldsTests
     }
 
     [Theory]
+    // Days in Mar 2025; "today" is Mar 20. null means the field is empty.
+    [InlineData(null, null, null)]  // no discharge -> blank
+    [InlineData(10, 14, 4)]         // seen: Date Seen - Discharge Date
+    [InlineData(10, 10, 0)]         // seen on discharge day
+    [InlineData(10, null, 10)]      // not seen: today - Discharge Date
+    [InlineData(20, null, 0)]       // discharged today
+    public void Admission_CalculatesPatientEngagement(int? dischargeDay, int? seenDay, int? expected)
+    {
+        var today = new DateTime(2025, 3, 20);
+
+        var result = Admission.CalculatePatientEngagement(
+            dischargeDay.HasValue ? new DateTime(2025, 3, dischargeDay.Value) : null,
+            seenDay.HasValue ? new DateTime(2025, 3, seenDay.Value) : null,
+            today);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void Admission_PatientEngagementIgnoresTimeOfDay()
+    {
+        // Discharged in the evening, seen the next morning: one calendar day.
+        Assert.Equal(1, Admission.CalculatePatientEngagement(
+            new DateTime(2025, 3, 10, 22, 0, 0),
+            new DateTime(2025, 3, 11, 8, 0, 0),
+            new DateTime(2025, 3, 20)));
+
+        // Not seen; "today" carries a time but only the date counts.
+        Assert.Equal(10, Admission.CalculatePatientEngagement(
+            new DateTime(2025, 3, 10, 22, 0, 0),
+            null,
+            new DateTime(2025, 3, 20, 1, 0, 0)));
+    }
+
+    [Theory]
     // A readmission within 30 days of the final discharge.
     [InlineData(1, true)]
     [InlineData(30, true)]

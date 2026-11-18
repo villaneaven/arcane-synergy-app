@@ -36,7 +36,11 @@ namespace arcane_synergy_app_backend.Models
         public string? DayOfWeekAdmitted { get; set; }
         public string? MonthAdmitted { get; set; }
         public DateTime? TCMDueDate { get; set; }
-        public int PatientEngagement { get; set; }
+        // Days from Discharge Date to Date Seen (or to today if not seen yet); null without
+        // a Discharge Date. Changes daily, so it is never stored: call
+        // ApplyPatientEngagement(today) after loading an admission.
+        [NotMapped]
+        public int? PatientEngagement { get; set; }
         public bool ReadmissionFlag { get; set; }
         // This will get the next initial admission date
         public DateTime? NextAdmissionDate { get; set; }
@@ -65,6 +69,19 @@ namespace arcane_synergy_app_backend.Models
             if (DateSeen.Value.Date < DischargeDate.Value.Date)
                 return "Date Seen must be on or after the Discharge Date.";
             return null;
+        }
+
+        // Whole calendar days, ignoring time of day.
+        public static int? CalculatePatientEngagement(DateTime? dischargeDate, DateTime? dateSeen, DateTime today)
+        {
+            if (!dischargeDate.HasValue) return null;
+            var end = dateSeen ?? today;
+            return (end.Date - dischargeDate.Value.Date).Days;
+        }
+
+        public void ApplyPatientEngagement(DateTime today)
+        {
+            PatientEngagement = CalculatePatientEngagement(DischargeDate, DateSeen, today);
         }
 
         // temp calculations
