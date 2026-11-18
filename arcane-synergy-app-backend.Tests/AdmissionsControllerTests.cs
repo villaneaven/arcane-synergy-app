@@ -413,7 +413,7 @@ public class AdmissionsControllerTests
         context.Admissions.Add(TestDb.Admission(1, 1, new DateTime(2025, 1, 10)));
         await context.SaveChangesAsync();
 
-        var controller = new AdmissionsController(context);
+        var controller = new AdmissionsController(context).WithUser();
 
         Assert.IsType<NoContentResult>(await controller.DeleteAdmission(1));
         Assert.Equal(0, await context.Admissions.CountAsync());
@@ -551,19 +551,43 @@ public class AdmissionsControllerTests
     }
 
     [Fact]
-    public async Task DeleteAdmission_SucceedsWithoutAUserNameAndIsRecordedAsSystem()
+    public async Task DeleteAdmission_ForbidsWhenPrincipalHasNoUserName()
     {
         using var context = await SeededAdmissionAsync(contextUser: null);
-        context.EditHistory.RemoveRange(context.EditHistory);
-        await context.SaveChangesAsync();
+        await ClearHistoryAsync(context);
 
         var controller = new AdmissionsController(context).WithUser(null);
+
+        Assert.IsType<ForbidResult>(await controller.DeleteAdmission(1));
+
+        Assert.Equal(1, await context.Admissions.CountAsync());
+        Assert.Empty(await context.EditHistory.ToListAsync());
+    }
+
+    [Fact]
+    public async Task DeleteAdmission_ChecksTheUserBeforeLookingTheAdmissionUp()
+    {
+        using var context = await SeededAdmissionAsync(contextUser: null);
+        var controller = new AdmissionsController(context).WithUser(null);
+
+        Assert.IsType<ForbidResult>(await controller.DeleteAdmission(404));
+    }
+
+    [Fact]
+    public async Task DeleteAdmission_AttributesTheRemovalToTheSignedInUser()
+    {
+        using var context = await SeededAdmissionAsync(contextUser: "nurse@example.com");
+        await ClearHistoryAsync(context);
+
+        var controller = new AdmissionsController(context).WithUser("nurse@example.com");
 
         Assert.IsType<NoContentResult>(await controller.DeleteAdmission(1));
 
         var entry = Assert.Single(await context.EditHistory.ToListAsync());
         Assert.Equal(nameof(Admission), entry.EntityType);
-        Assert.Equal("system", entry.ChangedBy);
+        Assert.Equal(EditHistory.ChangeTypes.Delete, entry.ChangeType);
+        Assert.Equal("1", entry.EntityId);
+        Assert.Equal("nurse@example.com", entry.ChangedBy);
     }
 
     // ------------------------------------------------------------------
@@ -753,6 +777,16 @@ public class AdmissionsControllerTests
         var update = NewAdmission(admissionDate);
         update.AdmissionId = 1;
         return update;
+    }
+
+    /// <summary>
+    /// Drops the history the seeding itself produced, so a test asserts only on
+    /// the entries its own call created.
+    /// </summary>
+    private static async Task ClearHistoryAsync(ArcaneSynergyContext context)
+    {
+        context.EditHistory.RemoveRange(context.EditHistory);
+        await context.SaveChangesAsync();
     }
 
     private static async Task<Admission> ReloadAsync(ArcaneSynergyContext context, int id = 1) =>
