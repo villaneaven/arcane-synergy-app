@@ -1,10 +1,25 @@
 ﻿using arcane_synergy_app_backend.Data;
 using arcane_synergy_app_backend.Models;
 
+/// <summary>
+/// Adds a couple of fictional patients and admissions for local development.
+/// Only runs when <c>SeedDemoData</c> is enabled; see Program.cs.
+/// </summary>
 public static class DataSeeder
 {
-    public static void Seed(ArcaneSynergyContext context)
+    /// <summary>Configuration key that opts a run into seeding.</summary>
+    public const string EnabledSetting = "SeedDemoData";
+
+    /// <summary>
+    /// Adds whichever demo rows are missing. Safe to run repeatedly: rows that
+    /// already exist are left as they are.
+    /// </summary>
+    /// <returns>How many rows this run added.</returns>
+    public static SeedResult Seed(ArcaneSynergyContext context)
     {
+        var patientsAdded = 0;
+        var admissionsAdded = 0;
+
         var patients = new List<Patient>
         {
             new Patient
@@ -36,8 +51,9 @@ public static class DataSeeder
             bool exists = context.Patients.Any(p => p.MRN == patient.MRN);
             if (!exists)
             {
-                patient.UpdateCalculatedFields(); 
+                patient.UpdateCalculatedFields();
                 context.Patients.Add(patient);
+                patientsAdded++;
             }
         }
 
@@ -126,19 +142,15 @@ public static class DataSeeder
             {
                 admission.UpdateCalculatedFields();
                 context.Admissions.Add(admission);
+                admissionsAdded++;
             }
         }
 
         context.SaveChanges();
 
-        foreach (var p in dbPatients)
-            Console.WriteLine($"Seeded/Present: {p.PatientID} - {p.FullName}");
-
-        var dbAdmissions = context.Admissions
-            .OrderBy(a => a.AdmissionId)
-            .ToList();
-
-        foreach (var a in dbAdmissions)
-            Console.WriteLine($"Seeded/Present Admission: {a.AdmissionId} - Patient {a.PatientID} - {a.Type} on {a.AdmissionDate:yyyy-MM-dd}");
+        return new SeedResult(patientsAdded, admissionsAdded);
     }
 }
+
+/// <summary>Counts only, so nothing identifying a patient reaches the logs.</summary>
+public readonly record struct SeedResult(int PatientsAdded, int AdmissionsAdded);
