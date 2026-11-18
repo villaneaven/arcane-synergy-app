@@ -1,5 +1,6 @@
 using arcane_synergy_app_backend.Controllers;
 using arcane_synergy_app_backend.Models;
+using arcane_synergy_app_backend.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace arcane_synergy_app_backend.Tests;
@@ -159,6 +160,70 @@ public class AdmissionsControllerTests
         Assert.Equal(2, (await controller.GetAdmissions(facilityType: "HOSPITAL")).OkJson().Int("totalCount"));
         Assert.Equal(1, (await controller.GetAdmissions(facilityType: "SNF")).OkJson().Int("totalCount"));
         Assert.Equal(3, (await controller.GetAdmissions()).OkJson().Int("totalCount"));
+    }
+
+    [Fact]
+    public async Task ReadEndpoints_ReturnPatientEngagementCalculatedForRequestedDay()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        context.Admissions.AddRange(
+            // Not discharged -> null.
+            TestDb.Admission(1, 1, new DateTime(2025, 3, 1)),
+            // Discharged Mar 10, not seen -> today - discharge.
+            TestDb.Admission(2, 1, new DateTime(2025, 3, 2), dischargeDate: new DateTime(2025, 3, 10)),
+            // Discharged Mar 10, seen Mar 13 -> 3, regardless of today.
+            TestDb.Admission(3, 1, new DateTime(2025, 3, 3),
+                dischargeDate: new DateTime(2025, 3, 10), dateSeen: new DateTime(2025, 3, 13)));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context);
+        var today = new DateOnly(2025, 3, 20);
+
+        int? EngagementFor(IEnumerable<Admission> admissions, int id) =>
+            admissions.Single(a => a.AdmissionId == id).PatientEngagement;
+
+        // List endpoint (anonymous payload -> check via JSON).
+        var list = (await controller.GetAdmissions(today: today)).OkJson().Array("items");
+        int? ListValue(int id) => list
+            .Single(item => item!["AdmissionId"]!.GetValue<int>() == id)!["PatientEngagement"]?
+            .GetValue<int>();
+        Assert.Null(ListValue(1));
+        Assert.Equal(10, ListValue(2));
+        Assert.Equal(3, ListValue(3));
+
+        // Export endpoint.
+        var exported = (await controller.GetAdmissionsForExport(today: today)).OkValue<List<Admission>>();
+        Assert.Null(EngagementFor(exported, 1));
+        Assert.Equal(10, EngagementFor(exported, 2));
+        Assert.Equal(3, EngagementFor(exported, 3));
+
+        // Single admission and by-patient endpoints.
+        var single = (await controller.GetAdmission(2, today)).OkValue<Admission>();
+        Assert.Equal(10, single.PatientEngagement);
+
+        var byPatient = (await controller.GetAdmissionsByPatient(1, today)).OkValue<List<Admission>>();
+        Assert.Equal(10, EngagementFor(byPatient, 2));
+
+        // A later day moves the unseen admission forward but not the seen one.
+        var nextDay = (await controller.GetAdmissionsForExport(today: today.AddDays(1))).OkValue<List<Admission>>();
+        Assert.Equal(11, EngagementFor(nextDay, 2));
+        Assert.Equal(3, EngagementFor(nextDay, 3));
+    }
+
+    [Fact]
+    public async Task ReadEndpoints_DefaultPatientEngagementToClinicToday()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        var discharge = ClinicTime.Today.AddDays(-5).ToDateTime(TimeOnly.MinValue);
+        context.Admissions.Add(TestDb.Admission(1, 1, discharge.AddDays(-2), dischargeDate: discharge));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context);
+
+        var single = (await controller.GetAdmission(1)).OkValue<Admission>();
+        Assert.Equal(5, single.PatientEngagement);
     }
 
     [Fact]
