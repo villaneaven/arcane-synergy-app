@@ -21,6 +21,28 @@ public class CalculatedFieldsTests
     }
 
     [Theory]
+    [InlineData(false, false, "Current")]  // still admitted
+    [InlineData(false, true, "Current")]   // seen, but no discharge date yet
+    [InlineData(true, false, "Pending")]   // discharged, not seen
+    [InlineData(true, true, "Completed")]  // discharged and seen
+    public void Admission_DerivesStatusFromDischargeDateAndDateSeen(
+        bool hasDischargeDate, bool hasDateSeen, string expected)
+    {
+        var admission = new Admission
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 1, 1),
+            DateNotified = new DateTime(2025, 1, 1),
+            DischargeDate = hasDischargeDate ? new DateTime(2025, 1, 5) : null,
+            DateSeen = hasDateSeen ? new DateTime(2025, 1, 7) : null,
+        };
+
+        admission.UpdateCalculatedFields();
+
+        Assert.Equal(expected, admission.Status);
+    }
+
+    [Theory]
     // A readmission within 30 days of the final discharge.
     [InlineData(1, true)]
     [InlineData(30, true)]

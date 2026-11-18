@@ -44,13 +44,15 @@ namespace arcane_synergy_app_backend.Models
         public DateTime? FinalDischargeDate { get; set; }
         public int CountOfTransfers { get; set; }
 
-        // Status will mark Done if the patient's transfers have been finalized and discharged and patient has been seen. 
-        // In Transfer if Patient is not discharged from a transfer. 
-        // Hospice if patient has been admitted to a hospice. 
-        // Expired if passed away. 
-        // To Be Seen if patient is pending being seen after discharge when transfers are finalized and done.
-        // SNF if patient is in an SNF
+        // Derived in UpdateCalculatedFields:
+        // Current   - no Discharge Date yet.
+        // Pending   - has a Discharge Date but Date Seen is empty.
+        // Completed - has a Discharge Date and Date Seen.
         public string? Status { get; set; }
+
+        public const string StatusCurrent = "Current";
+        public const string StatusPending = "Pending";
+        public const string StatusCompleted = "Completed";
 
         //references
         public ICollection<Transfer>? Transfers { get; set; }
@@ -69,6 +71,9 @@ namespace arcane_synergy_app_backend.Models
                 ReadmissionFlag = false;
             }
 
+            Status = !DischargeDate.HasValue
+                ? StatusCurrent
+                : DateSeen.HasValue ? StatusCompleted : StatusPending;
         }
     }
 }
