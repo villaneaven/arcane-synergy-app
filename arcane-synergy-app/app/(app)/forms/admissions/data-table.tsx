@@ -59,7 +59,11 @@ import { ButtonLoading } from "@/components/button-loading";
 import { NewAdmissionDialog } from "@/components/new-admission-dialog";
 import { toast } from "sonner";
 import { DatePickerInput } from "@/components/date-picker-input";
-import { STATUS_OPTIONS, TYPE_OPTIONS } from "@/lib/admission-options";
+import {
+  FACILITY_TYPE_OPTIONS,
+  STATUS_OPTIONS,
+  TYPE_OPTIONS,
+} from "@/lib/admission-options";
 import { GROUP_OPTIONS } from "@/lib/patient-options";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -101,6 +105,8 @@ interface DataTableProps<
   onGroupChange: (value: string) => void;
   status: string;
   onStatusChange: (value: string) => void;
+  facilityType: string;
+  onFacilityTypeChange: (value: string) => void;
   startDate?: Date;
   onStartDateChange: (date: Date | undefined) => void;
   endDate?: Date;
@@ -143,6 +149,8 @@ export function DataTable<
   onGroupChange,
   status,
   onStatusChange,
+  facilityType,
+  onFacilityTypeChange,
   startDate,
   onStartDateChange,
   endDate,
@@ -267,6 +275,7 @@ export function DataTable<
     if (admissionType !== "all") params.set("admissionType", admissionType);
     if (group !== "all") params.set("group", group);
     if (status !== "all") params.set("status", status);
+    if (facilityType !== "all") params.set("facilityType", facilityType);
     if (startDate) params.set("startDate", startDate.toISOString());
     if (endDate) params.set("endDate", endDate.toISOString());
     if (sorting[0]) {
@@ -636,6 +645,25 @@ export function DataTable<
                 <SelectLabel>Status</SelectLabel>
                 <SelectItem value="all">All Statuses</SelectItem>
                 {STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field className="w-full max-w-48">
+          <FieldLabel>Facility Type</FieldLabel>
+          <Select value={facilityType} onValueChange={onFacilityTypeChange}>
+            <SelectTrigger className="w-45">
+              <SelectValue placeholder="Select a facility type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Facility Type</SelectLabel>
+                <SelectItem value="all">All Facility Types</SelectItem>
+                {FACILITY_TYPE_OPTIONS.map((option) => (
                   <SelectItem key={option} value={option}>
                     {option}
                   </SelectItem>

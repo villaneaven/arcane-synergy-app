@@ -42,6 +42,7 @@ export function AdmissionsTableWrapper({
   const [admissionType, setAdmissionType] = useState("all");
   const [group, setGroup] = useState("all");
   const [status, setStatus] = useState("all");
+  const [facilityType, setFacilityType] = useState("all");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
@@ -64,6 +65,7 @@ export function AdmissionsTableWrapper({
       targetAdmissionType: string,
       targetGroup: string,
       targetStatus: string,
+      targetFacilityType: string,
       targetStartDate: Date | undefined,
       targetEndDate: Date | undefined,
     ) => {
@@ -79,6 +81,8 @@ export function AdmissionsTableWrapper({
         params.set("admissionType", targetAdmissionType);
       if (targetGroup !== "all") params.set("group", targetGroup);
       if (targetStatus !== "all") params.set("status", targetStatus);
+      if (targetFacilityType !== "all")
+        params.set("facilityType", targetFacilityType);
       if (targetStartDate)
         params.set("startDate", targetStartDate.toISOString());
       if (targetEndDate) params.set("endDate", targetEndDate.toISOString());
@@ -135,6 +139,7 @@ export function AdmissionsTableWrapper({
       admissionType,
       group,
       status,
+      facilityType,
       startDate,
       endDate,
     );
@@ -145,6 +150,7 @@ export function AdmissionsTableWrapper({
     admissionType,
     group,
     status,
+    facilityType,
     startDate,
     endDate,
   ]);
@@ -175,6 +181,7 @@ export function AdmissionsTableWrapper({
           admissionType,
           group,
           status,
+          facilityType,
           startDate,
           endDate,
         );
@@ -187,6 +194,7 @@ export function AdmissionsTableWrapper({
       admissionType,
       group,
       status,
+      facilityType,
       startDate,
       endDate,
     ],
@@ -204,6 +212,11 @@ export function AdmissionsTableWrapper({
 
   const handleStatusChange = useCallback((value: string) => {
     setStatus(value);
+    setPageIndex(0);
+  }, []);
+
+  const handleFacilityTypeChange = useCallback((value: string) => {
+    setFacilityType(value);
     setPageIndex(0);
   }, []);
 
@@ -232,6 +245,7 @@ export function AdmissionsTableWrapper({
       admissionType,
       group,
       status,
+      facilityType,
       startDate,
       endDate,
     );
@@ -244,6 +258,7 @@ export function AdmissionsTableWrapper({
     admissionType,
     group,
     status,
+    facilityType,
     startDate,
     endDate,
   ]);
@@ -277,6 +292,8 @@ export function AdmissionsTableWrapper({
       onGroupChange={handleGroupChange}
       status={status}
       onStatusChange={handleStatusChange}
+      facilityType={facilityType}
+      onFacilityTypeChange={handleFacilityTypeChange}
       startDate={startDate}
       onStartDateChange={handleStartDateChange}
       endDate={endDate}
