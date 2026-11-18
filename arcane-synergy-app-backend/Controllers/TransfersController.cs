@@ -268,6 +268,8 @@ public class TransfersController : ControllerBase
 	[HttpDelete("{id}")]
 	public async Task<IActionResult> Delete(int id)
 	{
+		if (User.GetUserName() == null) return Forbid();
+
 		var transfer = await _context.Transfers.FindAsync(id);
 		if (transfer == null)
 		{

@@ -693,7 +693,7 @@ public class TransfersControllerTests
             TestDb.Transfer(2, 1, new DateTime(2025, 1, 12)));
         await context.SaveChangesAsync();
 
-        var controller = new TransfersController(context);
+        var controller = new TransfersController(context).WithUser();
 
         Assert.IsType<NoContentResult>(await controller.Delete(1));
         Assert.Equal(1, await context.Transfers.CountAsync());
@@ -711,7 +711,7 @@ public class TransfersControllerTests
             isFinalDischarge: true));
         await context.SaveChangesAsync();
 
-        var controller = new TransfersController(context);
+        var controller = new TransfersController(context).WithUser();
 
         Assert.IsType<NoContentResult>(await controller.Delete(1));
         var admission = await ReloadAdmission(context, 1);
@@ -732,7 +732,7 @@ public class TransfersControllerTests
             TestDb.Transfer(2, 1, new DateTime(2025, 1, 5)));
         await context.SaveChangesAsync();
 
-        var controller = new TransfersController(context);
+        var controller = new TransfersController(context).WithUser();
 
         Assert.IsType<NoContentResult>(await controller.Delete(2));
         var admission = await ReloadAdmission(context, 1);
@@ -744,12 +744,66 @@ public class TransfersControllerTests
     public async Task Delete_ReturnsNotFoundForUnknownId()
     {
         using var context = TestDb.CreateContext();
-        var controller = new TransfersController(context);
+        var controller = new TransfersController(context).WithUser();
 
         Assert.IsType<NotFoundResult>(await controller.Delete(404));
     }
 
+    [Fact]
+    public async Task Delete_ForbidsWhenPrincipalHasNoUserName()
+    {
+        using var context = TestDb.CreateContext();
+        SeedAdmission(context, 1, countOfTransfers: 1);
+        context.Transfers.Add(TestDb.Transfer(1, 1, new DateTime(2025, 1, 10)));
+        await context.SaveChangesAsync();
+        await ClearHistoryAsync(context);
+
+        var controller = new TransfersController(context).WithUser(null);
+
+        Assert.IsType<ForbidResult>(await controller.Delete(1));
+
+        Assert.Equal(1, await context.Transfers.CountAsync());
+        Assert.Equal(1, (await ReloadAdmission(context, 1)).CountOfTransfers);
+        Assert.Empty(await context.EditHistory.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Delete_ChecksTheUserBeforeLookingTheTransferUp()
+    {
+        using var context = TestDb.CreateContext();
+        var controller = new TransfersController(context).WithUser(null);
+
+        Assert.IsType<ForbidResult>(await controller.Delete(404));
+    }
+
+    [Fact]
+    public async Task Delete_AttributesTheRemovalToTheSignedInUser()
+    {
+        using var context = TestDb.CreateContext("nurse@example.com");
+        SeedAdmission(context, 1, countOfTransfers: 1);
+        context.Transfers.Add(TestDb.Transfer(1, 1, new DateTime(2025, 1, 10)));
+        await context.SaveChangesAsync();
+        await ClearHistoryAsync(context);
+
+        var controller = new TransfersController(context).WithUser("nurse@example.com");
+
+        Assert.IsType<NoContentResult>(await controller.Delete(1));
+
+        var entry = Assert.Single(await context.EditHistory
+            .Where(h => h.EntityType == nameof(Transfer))
+            .ToListAsync());
+        Assert.Equal(EditHistory.ChangeTypes.Delete, entry.ChangeType);
+        Assert.Equal("1", entry.EntityId);
+        Assert.Equal("nurse@example.com", entry.ChangedBy);
+    }
+
     // ---------- helpers ----------
+
+    private static async Task ClearHistoryAsync(ArcaneSynergyContext context)
+    {
+        context.EditHistory.RemoveRange(context.EditHistory);
+        await context.SaveChangesAsync();
+    }
 
     /// <summary>
     /// Adds an admission (and the patient it hangs off) using the admission id
