@@ -37,6 +37,10 @@ interface DatePickerInputProps {
   id?: string;
   name?: string;
   required?: boolean;
+  disabled?: boolean;
+  minDate?: Date;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
 }
 
 export function DatePickerInput({
@@ -46,6 +50,10 @@ export function DatePickerInput({
   id,
   name,
   required,
+  disabled,
+  minDate,
+  "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
 }: DatePickerInputProps) {
   const [open, setOpen] = React.useState(false);
   const [date, setDate] = React.useState<Date | undefined>(controlledValue);
@@ -106,6 +114,9 @@ export function DatePickerInput({
           }
         }}
         required={required}
+        disabled={disabled}
+        aria-invalid={ariaInvalid}
+        aria-describedby={ariaDescribedBy}
       />
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -113,6 +124,7 @@ export function DatePickerInput({
             type="button"
             id="date-picker"
             variant="ghost"
+            disabled={disabled}
             className="absolute top-1/2 right-2 size-6 -translate-y-1/2"
           >
             <CalendarIcon className="size-3.5" />
@@ -131,6 +143,7 @@ export function DatePickerInput({
             captionLayout="dropdown"
             month={month}
             onMonthChange={setMonth}
+            disabled={minDate ? { before: minDate } : undefined}
             onSelect={(date) => {
               handleDateChange(date);
               setOpen(false);
