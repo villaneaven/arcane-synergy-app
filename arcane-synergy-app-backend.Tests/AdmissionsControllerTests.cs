@@ -424,6 +424,110 @@ public class AdmissionsControllerTests
     }
 
     [Fact]
+    public async Task AddAdmission_RejectsDateSeenWithoutDischargeDate()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context).WithUser("nurse@example.com");
+        var admission = TestDb.Admission(0, 1, new DateTime(2025, 3, 10),
+            dateSeen: new DateTime(2025, 3, 12));
+
+        var result = await controller.AddAdmission(admission);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Date Seen requires a Discharge Date.", badRequest.Value);
+        Assert.Equal(0, await context.Admissions.CountAsync());
+    }
+
+    [Fact]
+    public async Task AddAdmission_RejectsDateSeenBeforeDischargeDate()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context).WithUser("nurse@example.com");
+        var admission = TestDb.Admission(0, 1, new DateTime(2025, 3, 10),
+            dischargeDate: new DateTime(2025, 3, 15),
+            dateSeen: new DateTime(2025, 3, 14));
+
+        var result = await controller.AddAdmission(admission);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Date Seen must be on or after the Discharge Date.", badRequest.Value);
+        Assert.Equal(0, await context.Admissions.CountAsync());
+    }
+
+    [Theory]
+    [InlineData(15)] // same day as discharge
+    [InlineData(20)] // after discharge
+    public async Task AddAdmission_AcceptsDateSeenOnOrAfterDischargeDate(int seenDay)
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context).WithUser("nurse@example.com");
+        var admission = TestDb.Admission(0, 1, new DateTime(2025, 3, 10),
+            dischargeDate: new DateTime(2025, 3, 15),
+            dateSeen: new DateTime(2025, 3, seenDay));
+
+        var result = await controller.AddAdmission(admission);
+
+        Assert.IsType<CreatedAtActionResult>(result);
+        Assert.Equal(1, await context.Admissions.CountAsync());
+    }
+
+    [Fact]
+    public async Task UpdateAdmission_RejectsInvalidDateSeenAndLeavesRecordUnchanged()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        context.Admissions.Add(TestDb.Admission(1, 1, new DateTime(2025, 1, 10),
+            dischargeDate: new DateTime(2025, 1, 15)));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context).WithUser("doctor@example.com");
+
+        // Seen before discharge.
+        var seenEarly = TestDb.Admission(1, 1, new DateTime(2025, 1, 10),
+            dischargeDate: new DateTime(2025, 1, 15),
+            dateSeen: new DateTime(2025, 1, 14));
+        Assert.IsType<BadRequestObjectResult>(await controller.UpdateAdmission(1, seenEarly));
+
+        // Discharge Date cleared while Date Seen is set.
+        var noDischarge = TestDb.Admission(1, 1, new DateTime(2025, 1, 10),
+            dateSeen: new DateTime(2025, 1, 16));
+        Assert.IsType<BadRequestObjectResult>(await controller.UpdateAdmission(1, noDischarge));
+
+        var saved = await context.Admissions.AsNoTracking().FirstAsync(a => a.AdmissionId == 1);
+        Assert.Null(saved.DateSeen);
+        Assert.Equal(new DateTime(2025, 1, 15), saved.DischargeDate);
+    }
+
+    [Fact]
+    public async Task UpdateAdmission_AcceptsDateSeenOnOrAfterDischargeDate()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        context.Admissions.Add(TestDb.Admission(1, 1, new DateTime(2025, 1, 10)));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context).WithUser("doctor@example.com");
+        var update = TestDb.Admission(1, 1, new DateTime(2025, 1, 10),
+            dischargeDate: new DateTime(2025, 1, 15),
+            dateSeen: new DateTime(2025, 1, 15));
+
+        Assert.IsType<NoContentResult>(await controller.UpdateAdmission(1, update));
+
+        var saved = await context.Admissions.AsNoTracking().FirstAsync(a => a.AdmissionId == 1);
+        Assert.Equal(new DateTime(2025, 1, 15), saved.DateSeen);
+        Assert.Equal("Completed", saved.Status);
+    }
+
+    [Fact]
     public async Task UpdateAdmission_RejectsMismatchedIdAndMissingAdmission()
     {
         using var context = TestDb.CreateContext();

@@ -57,6 +57,16 @@ namespace arcane_synergy_app_backend.Models
         //references
         public ICollection<Transfer>? Transfers { get; set; }
 
+        public string? ValidateDateSeen()
+        {
+            if (!DateSeen.HasValue) return null;
+            if (!DischargeDate.HasValue)
+                return "Date Seen requires a Discharge Date.";
+            if (DateSeen.Value.Date < DischargeDate.Value.Date)
+                return "Date Seen must be on or after the Discharge Date.";
+            return null;
+        }
+
         // temp calculations
         public void UpdateCalculatedFields()
         {

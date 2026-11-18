@@ -43,6 +43,45 @@ public class CalculatedFieldsTests
     }
 
     [Theory]
+    // dischargeDay / seenDay are days in Jan 2025; null means the field is empty.
+    [InlineData(null, null, null)]                                                     // neither set
+    [InlineData(5, null, null)]                                                        // discharged, not seen yet
+    [InlineData(null, 7, "Date Seen requires a Discharge Date.")]                      // seen without discharge
+    [InlineData(5, 4, "Date Seen must be on or after the Discharge Date.")]            // seen before discharge
+    [InlineData(5, 5, null)]                                                           // same day
+    [InlineData(5, 7, null)]                                                           // after discharge
+    public void Admission_ValidatesDateSeenAgainstDischargeDate(
+        int? dischargeDay, int? seenDay, string? expectedError)
+    {
+        var admission = new Admission
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 1, 1),
+            DateNotified = new DateTime(2025, 1, 1),
+            DischargeDate = dischargeDay.HasValue ? new DateTime(2025, 1, dischargeDay.Value) : null,
+            DateSeen = seenDay.HasValue ? new DateTime(2025, 1, seenDay.Value) : null,
+        };
+
+        Assert.Equal(expectedError, admission.ValidateDateSeen());
+    }
+
+    [Fact]
+    public void Admission_DateSeenOnDischargeDayIsValidRegardlessOfTime()
+    {
+        // Discharged in the evening, seen earlier the same day: compared by day, so valid.
+        var admission = new Admission
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 1, 1),
+            DateNotified = new DateTime(2025, 1, 1),
+            DischargeDate = new DateTime(2025, 1, 5, 18, 0, 0),
+            DateSeen = new DateTime(2025, 1, 5, 9, 0, 0),
+        };
+
+        Assert.Null(admission.ValidateDateSeen());
+    }
+
+    [Theory]
     // A readmission within 30 days of the final discharge.
     [InlineData(1, true)]
     [InlineData(30, true)]
