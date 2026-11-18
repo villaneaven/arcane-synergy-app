@@ -41,6 +41,7 @@ export function AdmissionsTableWrapper({
   const [search, setSearch] = useState("");
   const [admissionType, setAdmissionType] = useState("all");
   const [group, setGroup] = useState("all");
+  const [status, setStatus] = useState("all");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
@@ -62,6 +63,7 @@ export function AdmissionsTableWrapper({
       targetSearch: string,
       targetAdmissionType: string,
       targetGroup: string,
+      targetStatus: string,
       targetStartDate: Date | undefined,
       targetEndDate: Date | undefined,
     ) => {
@@ -76,6 +78,7 @@ export function AdmissionsTableWrapper({
       if (targetAdmissionType !== "all")
         params.set("admissionType", targetAdmissionType);
       if (targetGroup !== "all") params.set("group", targetGroup);
+      if (targetStatus !== "all") params.set("status", targetStatus);
       if (targetStartDate)
         params.set("startDate", targetStartDate.toISOString());
       if (targetEndDate) params.set("endDate", targetEndDate.toISOString());
@@ -131,10 +134,20 @@ export function AdmissionsTableWrapper({
       search,
       admissionType,
       group,
+      status,
       startDate,
       endDate,
     );
-  }, [pageIndex, pageSize, sorting, admissionType, group, startDate, endDate]);
+  }, [
+    pageIndex,
+    pageSize,
+    sorting,
+    admissionType,
+    group,
+    status,
+    startDate,
+    endDate,
+  ]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((old: SortingState) => SortingState)) => {
@@ -161,6 +174,7 @@ export function AdmissionsTableWrapper({
           value,
           admissionType,
           group,
+          status,
           startDate,
           endDate,
         );
@@ -172,6 +186,7 @@ export function AdmissionsTableWrapper({
       sorting,
       admissionType,
       group,
+      status,
       startDate,
       endDate,
     ],
@@ -184,6 +199,11 @@ export function AdmissionsTableWrapper({
 
   const handleGroupChange = useCallback((value: string) => {
     setGroup(value);
+    setPageIndex(0);
+  }, []);
+
+  const handleStatusChange = useCallback((value: string) => {
+    setStatus(value);
     setPageIndex(0);
   }, []);
 
@@ -211,6 +231,7 @@ export function AdmissionsTableWrapper({
       search,
       admissionType,
       group,
+      status,
       startDate,
       endDate,
     );
@@ -222,6 +243,7 @@ export function AdmissionsTableWrapper({
     search,
     admissionType,
     group,
+    status,
     startDate,
     endDate,
   ]);
@@ -253,6 +275,8 @@ export function AdmissionsTableWrapper({
       onAdmissionTypeChange={handleAdmissionTypeChange}
       group={group}
       onGroupChange={handleGroupChange}
+      status={status}
+      onStatusChange={handleStatusChange}
       startDate={startDate}
       onStartDateChange={handleStartDateChange}
       endDate={endDate}
