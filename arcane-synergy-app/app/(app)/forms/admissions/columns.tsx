@@ -40,7 +40,7 @@ export type Admission = {
   dayOfWeekAdmitted: string | undefined;
   monthAdmitted: string | undefined;
   tcmDueDate: string | undefined;
-  patientEngagement: number;
+  patientEngagement: number | null;
   readmissionFlag: boolean;
   nextAdmissionDate: string | undefined;
   finalDischargeDate: string | undefined;
@@ -278,7 +278,11 @@ export const createColumns = (
   },
   {
     accessorKey: "patientEngagement",
-    header: "Patient Engagement",
+    header: () => <div className="text-right">Patient Engagement</div>,
+    cell: ({ row }) => {
+      const days = row.getValue<number | null>("patientEngagement");
+      return <div className="text-right tabular-nums">{days ?? ""}</div>;
+    },
   },
   {
     accessorKey: "readmissionFlag",
