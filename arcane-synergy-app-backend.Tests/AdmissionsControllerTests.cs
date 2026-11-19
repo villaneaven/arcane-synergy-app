@@ -657,4 +657,169 @@ public class AdmissionsControllerTests
         Assert.Equal(0, await context.Admissions.CountAsync());
         Assert.IsType<NotFoundResult>(await controller.DeleteAdmission(1));
     }
+
+    [Theory]
+    [InlineData(false, false, "Current")]
+    [InlineData(true, false, "Pending")]
+    [InlineData(true, true, "Completed")]
+    public async Task AddAdmission_StoresDerivedStatus(bool discharged, bool seen, string expected)
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context).WithUser("nurse@example.com");
+        var admission = TestDb.Admission(0, 1, new DateTime(2025, 3, 10),
+            dischargeDate: discharged ? new DateTime(2025, 3, 15) : null,
+            dateSeen: seen ? new DateTime(2025, 3, 16) : null);
+        admission.Status = null; // Whatever the client sends is ignored.
+
+        Assert.IsType<CreatedAtActionResult>(await controller.AddAdmission(admission));
+
+        var saved = await context.Admissions.AsNoTracking().SingleAsync();
+        Assert.Equal(expected, saved.Status);
+    }
+
+    [Fact]
+    public async Task AddAdmission_ReturnsPatientEngagementCalculatedForClinicToday()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context).WithUser("nurse@example.com");
+        var discharge = ClinicTime.Today.AddDays(-4).ToDateTime(TimeOnly.MinValue);
+        var admission = TestDb.Admission(0, 1, discharge.AddDays(-2), dischargeDate: discharge);
+        admission.PatientEngagement = 999; // Client-supplied value is ignored.
+
+        var created = Assert.IsType<CreatedAtActionResult>(await controller.AddAdmission(admission));
+
+        Assert.Equal(4, Assert.IsType<Admission>(created.Value).PatientEngagement);
+    }
+
+    [Fact]
+    public async Task UpdateAdmission_RecalculatesStatusWhenDatesAreCleared()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        context.Admissions.Add(TestDb.Admission(1, 1, new DateTime(2025, 1, 10),
+            dischargeDate: new DateTime(2025, 1, 15),
+            dateSeen: new DateTime(2025, 1, 16)));
+        await context.SaveChangesAsync();
+        Assert.Equal("Completed", (await context.Admissions.AsNoTracking().SingleAsync()).Status);
+
+        var controller = new AdmissionsController(context).WithUser("doctor@example.com");
+
+        // Clearing Date Seen: Completed -> Pending.
+        var unseen = TestDb.Admission(1, 1, new DateTime(2025, 1, 10),
+            dischargeDate: new DateTime(2025, 1, 15));
+        Assert.IsType<NoContentResult>(await controller.UpdateAdmission(1, unseen));
+        Assert.Equal("Pending", (await context.Admissions.AsNoTracking().SingleAsync()).Status);
+
+        // Clearing Discharge Date too: Pending -> Current.
+        var readmitted = TestDb.Admission(1, 1, new DateTime(2025, 1, 10));
+        Assert.IsType<NoContentResult>(await controller.UpdateAdmission(1, readmitted));
+        Assert.Equal("Current", (await context.Admissions.AsNoTracking().SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task UpdateAdmission_ValidatesDateSeenBeforeLookingUpTheAdmission()
+    {
+        using var context = TestDb.CreateContext();
+        var controller = new AdmissionsController(context).WithUser("doctor@example.com");
+
+        // Invalid payload for an id that doesn't exist: the validation error wins.
+        var invalid = TestDb.Admission(42, 1, new DateTime(2025, 1, 10),
+            dateSeen: new DateTime(2025, 1, 16));
+        Assert.IsType<BadRequestObjectResult>(await controller.UpdateAdmission(42, invalid));
+
+        // A valid payload for the same id is a plain 404.
+        var valid = TestDb.Admission(42, 1, new DateTime(2025, 1, 10));
+        Assert.IsType<NotFoundResult>(await controller.UpdateAdmission(42, valid));
+    }
+
+    [Fact]
+    public async Task ListAndExport_ApplyGroupStatusAndFacilityTypeFiltersTogether()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(
+            TestDb.Patient(1, group: "DMC"),
+            TestDb.Patient(2, firstName: "Grace", lastName: "Hopper", group: "Other"));
+
+        Admission Make(int id, int patientId, string facilityType, bool discharged)
+        {
+            var a = TestDb.Admission(id, patientId, new DateTime(2025, 1, id),
+                dischargeDate: discharged ? new DateTime(2025, 2, 1) : null);
+            a.FacilityType = facilityType;
+            return a;
+        }
+
+        context.Admissions.AddRange(
+            Make(1, 1, "HOSPITAL", discharged: true),   // match
+            Make(2, 1, "HOSPITAL", discharged: true),   // match
+            Make(3, 1, "HOSPITAL", discharged: true),   // match
+            Make(4, 1, "HOSPITAL", discharged: false),  // wrong status
+            Make(5, 1, "SNF", discharged: true),        // wrong facility type
+            Make(6, 2, "HOSPITAL", discharged: true));  // wrong group
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context);
+
+        var page = (await controller.GetAdmissions(
+            page: 2, pageSize: 2, group: "DMC", status: "Pending", facilityType: "HOSPITAL",
+            sortBy: "admissionDate", sortDir: "asc")).OkJson();
+        Assert.Equal(3, page.Int("totalCount"));
+        var pageIds = page.Array("items").Select(i => i!["AdmissionId"]!.GetValue<int>());
+        Assert.Equal(new[] { 3 }, pageIds);
+
+        var exported = (await controller.GetAdmissionsForExport(
+            group: "DMC", status: "Pending", facilityType: "HOSPITAL",
+            sortBy: "admissionDate", sortDir: "asc")).OkValue<List<Admission>>();
+        Assert.Equal(new[] { 1, 2, 3 }, exported.Select(a => a.AdmissionId));
+    }
+
+    [Fact]
+    public async Task Export_FiltersByStatusAndFacilityType()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        var current = TestDb.Admission(1, 1, new DateTime(2025, 1, 10));
+        current.FacilityType = "HOSPITAL";
+        var pending = TestDb.Admission(2, 1, new DateTime(2025, 1, 11), dischargeDate: new DateTime(2025, 1, 15));
+        pending.FacilityType = "SNF";
+        var completed = TestDb.Admission(3, 1, new DateTime(2025, 1, 12),
+            dischargeDate: new DateTime(2025, 1, 16), dateSeen: new DateTime(2025, 1, 18));
+        completed.FacilityType = "SNF";
+        context.Admissions.AddRange(current, pending, completed);
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context);
+
+        async Task<int[]> Ids(string? status = null, string? facilityType = null) =>
+            (await controller.GetAdmissionsForExport(status: status, facilityType: facilityType))
+                .OkValue<List<Admission>>().Select(a => a.AdmissionId).OrderBy(id => id).ToArray();
+
+        Assert.Equal(new[] { 2 }, await Ids(status: "Pending"));
+        Assert.Equal(new[] { 3 }, await Ids(status: "Completed"));
+        Assert.Equal(new[] { 2, 3 }, await Ids(facilityType: "SNF"));
+        Assert.Equal(new[] { 1 }, await Ids(facilityType: "HOSPITAL"));
+        Assert.Equal(new[] { 1, 2, 3 }, await Ids());
+    }
+
+    [Fact]
+    public async Task GetAdmissions_StatusFilterExcludesRowsWithoutStatus()
+    {
+        // Rows saved before Status was derived have NULL until BackfillAdmissionStatus runs.
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        var legacy = TestDb.Admission(1, 1, new DateTime(2025, 1, 10));
+        legacy.Status = null;
+        context.Admissions.AddRange(legacy, TestDb.Admission(2, 1, new DateTime(2025, 1, 11)));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context);
+
+        Assert.Equal(1, (await controller.GetAdmissions(status: "Current")).OkJson().Int("totalCount"));
+        Assert.Equal(2, (await controller.GetAdmissions()).OkJson().Int("totalCount"));
+    }
 }
