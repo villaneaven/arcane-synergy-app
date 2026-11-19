@@ -187,7 +187,6 @@ export function DataTable<
       dayOfWeekAdmitted: false,
       monthAdmitted: false,
       tcmDueDate: false,
-      patientEngagement: false,
       readmissionFlag: false,
       nextAdmissionDate: false,
       finalDischargeDate: false,
