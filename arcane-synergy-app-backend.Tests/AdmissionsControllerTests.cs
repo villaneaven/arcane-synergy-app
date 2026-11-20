@@ -546,6 +546,58 @@ public class AdmissionsControllerTests
     }
 
     [Fact]
+    public async Task AddAdmission_RejectsDischargeDateAfterClinicToday()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context).WithUser("nurse@example.com");
+        var tomorrow = ClinicTime.Today.AddDays(1).ToDateTime(TimeOnly.MinValue);
+        var admission = TestDb.Admission(0, 1, tomorrow.AddDays(-3), dischargeDate: tomorrow);
+
+        var result = await controller.AddAdmission(admission);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Discharge Date must be today or earlier.", badRequest.Value);
+        Assert.Equal(0, await context.Admissions.CountAsync());
+    }
+
+    [Fact]
+    public async Task AddAdmission_AcceptsDischargeDateOfClinicToday()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context).WithUser("nurse@example.com");
+        var today = ClinicTime.Today.ToDateTime(TimeOnly.MinValue);
+        var admission = TestDb.Admission(0, 1, today.AddDays(-3), dischargeDate: today);
+
+        Assert.IsType<CreatedAtActionResult>(await controller.AddAdmission(admission));
+    }
+
+    [Fact]
+    public async Task UpdateAdmission_RejectsFutureDischargeDateAndLeavesRecordUnchanged()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        context.Admissions.Add(TestDb.Admission(1, 1, new DateTime(2025, 1, 10),
+            dischargeDate: new DateTime(2025, 1, 15)));
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context).WithUser("doctor@example.com");
+        var tomorrow = ClinicTime.Today.AddDays(1).ToDateTime(TimeOnly.MinValue);
+        var future = TestDb.Admission(1, 1, new DateTime(2025, 1, 10), dischargeDate: tomorrow);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(await controller.UpdateAdmission(1, future));
+        Assert.Equal("Discharge Date must be today or earlier.", badRequest.Value);
+
+        var saved = await context.Admissions.AsNoTracking().FirstAsync(a => a.AdmissionId == 1);
+        Assert.Equal(new DateTime(2025, 1, 15), saved.DischargeDate);
+    }
+
+    [Fact]
     public async Task UpdateAdmission_RejectsInvalidDateSeenAndLeavesRecordUnchanged()
     {
         using var context = TestDb.CreateContext();
