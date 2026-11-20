@@ -26,7 +26,10 @@ import {
   NOTIFICATION_SOURCE_OPTIONS,
   TYPE_OPTIONS,
 } from "@/lib/admission-options";
-import { validateDateSeen } from "@/lib/admission-validation";
+import {
+  validateDateSeen,
+  validateDischargeDate,
+} from "@/lib/admission-validation";
 
 function RequiredLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -113,7 +116,10 @@ export function AdmissionForm({
     initialValues?.dateSeen ? new Date(initialValues.dateSeen) : undefined,
   );
 
+  const today = new Date();
+  const dischargeDateError = validateDischargeDate(dischargeDate, today);
   const dateSeenError = validateDateSeen(dischargeDate, dateSeen);
+  const hasDateError = !!dischargeDateError || !!dateSeenError;
 
   const handleDischargeDateChange = (date: Date | undefined) => {
     setDischargeDate(date);
@@ -123,7 +129,7 @@ export function AdmissionForm({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (dateSeenError) return;
+    if (hasDateError) return;
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
@@ -320,7 +326,17 @@ export function AdmissionForm({
             name="discharge-date"
             value={dischargeDate}
             onChange={handleDischargeDateChange}
+            maxDate={today}
+            aria-invalid={!!dischargeDateError}
+            aria-describedby={
+              dischargeDateError ? "discharge-date-error" : undefined
+            }
           />
+          {dischargeDateError && (
+            <p id="discharge-date-error" className="text-sm text-destructive">
+              {dischargeDateError}
+            </p>
+          )}
         </div>
         <div className="grid gap-3">
           <Label htmlFor="discharge-to">Discharge To</Label>
@@ -382,7 +398,7 @@ export function AdmissionForm({
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting || !!dateSeenError}>
+        <Button type="submit" disabled={isSubmitting || hasDateError}>
           {isSubmitting ? "Saving..." : "Save changes"}
         </Button>
       </div>
