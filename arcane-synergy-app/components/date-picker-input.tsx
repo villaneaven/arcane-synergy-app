@@ -39,6 +39,7 @@ interface DatePickerInputProps {
   required?: boolean;
   disabled?: boolean;
   minDate?: Date;
+  maxDate?: Date;
   "aria-invalid"?: boolean;
   "aria-describedby"?: string;
 }
@@ -52,6 +53,7 @@ export function DatePickerInput({
   required,
   disabled,
   minDate,
+  maxDate,
   "aria-invalid": ariaInvalid,
   "aria-describedby": ariaDescribedBy,
 }: DatePickerInputProps) {
@@ -143,7 +145,11 @@ export function DatePickerInput({
             captionLayout="dropdown"
             month={month}
             onMonthChange={setMonth}
-            disabled={minDate ? { before: minDate } : undefined}
+            disabled={[
+              ...(minDate ? [{ before: minDate }] : []),
+              ...(maxDate ? [{ after: maxDate }] : []),
+            ]}
+            endMonth={maxDate}
             onSelect={(date) => {
               handleDateChange(date);
               setOpen(false);
