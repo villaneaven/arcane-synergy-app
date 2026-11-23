@@ -61,6 +61,13 @@ namespace arcane_synergy_app_backend.Models
         //references
         public ICollection<Transfer>? Transfers { get; set; }
 
+        public string? ValidateDischargeDate(DateOnly today)
+        {
+            if (DischargeDate.HasValue && DateOnly.FromDateTime(DischargeDate.Value) > today)
+                return "Discharge Date must be today or earlier.";
+            return null;
+        }
+
         public string? ValidateDateSeen()
         {
             if (!DateSeen.HasValue) return null;

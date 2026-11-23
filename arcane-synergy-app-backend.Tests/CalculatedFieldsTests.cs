@@ -65,6 +65,40 @@ public class CalculatedFieldsTests
         Assert.Equal(expectedError, admission.ValidateDateSeen());
     }
 
+    [Theory]
+    // dischargeDay is a day in Mar 2025; "today" is Mar 20. null means the field is empty.
+    [InlineData(null, null)]                                          // no discharge
+    [InlineData(19, null)]                                            // yesterday
+    [InlineData(20, null)]                                            // today
+    [InlineData(21, "Discharge Date must be today or earlier.")]      // tomorrow
+    public void Admission_ValidatesDischargeDateNotInFuture(int? dischargeDay, string? expectedError)
+    {
+        var admission = new Admission
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 3, 1),
+            DateNotified = new DateTime(2025, 3, 1),
+            DischargeDate = dischargeDay.HasValue ? new DateTime(2025, 3, dischargeDay.Value) : null,
+        };
+
+        Assert.Equal(expectedError, admission.ValidateDischargeDate(new DateOnly(2025, 3, 20)));
+    }
+
+    [Fact]
+    public void Admission_DischargeLaterTodayIsValid()
+    {
+        // Compared by day, so a time later today is still "today".
+        var admission = new Admission
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 3, 1),
+            DateNotified = new DateTime(2025, 3, 1),
+            DischargeDate = new DateTime(2025, 3, 20, 23, 30, 0),
+        };
+
+        Assert.Null(admission.ValidateDischargeDate(new DateOnly(2025, 3, 20)));
+    }
+
     [Fact]
     public void Admission_DateSeenOnDischargeDayIsValidRegardlessOfTime()
     {
