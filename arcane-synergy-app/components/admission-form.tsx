@@ -27,6 +27,7 @@ import {
   TYPE_OPTIONS,
 } from "@/lib/admission-options";
 import {
+  validateDateNotified,
   validateDateSeen,
   validateDischargeDate,
 } from "@/lib/admission-validation";
@@ -123,7 +124,9 @@ export function AdmissionForm({
     admissionDate,
   );
   const dateSeenError = validateDateSeen(dischargeDate, dateSeen, today);
-  const hasDateError = !!dischargeDateError || !!dateSeenError;
+  const dateNotifiedError = validateDateNotified(notificationDate, today);
+  const hasDateError =
+    !!dischargeDateError || !!dateSeenError || !!dateNotifiedError;
 
   const handleDischargeDateChange = (date: Date | undefined) => {
     setDischargeDate(date);
@@ -320,8 +323,18 @@ export function AdmissionForm({
             name="date-notified"
             value={notificationDate}
             onChange={setNotificationDate}
+            maxDate={today}
             required
+            aria-invalid={!!dateNotifiedError}
+            aria-describedby={
+              dateNotifiedError ? "date-notified-error" : undefined
+            }
           />
+          {dateNotifiedError && (
+            <p id="date-notified-error" className="text-sm text-destructive">
+              {dateNotifiedError}
+            </p>
+          )}
         </div>
         <div className="grid gap-3">
           <Label htmlFor="discharge-date">Discharge Date</Label>

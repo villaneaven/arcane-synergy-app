@@ -4,7 +4,10 @@ import * as React from "react";
 
 import { DatePickerInput } from "@/components/date-picker-input";
 import { DatePickerTimeInput } from "@/components/date-picker-time-input";
-import { validateDischargeDate } from "@/lib/admission-validation";
+import {
+  validateDateNotified,
+  validateDischargeDate,
+} from "@/lib/admission-validation";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -109,10 +112,12 @@ export function TransferForm({
     today,
     admissionDate,
   );
+  const dateNotifiedError = validateDateNotified(notificationDate, today);
+  const hasDateError = !!dischargeDateError || !!dateNotifiedError;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (dischargeDateError) return;
+    if (hasDateError) return;
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
@@ -312,8 +317,18 @@ export function TransferForm({
             name="date-notified"
             value={notificationDate}
             onChange={setNotificationDate}
+            maxDate={today}
             required
+            aria-invalid={!!dateNotifiedError}
+            aria-describedby={
+              dateNotifiedError ? "date-notified-error" : undefined
+            }
           />
+          {dateNotifiedError && (
+            <p id="date-notified-error" className="text-sm text-destructive">
+              {dateNotifiedError}
+            </p>
+          )}
         </div>
         <div className="grid gap-3">
           <Label htmlFor="discharge-to">Discharge To</Label>
@@ -343,7 +358,7 @@ export function TransferForm({
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting || !!dischargeDateError}>
+        <Button type="submit" disabled={isSubmitting || hasDateError}>
           {isSubmitting ? "Saving..." : "Save changes"}
         </Button>
       </div>

@@ -3,6 +3,8 @@ export const DATE_SEEN_REQUIRES_DISCHARGE =
 export const DATE_SEEN_BEFORE_DISCHARGE =
   "Date Seen must be on or after the Discharge Date.";
 export const DATE_SEEN_IN_FUTURE = "Date Seen must be today or earlier.";
+export const DATE_NOTIFIED_IN_FUTURE =
+  "Date Notified must be today or earlier.";
 
 export const DISCHARGE_DATE_IN_FUTURE =
   "Discharge Date must be today or earlier.";
@@ -47,6 +49,20 @@ export function validateDischargeNotBeforeAdmission(
     startOfDay(dischargeDate) < startOfDay(admissionDate)
   )
     return DISCHARGE_BEFORE_ADMISSION;
+  return null;
+}
+
+/**
+ * Date Notified can't be after today (compared by calendar day). Shared by
+ * admissions and transfers; mirrors Admission.ValidateDateNotifiedNotInFuture
+ * on the backend. Returns an error message, or null when valid or unset.
+ */
+export function validateDateNotified(
+  dateNotified: Date | undefined,
+  today: Date = new Date(),
+): string | null {
+  if (dateNotified && startOfDay(dateNotified) > startOfDay(today))
+    return DATE_NOTIFIED_IN_FUTURE;
   return null;
 }
 
