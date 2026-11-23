@@ -355,7 +355,52 @@ public class TransfersControllerTests
         Assert.Equal(1, await context.Transfers.CountAsync());
     }
 
+    [Fact]
+    public async Task AddTransfer_RejectsDischargeBeforeAdmissionDate()
+    {
+        using var context = TestDb.CreateContext();
+        SeedAdmission(context, 1);
+        await context.SaveChangesAsync();
+
+        var controller = new TransfersController(context).WithUser();
+
+        var result = await controller.AddTransfer(TestDb.Transfer(
+            0, 1,
+            new DateTime(2025, 1, 10, 12, 0, 0, DateTimeKind.Utc),
+            dischargeDate: new DateTime(2025, 1, 9, 12, 0, 0, DateTimeKind.Utc),
+            isFinalDischarge: true));
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Discharge Date must be on or after the Admission Date.", badRequest.Value);
+        Assert.Equal(0, await context.Transfers.CountAsync());
+        var admission = await ReloadAdmission(context, 1);
+        Assert.Equal(0, admission.CountOfTransfers);
+        Assert.Null(admission.FinalDischargeDate);
+    }
+
     // ---------- update ----------
+
+    [Fact]
+    public async Task UpdateTransfer_RejectsDischargeBeforeAdmissionDate()
+    {
+        using var context = TestDb.CreateContext();
+        SeedAdmission(context, 1, countOfTransfers: 1);
+        context.Transfers.Add(TestDb.Transfer(
+            1, 1, new DateTime(2025, 1, 10), dischargeDate: new DateTime(2025, 1, 12)));
+        await context.SaveChangesAsync();
+
+        var controller = new TransfersController(context).WithUser();
+        var update = TestDb.Transfer(
+            1, 1,
+            new DateTime(2025, 1, 10, 12, 0, 0, DateTimeKind.Utc),
+            dischargeDate: new DateTime(2025, 1, 9, 12, 0, 0, DateTimeKind.Utc));
+
+        var result = await controller.UpdateTransfer(1, update);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        var saved = await context.Transfers.AsNoTracking().FirstAsync(t => t.TransferId == 1);
+        Assert.Equal(new DateTime(2025, 1, 12), saved.DischargeDate);
+    }
 
     [Fact]
     public async Task UpdateTransfer_RejectsMismatchedIdAndMissingTransfer()

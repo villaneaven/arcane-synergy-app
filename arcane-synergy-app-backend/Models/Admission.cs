@@ -67,7 +67,17 @@ namespace arcane_synergy_app_backend.Models
             if (!DischargeDate.HasValue) return null;
             if (DateOnly.FromDateTime(DischargeDate.Value) > today)
                 return "Discharge Date must be today or earlier.";
-            if (ClinicTime.DateFor(DischargeDate.Value) < ClinicTime.DateFor(AdmissionDate))
+            return ValidateDischargeNotBeforeAdmission(AdmissionDate, DischargeDate);
+        }
+
+        /// <summary>
+        /// Shared by admissions and transfers. Compared by the clinic's calendar day:
+        /// Admission Date carries a time, so an evening admission is already the next
+        /// day in UTC, yet a same-day discharge is still valid.
+        /// </summary>
+        public static string? ValidateDischargeNotBeforeAdmission(DateTime admissionDate, DateTime? dischargeDate)
+        {
+            if (dischargeDate.HasValue && ClinicTime.DateFor(dischargeDate.Value) < ClinicTime.DateFor(admissionDate))
                 return "Discharge Date must be on or after the Admission Date.";
             return null;
         }

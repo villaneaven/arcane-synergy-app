@@ -99,6 +99,9 @@ public class TransfersController : ControllerBase
 		var editedBy = User.GetUserName();
 		if (editedBy == null) return Forbid();
 
+		var dateError = transfer.ValidateDischargeDate();
+		if (dateError != null) return BadRequest(dateError);
+
 		transfer.Notes = string.IsNullOrWhiteSpace(transfer.Notes) ? null : transfer.Notes.Trim();
 		transfer.LastEditedBy = editedBy;
 		transfer.LastEditedAt = DateTime.UtcNow;
@@ -141,6 +144,9 @@ public class TransfersController : ControllerBase
 	{
         if (id != transfer.TransferId)
             return BadRequest("TransferId mismatch");
+
+		var dateError = transfer.ValidateDischargeDate();
+		if (dateError != null) return BadRequest(dateError);
 
 		var existingTransfer = await _context.Transfers.FindAsync(id);
 		if (existingTransfer == null)
