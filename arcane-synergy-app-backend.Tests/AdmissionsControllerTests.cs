@@ -878,10 +878,8 @@ public class AdmissionsControllerTests
     {
         using var context = await SeededAdmissionAsync(configure: admission =>
         {
-            admission.Status = "To Be Seen";
             admission.TotalERVisits = 2;
             admission.TotalADMVisits = 4;
-            admission.PatientEngagement = 7;
             admission.TCMDueDate = new DateTime(2025, 1, 24);
             admission.NextAdmissionDate = new DateTime(2025, 2, 1);
         });
@@ -891,17 +889,15 @@ public class AdmissionsControllerTests
         update.Status = "Done";
         update.TotalERVisits = 100;
         update.TotalADMVisits = 100;
-        update.PatientEngagement = 100;
         update.TCMDueDate = new DateTime(2030, 1, 1);
         update.NextAdmissionDate = new DateTime(2030, 1, 1);
 
         await controller.UpdateAdmission(1, update);
 
         var saved = await ReloadAsync(context);
-        Assert.Equal("To Be Seen", saved.Status);
+        Assert.Equal(Admission.StatusCurrent, saved.Status);
         Assert.Equal(2, saved.TotalERVisits);
         Assert.Equal(4, saved.TotalADMVisits);
-        Assert.Equal(7, saved.PatientEngagement);
         Assert.Equal(new DateTime(2025, 1, 24), saved.TCMDueDate);
         Assert.Equal(new DateTime(2025, 2, 1), saved.NextAdmissionDate);
     }
@@ -960,7 +956,7 @@ public class AdmissionsControllerTests
         var saved = await SingleAdmissionAsync(context);
         Assert.Equal(5, saved.CountOfTransfers);
         Assert.Equal(new DateTime(2025, 1, 20), saved.FinalDischargeDate);
-        Assert.Equal("Done", saved.Status);
+        Assert.Equal(Admission.StatusCurrent, saved.Status);
     }
 
     // ------------------------------------------------------------------
