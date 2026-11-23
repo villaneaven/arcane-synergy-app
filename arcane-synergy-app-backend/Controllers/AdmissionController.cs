@@ -219,7 +219,10 @@ public class AdmissionsController : ControllerBase
         var editedBy = User.GetUserName();
         if (editedBy == null) return Forbid();
 
-        admission.Notes = string.IsNullOrWhiteSpace(admission.Notes) ? null : admission.Notes.Trim();
+        var dateSeenError = admission.ValidateDateSeen();
+        if (dateSeenError != null) return BadRequest(dateSeenError);
+
+        admission.Notes =string.IsNullOrWhiteSpace(admission.Notes) ? null : admission.Notes.Trim();
         admission.LastEditedBy = editedBy;
         admission.LastEditedAt = DateTime.UtcNow;
         admission.UpdateCalculatedFields();
@@ -238,6 +241,9 @@ public class AdmissionsController : ControllerBase
     {
         if (id != admission.AdmissionId)
             return BadRequest("AdmissionId mismatch");
+
+        var dateSeenError = admission.ValidateDateSeen();
+        if (dateSeenError != null) return BadRequest(dateSeenError);
 
         var existing = await _context.Admissions
             .Include(a => a.Transfers)
