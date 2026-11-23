@@ -31,6 +31,8 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -66,6 +68,73 @@ import {
 } from "@/lib/admission-options";
 import { GROUP_OPTIONS } from "@/lib/patient-options";
 import { API_BASE_URL } from "@/lib/api";
+import { cn } from "@/lib/utils";
+
+const COLUMN_VISIBILITY_STORAGE_KEY = "admissions-table-column-visibility";
+
+const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
+  totalERVisits: false,
+  totalADMVisits: false,
+  dayOfWeekAdmitted: false,
+  monthAdmitted: false,
+  tcmDueDate: false,
+  readmissionFlag: false,
+  nextAdmissionDate: false,
+  finalDischargeDate: false,
+  countOfTransfers: false,
+};
+
+function saveColumnVisibility(visibility: VisibilityState) {
+  try {
+    localStorage.setItem(
+      COLUMN_VISIBILITY_STORAGE_KEY,
+      JSON.stringify(visibility),
+    );
+  } catch {
+    // Storage can be unavailable (private mode, blocked site data).
+  }
+}
+
+const PINNED_CELL_BG =
+  "bg-background group-hover:bg-[color-mix(in_oklab,var(--muted)_50%,var(--background))] group-data-[state=selected]:bg-muted";
+
+const HEAD_CLASSES = {
+  default:
+    "sticky top-0 z-20 bg-background shadow-[inset_0_-1px_0_var(--border)]",
+  select:
+    "sticky top-0 left-0 z-30 w-10 min-w-10 bg-background shadow-[inset_0_-1px_0_var(--border)]",
+  left: "sticky top-0 left-10 z-30 bg-background shadow-[inset_-1px_0_0_var(--border),inset_0_-1px_0_var(--border)]",
+  right:
+    "sticky top-0 right-0 z-30 bg-background shadow-[inset_1px_0_0_var(--border),inset_0_-1px_0_var(--border)]",
+};
+
+const CELL_CLASSES = {
+  select: cn("sticky left-0 z-10 w-10 min-w-10", PINNED_CELL_BG),
+  left: cn(
+    "sticky left-10 z-10 shadow-[inset_-1px_0_0_var(--border)]",
+    PINNED_CELL_BG,
+  ),
+  right: cn(
+    "sticky right-0 z-10 shadow-[inset_1px_0_0_var(--border)]",
+    PINNED_CELL_BG,
+  ),
+};
+
+function getPinKey(columnId: string, pin: "left" | "right" | undefined) {
+  if (!pin) return undefined;
+  if (pin === "right") return "right" as const;
+  return columnId === "select" ? ("select" as const) : ("left" as const);
+}
+
+function getHeadClassName(columnId: string, pin?: "left" | "right") {
+  const key = getPinKey(columnId, pin);
+  return key ? HEAD_CLASSES[key] : HEAD_CLASSES.default;
+}
+
+function getCellClassName(columnId: string, pin?: "left" | "right") {
+  const key = getPinKey(columnId, pin);
+  return key ? CELL_CLASSES[key] : undefined;
+}
 
 interface DataTableProps<
   TData extends {
@@ -181,18 +250,37 @@ export function DataTable<
   };
 
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({
-      totalERVisits: false,
-      totalADMVisits: false,
-      dayOfWeekAdmitted: false,
-      monthAdmitted: false,
-      tcmDueDate: false,
-      readmissionFlag: false,
-      nextAdmissionDate: false,
-      finalDischargeDate: false,
-      countOfTransfers: false,
-      transfers: false,
+    React.useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
+
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem(COLUMN_VISIBILITY_STORAGE_KEY);
+      if (saved) {
+        setColumnVisibility({
+          ...DEFAULT_COLUMN_VISIBILITY,
+          ...(JSON.parse(saved) as VisibilityState),
+        });
+      }
+    } catch {
+      // Ignore unreadable or malformed saved state and keep the defaults.
+    }
+  }, []);
+
+  const handleColumnVisibilityChange: OnChangeFn<VisibilityState> = (
+    updater,
+  ) => {
+    setColumnVisibility((current) => {
+      const next = typeof updater === "function" ? updater(current) : updater;
+      saveColumnVisibility(next);
+      return next;
     });
+  };
+
+  const resetColumnVisibility = () => {
+    setColumnVisibility(DEFAULT_COLUMN_VISIBILITY);
+    saveColumnVisibility(DEFAULT_COLUMN_VISIBILITY);
+  };
+
   const [rowSelection, setRowSelection] = React.useState({});
 
   // Pass the onAdmissionAdded callback to columns so they can refresh data
@@ -211,7 +299,7 @@ export function DataTable<
     getRowId: (row) => row.admissionId,
     getCoreRowModel: getCoreRowModel(),
     onSortingChange,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: handleColumnVisibilityChange,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: (updater) => {
       const current = { pageIndex, pageSize };
@@ -328,9 +416,20 @@ export function DataTable<
       return null;
     }
 
+    const exportFields = exportableColumns.flatMap(
+      (column) =>
+        column.columnDef.meta?.exportFields ?? [
+          {
+            header: column.id,
+            value: (row: TData) =>
+              column.accessorFn ? column.accessorFn(row, 0) : undefined,
+          },
+        ],
+    );
+
     return {
       headers: [
-        ...exportableColumns.map((column) => column.id),
+        ...exportFields.map((field) => field.header),
         "patientFirstName",
         "patientLastName",
         "patientMRN",
@@ -343,9 +442,7 @@ export function DataTable<
         const patient = admission.patient;
 
         return [
-          ...exportableColumns.map((column) =>
-            column.accessorFn ? column.accessorFn(admission, 0) : undefined,
-          ),
+          ...exportFields.map((field) => field.value(admission)),
           patient?.firstName ?? "",
           patient?.lastName ?? "",
           patient?.mrn ?? "",
@@ -780,29 +877,38 @@ export function DataTable<
                   return (
                     <DropdownMenuCheckboxItem
                       key={column.id}
-                      className="capitalize"
                       checked={column.getIsVisible()}
                       onCheckedChange={(value) =>
                         column.toggleVisibility(!!value)
                       }
                       onSelect={(e) => e.preventDefault()}
                     >
-                      {column.id}
+                      {column.columnDef.meta?.label ?? column.id}
                     </DropdownMenuCheckboxItem>
                   );
                 })}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={resetColumnVisibility}>
+                Reset to default
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
       <div className="overflow-hidden rounded-md border">
-        <Table>
+        <Table containerClassName="max-h-[70vh]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="hover:bg-transparent">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead
+                      key={header.id}
+                      className={getHeadClassName(
+                        header.column.id,
+                        header.column.columnDef.meta?.pin,
+                      )}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -845,10 +951,16 @@ export function DataTable<
                       `/forms/admissions/${row.original.admissionId}`,
                     );
                   }}
-                  className="cursor-pointer"
+                  className="group cursor-pointer"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      className={getCellClassName(
+                        cell.column.id,
+                        cell.column.columnDef.meta?.pin,
+                      )}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
@@ -860,7 +972,7 @@ export function DataTable<
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={table.getVisibleLeafColumns().length}
                   className="h-24 text-center"
                 >
                   No results.

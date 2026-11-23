@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { MoreHorizontal, ArrowUpDown } from "lucide-react";
@@ -49,6 +50,70 @@ export type Admission = {
   transfers: string | undefined;
 };
 
+function toDate(value: string | undefined | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDate(value: string | undefined | null) {
+  const date = toDate(value);
+  if (!date) return null;
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
+
+function formatTime(value: string | undefined | null) {
+  const date = toDate(value);
+  if (!date) return null;
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatDateTime(value: string | undefined | null) {
+  const date = toDate(value);
+  if (!date) return null;
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function daysBetween(start: string | undefined, end: string | undefined) {
+  const from = toDate(start);
+  const to = toDate(end);
+  if (!from || !to) return null;
+  const fromDay = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
+  const toDay = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
+  return Math.round((toDay - fromDay) / 86_400_000);
+}
+
+function Stacked({
+  primary,
+  secondary,
+}: {
+  primary: React.ReactNode;
+  secondary?: (string | null | undefined)[];
+}) {
+  const details = (secondary ?? []).filter(Boolean).join(" · ");
+  return (
+    <div className="flex flex-col leading-tight">
+      <span>{primary ?? "N/A"}</span>
+      {details ? (
+        <span className="text-muted-foreground text-xs">{details}</span>
+      ) : null}
+    </div>
+  );
+}
+
 export const createColumns = (
   onDataChange?: () => void,
 ): ColumnDef<Admission>[] => [
@@ -73,16 +138,7 @@ export const createColumns = (
     ),
     enableSorting: false,
     enableHiding: false,
-  },
-  {
-    id: "group",
-    accessorFn: (row) => row.patient?.group ?? "",
-    header: "Group",
-    cell: ({ row }) => {
-      const group = row.getValue("group");
-      if (!group) return "N/A";
-      return group;
-    },
+    meta: { pin: "left" },
   },
   {
     id: "patientFullName",
@@ -94,187 +150,182 @@ export const createColumns = (
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           className="cursor-pointer"
         >
-          Patient Name
+          Patient
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
-  },
-  {
-    id: "patientDOB",
-    accessorFn: (row) => row.patient?.dob ?? "",
-    header: "DOB",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("patientDOB"));
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      });
+      const patient = row.original.patient;
+      return (
+        <Stacked
+          primary={
+            <span className="font-medium">{patient?.fullName || "N/A"}</span>
+          }
+          secondary={[formatDate(patient?.dob), patient?.group]}
+        />
+      );
+    },
+    enableHiding: false,
+    meta: {
+      label: "Patient",
+      pin: "left",
+      exportFields: [
+        { header: "group", value: (row) => row.patient?.group ?? "" },
+        {
+          header: "patientFullName",
+          value: (row) => row.patient?.fullName ?? "",
+        },
+        { header: "patientDOB", value: (row) => row.patient?.dob ?? "" },
+      ],
     },
   },
   {
-    accessorKey: "facilityType",
-    header: "Facility Type",
-    cell: ({ row }) => {
-      const facilityType = row.getValue("facilityType");
-      if (!facilityType) return "N/A";
-      return facilityType;
-    },
-  },
-  {
-    accessorKey: "facility",
-    header: "Facility",
-    cell: ({ row }) => {
-      const facility = row.getValue("facility");
-      if (!facility) return "N/A";
-      return facility;
-    },
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => row.original.status || "N/A",
+    meta: { label: "Status" },
   },
   {
     accessorKey: "type",
     header: "Type",
+    meta: { label: "Type" },
   },
   {
-    accessorKey: "admissionDate",
-    header: "Admission Date",
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("admissionDate"));
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      });
+    id: "facility",
+    accessorFn: (row) => row.facility ?? "",
+    header: "Facility",
+    cell: ({ row }) => (
+      <Stacked
+        primary={row.original.facility || "N/A"}
+        secondary={[row.original.facilityType]}
+      />
+    ),
+    meta: {
+      label: "Facility",
+      exportFields: [
+        { header: "facilityType", value: (row) => row.facilityType },
+        { header: "facility", value: (row) => row.facility },
+      ],
     },
   },
   {
-    accessorKey: "timeOfAdmission",
-    header: "Time of Admission",
+    id: "stay",
+    accessorFn: (row) => row.admissionDate,
+    header: "Admitted → Discharged",
     cell: ({ row }) => {
-      const admissionDate = row.getValue("admissionDate");
-      if (!admissionDate) return "N/A";
-      const date = new Date(admissionDate as string);
-      return date.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      const { admissionDate, dischargeDate } = row.original;
+      const days = daysBetween(admissionDate, dischargeDate);
+      return (
+        <Stacked
+          primary={`${formatDate(admissionDate) ?? "N/A"} → ${
+            formatDate(dischargeDate) ?? "N/A"
+          }`}
+          secondary={[
+            formatTime(admissionDate),
+            days === null ? null : `${days} ${days === 1 ? "day" : "days"}`,
+          ]}
+        />
+      );
+    },
+    meta: {
+      label: "Admitted → Discharged",
+      exportFields: [
+        { header: "admissionDate", value: (row) => row.admissionDate },
+        {
+          header: "timeOfAdmission",
+          value: (row) => formatTime(row.admissionDate) ?? "",
+        },
+        { header: "dischargeDate", value: (row) => row.dischargeDate },
+      ],
     },
   },
   {
     accessorKey: "dx",
     header: "DX",
     cell: ({ row }) => {
-      const dx = row.getValue("dx");
+      const dx = row.original.dx;
       if (!dx) return "N/A";
-      return dx;
+      return (
+        <div className="max-w-48 truncate" title={dx}>
+          {dx}
+        </div>
+      );
     },
+    meta: { label: "DX" },
   },
   {
-    accessorKey: "notificationSource",
-    header: "Notification Source",
-    cell: ({ row }) => {
-      const notificationSource = row.getValue("notificationSource");
-      if (!notificationSource) return "N/A";
-      return notificationSource;
-    },
-  },
-  {
-    accessorKey: "dateNotified",
-    header: "Date Notified",
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("dateNotified"));
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      });
-    },
-  },
-  {
-    accessorKey: "dischargeDate",
-    header: "Discharge Date",
-    cell: ({ row }) => {
-      const dischargeDate = row.getValue("dischargeDate");
-      if (!dischargeDate) return "N/A";
-      const date = new Date(dischargeDate as string);
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      });
+    id: "notification",
+    accessorFn: (row) => row.notificationSource ?? "",
+    header: "Notified",
+    cell: ({ row }) => (
+      <Stacked
+        primary={row.original.notificationSource || "N/A"}
+        secondary={[formatDate(row.original.dateNotified)]}
+      />
+    ),
+    meta: {
+      label: "Notified (source & date)",
+      exportFields: [
+        {
+          header: "notificationSource",
+          value: (row) => row.notificationSource,
+        },
+        { header: "dateNotified", value: (row) => row.dateNotified },
+      ],
     },
   },
   {
     accessorKey: "dischargeTo",
     header: "Discharge To",
-    cell: ({ row }) => {
-      const dischargeTo = row.getValue("dischargeTo");
-      if (!dischargeTo) return "N/A";
-      return dischargeTo;
-    },
+    cell: ({ row }) => row.original.dischargeTo || "N/A",
+    meta: { label: "Discharge To" },
   },
   {
-    accessorKey: "dateSeen",
-    header: "Date Seen",
-    cell: ({ row }) => {
-      const dateSeen = row.getValue("dateSeen");
-      if (!dateSeen) return "N/A";
-      const date = new Date(dateSeen as string);
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      });
-    },
-  },
-  {
-    accessorKey: "seenBy",
-    header: "Seen By",
-    cell: ({ row }) => {
-      const seenBy = row.getValue("seenBy");
-      if (!seenBy) return "N/A";
-      return seenBy;
+    id: "seen",
+    accessorFn: (row) => row.dateSeen ?? "",
+    header: "Seen",
+    cell: ({ row }) => (
+      <Stacked
+        primary={formatDate(row.original.dateSeen) ?? "N/A"}
+        secondary={[row.original.seenBy]}
+      />
+    ),
+    meta: {
+      label: "Seen (date & by)",
+      exportFields: [
+        { header: "dateSeen", value: (row) => row.dateSeen },
+        { header: "seenBy", value: (row) => row.seenBy },
+      ],
     },
   },
   {
     accessorKey: "totalERVisits",
     header: "Total ER Visits",
+    meta: { label: "Total ER Visits" },
   },
   {
     accessorKey: "totalADMVisits",
     header: "Total ADM Visits",
+    meta: { label: "Total ADM Visits" },
   },
   {
     accessorKey: "dayOfWeekAdmitted",
     header: "Day of Week Admitted",
-    cell: ({ row }) => {
-      const dayOfWeekAdmitted = row.getValue("dayOfWeekAdmitted");
-      if (!dayOfWeekAdmitted) return "N/A";
-      return dayOfWeekAdmitted;
-    },
+    cell: ({ row }) => row.original.dayOfWeekAdmitted || "N/A",
+    meta: { label: "Day of Week Admitted" },
   },
   {
     accessorKey: "monthAdmitted",
     header: "Month Admitted",
-    cell: ({ row }) => {
-      const monthAdmitted = row.getValue("monthAdmitted");
-      if (!monthAdmitted) return "N/A";
-      return monthAdmitted;
-    },
+    cell: ({ row }) => row.original.monthAdmitted || "N/A",
+    meta: { label: "Month Admitted" },
   },
   {
     accessorKey: "tcmDueDate",
     header: "TCM Due Date",
-    cell: ({ row }) => {
-      const tcmDueDate = row.getValue("tcmDueDate");
-      if (!tcmDueDate) return "N/A";
-      const date = new Date(tcmDueDate as string);
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      });
-    },
+    cell: ({ row }) => formatDate(row.original.tcmDueDate) ?? "N/A",
+    meta: { label: "TCM Due Date" },
   },
   {
     accessorKey: "patientEngagement",
@@ -283,60 +334,36 @@ export const createColumns = (
       const days = row.getValue<number | null>("patientEngagement");
       return <div className="text-right tabular-nums">{days ?? ""}</div>;
     },
+    meta: { label: "Patient Engagement" },
   },
   {
     accessorKey: "readmissionFlag",
     header: "Readmission Flag",
-    cell: ({ row }) => {
-      return row.getValue("readmissionFlag") ? "Yes" : "No";
-    },
+    cell: ({ row }) => (row.original.readmissionFlag ? "Yes" : "No"),
+    meta: { label: "Readmission Flag" },
   },
   {
     accessorKey: "nextAdmissionDate",
     header: "Next Admission Date",
-    cell: ({ row }) => {
-      const nextAdmissionDate = row.getValue("nextAdmissionDate");
-      if (!nextAdmissionDate) return "N/A";
-      const date = new Date(nextAdmissionDate as string);
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      });
-    },
+    cell: ({ row }) => formatDate(row.original.nextAdmissionDate) ?? "N/A",
+    meta: { label: "Next Admission Date" },
   },
   {
     accessorKey: "finalDischargeDate",
     header: "Final Discharge Date",
-    cell: ({ row }) => {
-      const finalDischargeDate = row.getValue("finalDischargeDate");
-      if (!finalDischargeDate) return "N/A";
-      const date = new Date(finalDischargeDate as string);
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      });
-    },
+    cell: ({ row }) => formatDate(row.original.finalDischargeDate) ?? "N/A",
+    meta: { label: "Final Discharge Date" },
   },
   {
     accessorKey: "countOfTransfers",
     header: "Count of Transfers",
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("status");
-      if (!status) return "N/A";
-      return status;
-    },
+    meta: { label: "Count of Transfers" },
   },
   {
     accessorKey: "notes",
     header: "Notes",
     cell: ({ row }) => {
-      const notes = row.getValue("notes") as string | undefined;
+      const notes = row.original.notes;
       if (!notes) return "N/A";
       return (
         <div className="max-w-64 truncate" title={notes}>
@@ -344,30 +371,24 @@ export const createColumns = (
         </div>
       );
     },
+    meta: { label: "Notes" },
   },
   {
-    accessorKey: "lastEditedBy",
-    header: "Last Edited By",
-    cell: ({ row }) => {
-      const lastEditedBy = row.getValue("lastEditedBy");
-      if (!lastEditedBy) return "N/A";
-      return lastEditedBy;
-    },
-  },
-  {
-    accessorKey: "lastEditedAt",
-    header: "Last Edited At",
-    cell: ({ row }) => {
-      const lastEditedAt = row.getValue("lastEditedAt");
-      if (!lastEditedAt) return "N/A";
-      const date = new Date(lastEditedAt as string);
-      return date.toLocaleString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+    id: "lastEdited",
+    accessorFn: (row) => row.lastEditedAt ?? "",
+    header: "Last Edited",
+    cell: ({ row }) => (
+      <Stacked
+        primary={row.original.lastEditedBy || "N/A"}
+        secondary={[formatDateTime(row.original.lastEditedAt)]}
+      />
+    ),
+    meta: {
+      label: "Last Edited (by & when)",
+      exportFields: [
+        { header: "lastEditedBy", value: (row) => row.lastEditedBy },
+        { header: "lastEditedAt", value: (row) => row.lastEditedAt },
+      ],
     },
   },
   {
@@ -411,5 +432,7 @@ export const createColumns = (
         </DropdownMenu>
       );
     },
+    enableHiding: false,
+    meta: { pin: "right" },
   },
 ];
