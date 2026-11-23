@@ -1,6 +1,7 @@
 using arcane_synergy_app_backend.Data;
 using arcane_synergy_app_backend.Extensions;
 using arcane_synergy_app_backend.Models;
+using arcane_synergy_app_backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -99,7 +100,7 @@ public class TransfersController : ControllerBase
 		var editedBy = User.GetUserName();
 		if (editedBy == null) return Forbid();
 
-		var dateError = transfer.ValidateDischargeDate();
+		var dateError = transfer.ValidateDischargeDate(ClinicTime.Today);
 		if (dateError != null) return BadRequest(dateError);
 
 		transfer.Notes = string.IsNullOrWhiteSpace(transfer.Notes) ? null : transfer.Notes.Trim();
@@ -145,7 +146,7 @@ public class TransfersController : ControllerBase
         if (id != transfer.TransferId)
             return BadRequest("TransferId mismatch");
 
-		var dateError = transfer.ValidateDischargeDate();
+		var dateError = transfer.ValidateDischargeDate(ClinicTime.Today);
 		if (dateError != null) return BadRequest(dateError);
 
 		var existingTransfer = await _context.Transfers.FindAsync(id);
