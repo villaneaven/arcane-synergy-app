@@ -31,6 +31,9 @@ namespace arcane_synergy_app_backend.Models
             Admission.ValidateDischargeNotInFuture(DischargeDate, today)
             ?? Admission.ValidateDischargeNotBeforeAdmission(AdmissionDate, DischargeDate);
 
+        public string? ValidateAdmissionDate(DateOnly today) =>
+            Admission.ValidateAdmissionNotInFuture(AdmissionDate, today);
+
         public string? ValidateDateNotified(DateOnly today) =>
             Admission.ValidateDateNotifiedNotInFuture(DateNotified, today);
     }
