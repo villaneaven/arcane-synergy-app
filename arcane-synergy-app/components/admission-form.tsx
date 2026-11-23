@@ -117,7 +117,11 @@ export function AdmissionForm({
   );
 
   const today = new Date();
-  const dischargeDateError = validateDischargeDate(dischargeDate, today);
+  const dischargeDateError = validateDischargeDate(
+    dischargeDate,
+    today,
+    admissionDate,
+  );
   const dateSeenError = validateDateSeen(dischargeDate, dateSeen);
   const hasDateError = !!dischargeDateError || !!dateSeenError;
 
@@ -326,6 +330,7 @@ export function AdmissionForm({
             name="discharge-date"
             value={dischargeDate}
             onChange={handleDischargeDateChange}
+            minDate={admissionDate}
             maxDate={today}
             aria-invalid={!!dischargeDateError}
             aria-describedby={

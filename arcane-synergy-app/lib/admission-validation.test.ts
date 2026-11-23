@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   DATE_SEEN_BEFORE_DISCHARGE,
+  DISCHARGE_BEFORE_ADMISSION,
   DATE_SEEN_REQUIRES_DISCHARGE,
   DISCHARGE_DATE_IN_FUTURE,
   validateDateSeen,
@@ -29,6 +30,24 @@ describe("validateDischargeDate", () => {
     expect(validateDischargeDate(day(21), today)).toBe(
       DISCHARGE_DATE_IN_FUTURE,
     );
+  });
+
+  it("rejects a Discharge Date before the Admission Date", () => {
+    expect(validateDischargeDate(day(4), today, day(5))).toBe(
+      DISCHARGE_BEFORE_ADMISSION,
+    );
+  });
+
+  it("accepts a Discharge Date on the Admission Date", () => {
+    expect(validateDischargeDate(day(5), today, day(5))).toBeNull();
+  });
+
+  it("accepts a same-day discharge after an evening admission", () => {
+    expect(validateDischargeDate(day(5), today, day(5, 20))).toBeNull();
+  });
+
+  it("accepts a Discharge Date after the Admission Date", () => {
+    expect(validateDischargeDate(day(7), today, day(5))).toBeNull();
   });
 });
 
