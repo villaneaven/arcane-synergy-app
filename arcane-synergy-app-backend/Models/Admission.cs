@@ -86,6 +86,17 @@ namespace arcane_synergy_app_backend.Models
             return null;
         }
 
+        public string? ValidateDateNotified(DateOnly today) =>
+            ValidateDateNotifiedNotInFuture(DateNotified, today);
+
+        /// <summary>Shared by admissions and transfers. Compared by calendar day.</summary>
+        public static string? ValidateDateNotifiedNotInFuture(DateTime dateNotified, DateOnly today)
+        {
+            if (DateOnly.FromDateTime(dateNotified) > today)
+                return "Date Notified must be today or earlier.";
+            return null;
+        }
+
         /// <summary>Compared by calendar day.</summary>
         public string? ValidateDateSeen(DateOnly today)
         {
