@@ -297,6 +297,8 @@ public class AdmissionsController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteAdmission(int id)
     {
+        if (User.GetUserName() == null) return Forbid();
+
         var admission = await _context.Admissions.FindAsync(id);
         if (admission == null) return NotFound();
 
