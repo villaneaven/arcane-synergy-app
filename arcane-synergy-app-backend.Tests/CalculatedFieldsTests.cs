@@ -151,7 +151,7 @@ public class CalculatedFieldsTests
             DischargeDate = new DateTime(2025, 1, dischargeDay, 12, 0, 0, DateTimeKind.Utc),
         };
 
-        Assert.Equal(expectedError, transfer.ValidateDischargeDate());
+        Assert.Equal(expectedError, transfer.ValidateDischargeDate(new DateOnly(2025, 1, 20)));
     }
 
     [Fact]
@@ -164,7 +164,25 @@ public class CalculatedFieldsTests
             DateNotified = new DateTime(2025, 1, 5, 12, 0, 0, DateTimeKind.Utc),
         };
 
-        Assert.Null(transfer.ValidateDischargeDate());
+        Assert.Null(transfer.ValidateDischargeDate(new DateOnly(2025, 1, 20)));
+    }
+
+    [Theory]
+    // Admitted Mar 1 2025; dischargeDay is a day in Mar 2025; "today" is Mar 20.
+    [InlineData(19, null)]                                        // yesterday
+    [InlineData(20, null)]                                        // today
+    [InlineData(21, "Discharge Date must be today or earlier.")]  // tomorrow
+    public void Transfer_ValidatesDischargeDateNotInFuture(int dischargeDay, string? expectedError)
+    {
+        var transfer = new Transfer
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 3, 1, 12, 0, 0, DateTimeKind.Utc),
+            DateNotified = new DateTime(2025, 3, 1, 12, 0, 0, DateTimeKind.Utc),
+            DischargeDate = new DateTime(2025, 3, dischargeDay, 12, 0, 0, DateTimeKind.Utc),
+        };
+
+        Assert.Equal(expectedError, transfer.ValidateDischargeDate(new DateOnly(2025, 3, 20)));
     }
 
     [Fact]
