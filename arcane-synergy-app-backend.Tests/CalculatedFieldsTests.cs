@@ -99,6 +99,42 @@ public class CalculatedFieldsTests
         Assert.Null(admission.ValidateDischargeDate(new DateOnly(2025, 3, 20)));
     }
 
+    [Theory]
+    // Admitted Jan 5 2025; dischargeDay is a day in Jan 2025. Both at 12:00 UTC
+    // (06:00 at the clinic), so the UTC and clinic days match.
+    [InlineData(4, "Discharge Date must be on or after the Admission Date.")] // day before
+    [InlineData(5, null)]                                                     // same day
+    [InlineData(6, null)]                                                     // day after
+    public void Admission_ValidatesDischargeDateNotBeforeAdmissionDate(
+        int dischargeDay, string? expectedError)
+    {
+        var admission = new Admission
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 1, 5, 12, 0, 0, DateTimeKind.Utc),
+            DateNotified = new DateTime(2025, 1, 5, 12, 0, 0, DateTimeKind.Utc),
+            DischargeDate = new DateTime(2025, 1, dischargeDay, 12, 0, 0, DateTimeKind.Utc),
+        };
+
+        Assert.Equal(expectedError, admission.ValidateDischargeDate(new DateOnly(2025, 1, 20)));
+    }
+
+    [Fact]
+    public void Admission_SameDayDischargeAfterEveningAdmissionIsValid()
+    {
+        // Admitted Jan 5 at 8 PM clinic time, which is already Jan 6 in UTC.
+        // Discharged Jan 5 (date only: midnight clinic time). Same clinic day, so valid.
+        var admission = new Admission
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 1, 6, 2, 0, 0, DateTimeKind.Utc),
+            DateNotified = new DateTime(2025, 1, 6, 2, 0, 0, DateTimeKind.Utc),
+            DischargeDate = new DateTime(2025, 1, 5, 6, 0, 0, DateTimeKind.Utc),
+        };
+
+        Assert.Null(admission.ValidateDischargeDate(new DateOnly(2025, 1, 20)));
+    }
+
     [Fact]
     public void Admission_DateSeenOnDischargeDayIsValidRegardlessOfTime()
     {
