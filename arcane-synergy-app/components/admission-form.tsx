@@ -26,6 +26,7 @@ import {
   NOTIFICATION_SOURCE_OPTIONS,
   TYPE_OPTIONS,
 } from "@/lib/admission-options";
+import { validateDateSeen } from "@/lib/admission-validation";
 
 function RequiredLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -112,8 +113,17 @@ export function AdmissionForm({
     initialValues?.dateSeen ? new Date(initialValues.dateSeen) : undefined,
   );
 
+  const dateSeenError = validateDateSeen(dischargeDate, dateSeen);
+
+  const handleDischargeDateChange = (date: Date | undefined) => {
+    setDischargeDate(date);
+    // Date Seen can't exist without a Discharge Date.
+    if (!date) setDateSeen(undefined);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (dateSeenError) return;
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
@@ -309,7 +319,7 @@ export function AdmissionForm({
             id="discharge-date"
             name="discharge-date"
             value={dischargeDate}
-            onChange={setDischargeDate}
+            onChange={handleDischargeDateChange}
           />
         </div>
         <div className="grid gap-3">
@@ -327,7 +337,22 @@ export function AdmissionForm({
             name="date-seen"
             value={dateSeen}
             onChange={setDateSeen}
+            disabled={!dischargeDate && !dateSeen}
+            minDate={dischargeDate}
+            aria-invalid={!!dateSeenError}
+            aria-describedby={dateSeenError ? "date-seen-error" : undefined}
           />
+          {dateSeenError ? (
+            <p id="date-seen-error" className="text-sm text-destructive">
+              {dateSeenError}
+            </p>
+          ) : (
+            !dischargeDate && (
+              <p className="text-sm text-muted-foreground">
+                Set a Discharge Date first.
+              </p>
+            )
+          )}
         </div>
         <div className="grid gap-3">
           <Label htmlFor="seen-by">Seen by</Label>
@@ -357,7 +382,7 @@ export function AdmissionForm({
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting || !!dateSeenError}>
           {isSubmitting ? "Saving..." : "Save changes"}
         </Button>
       </div>
