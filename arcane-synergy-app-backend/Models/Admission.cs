@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using arcane_synergy_app_backend.Services;
 
 namespace arcane_synergy_app_backend.Models
 {
@@ -63,8 +64,11 @@ namespace arcane_synergy_app_backend.Models
 
         public string? ValidateDischargeDate(DateOnly today)
         {
-            if (DischargeDate.HasValue && DateOnly.FromDateTime(DischargeDate.Value) > today)
+            if (!DischargeDate.HasValue) return null;
+            if (DateOnly.FromDateTime(DischargeDate.Value) > today)
                 return "Discharge Date must be today or earlier.";
+            if (ClinicTime.DateFor(DischargeDate.Value) < ClinicTime.DateFor(AdmissionDate))
+                return "Discharge Date must be on or after the Admission Date.";
             return null;
         }
 
