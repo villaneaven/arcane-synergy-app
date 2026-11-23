@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using arcane_synergy_app_backend.Controllers;
 using arcane_synergy_app_backend.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -178,4 +179,379 @@ public class PatientsControllerTests
         Assert.Equal(0, await context.Patients.CountAsync());
         Assert.IsType<NotFoundResult>(await controller.DeletePatient(1));
     }
+
+    // ---------- get by id ----------
+
+    [Fact]
+    public async Task GetPatient_ReturnsThePatientOrNotFound()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(7, firstName: "Grace", lastName: "Hopper", mrn: "MRN-7"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        var patient = (await controller.GetPatient(7)).OkValue<Patient>();
+        Assert.Equal("Hopper, Grace", patient.FullName);
+        Assert.Equal("MRN-7", patient.MRN);
+
+        Assert.IsType<NotFoundResult>(await controller.GetPatient(404));
+    }
+
+    // ---------- list sorting ----------
+
+    [Theory]
+    [InlineData("firstName")]
+    [InlineData("fullName")]
+    [InlineData("dob")]
+    [InlineData("mrn")]
+    [InlineData("group")]
+    [InlineData("insurance")]
+    [InlineData("pcp")]
+    [InlineData("clinic")]
+    public async Task GetPatients_SortsByRequestedColumnAndDirection(string sortBy)
+    {
+        using var context = TestDb.CreateContext();
+
+        context.Patients.AddRange(
+            SortablePatient(1, "C"),
+            SortablePatient(2, "A"),
+            SortablePatient(3, "B"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        Assert.Equal(new[] { 2, 3, 1 }, PatientIds((await controller.GetPatients(sortBy: sortBy)).OkJson()));
+        Assert.Equal(
+            new[] { 1, 3, 2 },
+            PatientIds((await controller.GetPatients(sortBy: sortBy, sortDir: "desc")).OkJson()));
+    }
+
+    [Fact]
+    public async Task GetPatients_MatchesSortKeysAndDirectionCaseInsensitively()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(SortablePatient(1, "C"), SortablePatient(2, "A"), SortablePatient(3, "B"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        var payload = (await controller.GetPatients(sortBy: "MRN", sortDir: "DESC")).OkJson();
+
+        Assert.Equal(new[] { 1, 3, 2 }, PatientIds(payload));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("sideways")]
+    public async Task GetPatients_TreatsAnythingOtherThanDescAsAscending(string? sortDir)
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(SortablePatient(1, "C"), SortablePatient(2, "A"), SortablePatient(3, "B"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        var payload = (await controller.GetPatients(sortBy: "mrn", sortDir: sortDir)).OkJson();
+
+        Assert.Equal(new[] { 2, 3, 1 }, PatientIds(payload));
+    }
+
+    [Fact]
+    public async Task GetPatients_UnknownSortColumnFallsBackToNameOrderInTheRequestedDirection()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(
+            TestDb.Patient(1, firstName: "Ada", lastName: "Turing"),
+            TestDb.Patient(2, firstName: "Grace", lastName: "Hopper"),
+            TestDb.Patient(3, firstName: "Alan", lastName: "Hopper"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        var payload = (await controller.GetPatients(sortBy: "shoeSize", sortDir: "desc")).OkJson();
+
+        Assert.Equal(new[] { 1, 2, 3 }, PatientIds(payload));
+    }
+
+    [Fact]
+    public async Task GetPatients_BreaksTiesByPatientId()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(
+            TestDb.Patient(3, group: "DMC"),
+            TestDb.Patient(1, group: "DMC"),
+            TestDb.Patient(2, group: "DMC"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        Assert.Equal(
+            new[] { 1, 2, 3 },
+            PatientIds((await controller.GetPatients(sortBy: "group", sortDir: "desc")).OkJson()));
+    }
+
+    [Fact]
+    public async Task GetPatients_PagesThroughResultsAndReportsTotalCount()
+    {
+        using var context = TestDb.CreateContext();
+        for (var i = 1; i <= 5; i++)
+        {
+            context.Patients.Add(TestDb.Patient(i, lastName: $"Patient{i}"));
+        }
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        var payload = (await controller.GetPatients(page: 2, pageSize: 2)).OkJson();
+
+        Assert.Equal(5, payload.Int("totalCount"));
+        Assert.Equal(2, payload.Int("page"));
+        Assert.Equal(new[] { 3, 4 }, PatientIds(payload));
+    }
+
+    // ---------- list search ----------
+
+    [Fact]
+    public async Task GetPatients_SearchMatchesByPrefixOnlyAndIgnoresSurroundingWhitespace()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(
+            TestDb.Patient(1, firstName: "Ada", lastName: "Lovelace", mrn: "MRN-100"),
+            TestDb.Patient(2, firstName: "Grace", lastName: "Hopper", mrn: "XMRN-200"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        Assert.Equal(new[] { 1 }, PatientIds((await controller.GetPatients(search: "  Love  ")).OkJson()));
+        Assert.Empty(PatientIds((await controller.GetPatients(search: "lace")).OkJson()));
+        Assert.Equal(new[] { 1 }, PatientIds((await controller.GetPatients(search: "MRN-")).OkJson()));
+    }
+
+    [Fact]
+    public async Task GetPatients_BlankSearchReturnsEveryPatient()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(TestDb.Patient(1), TestDb.Patient(2));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        Assert.Equal(2, (await controller.GetPatients(search: "   ")).OkJson().Int("totalCount"));
+    }
+
+    // ---------- quick search ----------
+
+    [Fact]
+    public async Task SearchPatients_ReturnsOnlyTheLookupFieldsInNameOrder()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(
+            TestDb.Patient(1, firstName: "Grace", lastName: "Hopper", mrn: "MRN-1", clinic: "Main"),
+            TestDb.Patient(2, firstName: "Alan", lastName: "Hopper", mrn: "MRN-2", clinic: "Main"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        var results = (await controller.SearchPatients("  Hop ")).OkJson().AsArray();
+
+        Assert.Equal(new[] { 2, 1 }, results.Select(r => r!.Int("PatientID")).ToArray());
+
+        var first = results[0]!.AsObject();
+        Assert.Equal(
+            new[] { "DOB", "FullName", "MRN", "PatientID" },
+            first.Select(p => p.Key).OrderBy(k => k, StringComparer.Ordinal).ToArray());
+        Assert.Equal("Hopper, Alan", first["FullName"]!.GetValue<string>());
+    }
+
+    // ---------- add ----------
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task AddPatient_StoresABlankMrnAsNull(string? mrn)
+    {
+        using var context = TestDb.CreateContext();
+        var controller = new PatientsController(context);
+
+        var patient = TestDb.Patient(0, mrn: mrn);
+
+        Assert.IsType<CreatedAtActionResult>(await controller.AddPatient(patient));
+
+        var saved = await context.Patients.AsNoTracking().SingleAsync();
+        Assert.Null(saved.MRN);
+    }
+
+    [Fact]
+    public async Task AddPatient_AllowsSeveralPatientsWithoutAnMrnInTheSameGroup()
+    {
+        using var context = TestDb.CreateContext();
+        var controller = new PatientsController(context);
+
+        Assert.IsType<CreatedAtActionResult>(await controller.AddPatient(TestDb.Patient(0, mrn: "")));
+        Assert.IsType<CreatedAtActionResult>(await controller.AddPatient(TestDb.Patient(0, mrn: "")));
+
+        Assert.Equal(2, await context.Patients.CountAsync());
+    }
+
+    [Fact]
+    public async Task AddPatient_StoresTheMrnAndGroupTrimmed()
+    {
+        using var context = TestDb.CreateContext();
+        var controller = new PatientsController(context);
+
+        Assert.IsType<CreatedAtActionResult>(
+            await controller.AddPatient(TestDb.Patient(0, mrn: "  MRN-1 ", group: " DMC  ")));
+
+        var saved = await context.Patients.AsNoTracking().SingleAsync();
+        Assert.Equal("MRN-1", saved.MRN);
+        Assert.Equal("DMC", saved.Group);
+    }
+
+    [Fact]
+    public async Task AddPatient_TreatsMrnsThatDifferOnlyByWhitespaceAsDuplicates()
+    {
+        using var context = TestDb.CreateContext();
+        var controller = new PatientsController(context);
+
+        Assert.IsType<CreatedAtActionResult>(
+            await controller.AddPatient(TestDb.Patient(0, mrn: " MRN-1 ", group: "DMC")));
+        Assert.IsType<ConflictObjectResult>(
+            await controller.AddPatient(TestDb.Patient(0, mrn: "MRN-1", group: " DMC")));
+
+        Assert.Equal(1, await context.Patients.CountAsync());
+    }
+
+    // ---------- update ----------
+
+    [Fact]
+    public async Task UpdatePatient_WritesEveryEditableFieldAndRecalculates()
+    {
+        using var context = TestDb.CreateContext();
+        var original = TestDb.Patient(1, firstName: "Ada", lastName: "Lovelace", mrn: "MRN-1", clinic: "Main");
+        original.Version = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        context.Patients.Add(original);
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+        var update = new Patient
+        {
+            PatientID = 1,
+            FirstName = "Grace",
+            LastName = "Hopper",
+            DOB = new DateTime(1906, 12, 9),
+            MRN = "MRN-9",
+            Group = "PJP",
+            Insurance = "Cigna",
+            PCP = "Dr. Who",
+            Clinic = "North",
+        };
+
+        Assert.IsType<NoContentResult>(await controller.UpdatePatient(1, update));
+
+        var saved = await context.Patients.AsNoTracking().SingleAsync();
+        Assert.Equal("Grace", saved.FirstName);
+        Assert.Equal("Hopper", saved.LastName);
+        Assert.Equal(new DateTime(1906, 12, 9), saved.DOB);
+        Assert.Equal("MRN-9", saved.MRN);
+        Assert.Equal("PJP", saved.Group);
+        Assert.Equal("Cigna", saved.Insurance);
+        Assert.Equal("Dr. Who", saved.PCP);
+        Assert.Equal("North", saved.Clinic);
+        Assert.Equal("Hopper, Grace", saved.FullName);
+        Assert.True(saved.Version > new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+    }
+
+    [Fact]
+    public async Task UpdatePatient_IgnoresAClientSuppliedFullName()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1, firstName: "Ada", lastName: "Lovelace"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+        var update = TestDb.Patient(1, firstName: "Ada", lastName: "Byron");
+        update.FullName = "Somebody Else";
+
+        Assert.IsType<NoContentResult>(await controller.UpdatePatient(1, update));
+
+        Assert.Equal("Byron, Ada", (await context.Patients.AsNoTracking().SingleAsync()).FullName);
+    }
+
+    [Fact]
+    public async Task UpdatePatient_MovingToAGroupWhereTheMrnIsTakenConflicts()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(
+            TestDb.Patient(1, mrn: "MRN-1", group: "PJP"),
+            TestDb.Patient(2, mrn: "MRN-1", group: "DMC"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        Assert.IsType<ConflictObjectResult>(
+            await controller.UpdatePatient(2, TestDb.Patient(2, mrn: "MRN-1", group: "PJP")));
+        Assert.Equal("DMC", (await context.Patients.AsNoTracking().SingleAsync(p => p.PatientID == 2)).Group);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task UpdatePatient_ClearingTheMrnStoresNull(string mrn)
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(
+            TestDb.Patient(1, mrn: null, group: "DMC"),
+            TestDb.Patient(2, mrn: "MRN-2", group: "DMC"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        Assert.IsType<NoContentResult>(await controller.UpdatePatient(2, TestDb.Patient(2, mrn: mrn, group: "DMC")));
+
+        Assert.Null((await context.Patients.AsNoTracking().SingleAsync(p => p.PatientID == 2)).MRN);
+    }
+
+    [Fact]
+    public async Task UpdatePatient_StoresTheMrnAndGroupTrimmed()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1, mrn: "MRN-1", group: "DMC"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        Assert.IsType<NoContentResult>(
+            await controller.UpdatePatient(1, TestDb.Patient(1, mrn: " MRN-5  ", group: "  PJP ")));
+
+        var saved = await context.Patients.AsNoTracking().SingleAsync();
+        Assert.Equal("MRN-5", saved.MRN);
+        Assert.Equal("PJP", saved.Group);
+    }
+
+    // ---------- helpers ----------
+
+    /// <summary>
+    /// A patient whose every sortable column carries <paramref name="key"/>, so
+    /// patients built from "A", "B", "C" order the same way on any column.
+    /// </summary>
+    private static Patient SortablePatient(int id, string key)
+    {
+        var patient = TestDb.Patient(
+            id,
+            firstName: $"{key}first",
+            lastName: $"{key}last",
+            group: $"{key}group",
+            insurance: $"{key}insurance",
+            mrn: $"{key}mrn",
+            clinic: $"{key}clinic",
+            dob: new DateTime(1980, 1, 1).AddYears(key[0] - 'A'));
+        patient.PCP = $"{key}pcp";
+        return patient;
+    }
+
+    private static int[] PatientIds(JsonNode payload) =>
+        payload.Array("items").Select(p => p!.Int("PatientID")).ToArray();
 }
