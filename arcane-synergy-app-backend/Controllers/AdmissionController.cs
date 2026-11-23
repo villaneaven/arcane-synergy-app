@@ -28,6 +28,7 @@ public class AdmissionsController : ControllerBase
         [FromQuery] string? search = null,
         [FromQuery] string? admissionType = null,
         [FromQuery] string? group = null,
+        [FromQuery] string? status = null,
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null,
         [FromQuery] string? sortBy = null,
@@ -36,7 +37,7 @@ public class AdmissionsController : ControllerBase
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var query = BuildAdmissionsListQuery(search, admissionType, group, startDate, endDate);
+        var query = BuildAdmissionsListQuery(search, admissionType, group, status, startDate, endDate);
         query = ApplyAdmissionsSort(query, sortBy, sortDir);
 
         var totalCount = await query.CountAsync();
@@ -60,12 +61,13 @@ public class AdmissionsController : ControllerBase
         [FromQuery] string? search = null,
         [FromQuery] string? admissionType = null,
         [FromQuery] string? group = null,
+        [FromQuery] string? status = null,
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null,
         [FromQuery] string? sortBy = null,
         [FromQuery] string? sortDir = "desc")
     {
-        var query = BuildAdmissionsListQuery(search, admissionType, group, startDate, endDate);
+        var query = BuildAdmissionsListQuery(search, admissionType, group, status, startDate, endDate);
         query = ApplyAdmissionsSort(query, sortBy, sortDir);
 
         var admissions = await query.ToListAsync();
@@ -318,6 +320,7 @@ public class AdmissionsController : ControllerBase
         string? search,
         string? admissionType,
         string? group,
+        string? status,
         DateTime? startDate,
         DateTime? endDate)
     {
@@ -340,6 +343,9 @@ public class AdmissionsController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(group))
             query = query.Where(a => a.Patient != null && a.Patient.Group == group);
+
+        if (!string.IsNullOrWhiteSpace(status))
+            query = query.Where(a => a.Status == status);
 
         if (startDate.HasValue)
         {

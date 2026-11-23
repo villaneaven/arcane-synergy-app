@@ -118,6 +118,30 @@ public class AdmissionsControllerTests
     }
 
     [Fact]
+    public async Task GetAdmissions_FiltersByStatus()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        var current = TestDb.Admission(1, 1, new DateTime(2025, 1, 10));
+        var pending = TestDb.Admission(2, 1, new DateTime(2025, 1, 11));
+        pending.DischargeDate = new DateTime(2025, 1, 15);
+        var completed = TestDb.Admission(3, 1, new DateTime(2025, 1, 12));
+        completed.DischargeDate = new DateTime(2025, 1, 16);
+        completed.DateSeen = new DateTime(2025, 1, 18);
+        foreach (var a in new[] { current, pending, completed })
+            a.UpdateCalculatedFields();
+        context.Admissions.AddRange(current, pending, completed);
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context);
+
+        Assert.Equal(1, (await controller.GetAdmissions(status: "Current")).OkJson().Int("totalCount"));
+        Assert.Equal(1, (await controller.GetAdmissions(status: "Pending")).OkJson().Int("totalCount"));
+        Assert.Equal(1, (await controller.GetAdmissions(status: "Completed")).OkJson().Int("totalCount"));
+        Assert.Equal(3, (await controller.GetAdmissions()).OkJson().Int("totalCount"));
+    }
+
+    [Fact]
     public async Task GetAdmissions_SortsByRequestedColumnAndDirection()
     {
         using var context = TestDb.CreateContext();
