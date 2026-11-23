@@ -7,6 +7,7 @@ import {
   DISCHARGE_DATE_IN_FUTURE,
   validateDateSeen,
   validateDischargeDate,
+  validateDischargeNotBeforeAdmission,
 } from "@/lib/admission-validation";
 
 const day = (d: number, hours = 0) => new Date(2025, 0, d, hours);
@@ -48,6 +49,27 @@ describe("validateDischargeDate", () => {
 
   it("accepts a Discharge Date after the Admission Date", () => {
     expect(validateDischargeDate(day(7), today, day(5))).toBeNull();
+  });
+});
+
+describe("validateDischargeNotBeforeAdmission", () => {
+  it("is valid when either date is missing", () => {
+    expect(validateDischargeNotBeforeAdmission(undefined, day(5))).toBeNull();
+    expect(validateDischargeNotBeforeAdmission(day(5), undefined)).toBeNull();
+  });
+
+  it("rejects a Discharge Date before the Admission Date", () => {
+    expect(validateDischargeNotBeforeAdmission(day(5), day(4))).toBe(
+      DISCHARGE_BEFORE_ADMISSION,
+    );
+  });
+
+  it("accepts a same-day discharge after an evening admission", () => {
+    expect(validateDischargeNotBeforeAdmission(day(5, 20), day(5))).toBeNull();
+  });
+
+  it("accepts a Discharge Date after the Admission Date", () => {
+    expect(validateDischargeNotBeforeAdmission(day(5), day(7))).toBeNull();
   });
 });
 

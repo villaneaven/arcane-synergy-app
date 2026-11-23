@@ -26,7 +26,25 @@ export function validateDischargeDate(
   if (!dischargeDate) return null;
   if (startOfDay(dischargeDate) > startOfDay(today))
     return DISCHARGE_DATE_IN_FUTURE;
-  if (admissionDate && startOfDay(dischargeDate) < startOfDay(admissionDate))
+  return validateDischargeNotBeforeAdmission(admissionDate, dischargeDate);
+}
+
+/**
+ * Discharge Date can't be before the Admission Date, compared by calendar day
+ * so a same-day discharge is valid whatever the admission time. Shared by
+ * admissions and transfers; mirrors Admission.ValidateDischargeNotBeforeAdmission
+ * on the backend. Returns an error message, or null when valid or either date
+ * is missing.
+ */
+export function validateDischargeNotBeforeAdmission(
+  admissionDate: Date | undefined,
+  dischargeDate: Date | undefined,
+): string | null {
+  if (
+    admissionDate &&
+    dischargeDate &&
+    startOfDay(dischargeDate) < startOfDay(admissionDate)
+  )
     return DISCHARGE_BEFORE_ADMISSION;
   return null;
 }
