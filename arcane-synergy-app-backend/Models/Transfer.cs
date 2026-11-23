@@ -26,5 +26,8 @@ namespace arcane_synergy_app_backend.Models
         [MaxLength(255)]
         public string? LastEditedBy { get; set; }
         public DateTime? LastEditedAt { get; set; }
+
+        public string? ValidateDischargeDate() =>
+            Admission.ValidateDischargeNotBeforeAdmission(AdmissionDate, DischargeDate);
     }
 }

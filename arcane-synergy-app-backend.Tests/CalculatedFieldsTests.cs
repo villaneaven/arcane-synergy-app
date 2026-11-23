@@ -135,6 +135,38 @@ public class CalculatedFieldsTests
         Assert.Null(admission.ValidateDischargeDate(new DateOnly(2025, 1, 20)));
     }
 
+    [Theory]
+    // Same cases for a transfer: admitted Jan 5 2025 at 12:00 UTC.
+    [InlineData(4, "Discharge Date must be on or after the Admission Date.")] // day before
+    [InlineData(5, null)]                                                     // same day
+    [InlineData(6, null)]                                                     // day after
+    public void Transfer_ValidatesDischargeDateNotBeforeAdmissionDate(
+        int dischargeDay, string? expectedError)
+    {
+        var transfer = new Transfer
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 1, 5, 12, 0, 0, DateTimeKind.Utc),
+            DateNotified = new DateTime(2025, 1, 5, 12, 0, 0, DateTimeKind.Utc),
+            DischargeDate = new DateTime(2025, 1, dischargeDay, 12, 0, 0, DateTimeKind.Utc),
+        };
+
+        Assert.Equal(expectedError, transfer.ValidateDischargeDate());
+    }
+
+    [Fact]
+    public void Transfer_WithoutDischargeDateIsValid()
+    {
+        var transfer = new Transfer
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 1, 5, 12, 0, 0, DateTimeKind.Utc),
+            DateNotified = new DateTime(2025, 1, 5, 12, 0, 0, DateTimeKind.Utc),
+        };
+
+        Assert.Null(transfer.ValidateDischargeDate());
+    }
+
     [Fact]
     public void Admission_DateSeenOnDischargeDayIsValidRegardlessOfTime()
     {
