@@ -80,11 +80,6 @@ namespace arcane_synergy_app_backend.Data
             modelBuilder.Entity<Admission>()
                 .HasIndex(a => a.Type);
 
-            // Admission and transfer dates are stored as UTC, but SQL Server's datetime2
-            // drops the kind, so they'd be read back as Unspecified and serialized
-            // without a "Z". The browser then reads them as local time, shifting a
-            // 7:30 AM admission to 1:30 PM. Mark every one as UTC when read. Patient
-            // DOB is a date-only value, so it is deliberately left out.
             foreach (var entity in new[] { typeof(Admission), typeof(Transfer) })
             {
                 foreach (var property in modelBuilder.Entity(entity).Metadata.GetProperties())
