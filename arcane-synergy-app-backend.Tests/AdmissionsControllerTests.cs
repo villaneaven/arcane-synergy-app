@@ -1,4 +1,5 @@
 using arcane_synergy_app_backend.Controllers;
+using arcane_synergy_app_backend.Data;
 using arcane_synergy_app_backend.Models;
 using arcane_synergy_app_backend.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -703,7 +704,7 @@ public class AdmissionsControllerTests
         context.Admissions.Add(TestDb.Admission(1, 1, new DateTime(2025, 1, 10)));
         await context.SaveChangesAsync();
 
-        var controller = new AdmissionsController(context);
+        var controller = new AdmissionsController(context).WithUser();
 
         Assert.IsType<NoContentResult>(await controller.DeleteAdmission(1));
         Assert.Equal(0, await context.Admissions.CountAsync());
@@ -874,4 +875,375 @@ public class AdmissionsControllerTests
         Assert.Equal(1, (await controller.GetAdmissions(status: "Current")).OkJson().Int("totalCount"));
         Assert.Equal(2, (await controller.GetAdmissions()).OkJson().Int("totalCount"));
     }
+    
+    [Fact]
+    public async Task AddAdmission_TrimsNotesWithoutReformattingTheirContents()
+    {
+        using var context = await SeededPatientAsync();
+        var controller = new AdmissionsController(context).WithUser();
+
+        var admission = NewAdmission();
+        admission.Notes = "  Needs follow-up.\n  Call the daughter.  ";
+
+        Assert.IsType<CreatedAtActionResult>(await controller.AddAdmission(admission));
+
+        Assert.Equal(
+            "Needs follow-up.\n  Call the daughter.",
+            (await SingleAdmissionAsync(context)).Notes);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("\t\r\n ")]
+    public async Task AddAdmission_StoresBlankNotesAsNull(string? notes)
+    {
+        using var context = await SeededPatientAsync();
+        var controller = new AdmissionsController(context).WithUser();
+
+        var admission = NewAdmission();
+        admission.Notes = notes;
+
+        await controller.AddAdmission(admission);
+
+        Assert.Null((await SingleAdmissionAsync(context)).Notes);
+    }
+
+    [Fact]
+    public async Task UpdateAdmission_TrimsNotesWithoutReformattingTheirContents()
+    {
+        using var context = await SeededAdmissionAsync();
+        var controller = new AdmissionsController(context).WithUser();
+
+        var update = NewUpdate();
+        update.Notes = "  Discharged home.\n  Home health arranged.  ";
+
+        Assert.IsType<NoContentResult>(await controller.UpdateAdmission(1, update));
+
+        Assert.Equal(
+            "Discharged home.\n  Home health arranged.",
+            (await ReloadAsync(context)).Notes);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task UpdateAdmission_ClearsStoredNotesWhenGivenBlank(string? notes)
+    {
+        using var context = await SeededAdmissionAsync(
+            configure: admission => admission.Notes = "Family prefers morning calls.");
+        var controller = new AdmissionsController(context).WithUser();
+
+        var update = NewUpdate();
+        update.Notes = notes;
+
+        await controller.UpdateAdmission(1, update);
+
+        Assert.Null((await ReloadAsync(context)).Notes);
+    }
+
+    // ------------------------------------------------------------------
+    // Audit stamps
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task AddAdmission_StampsAuditFieldsOverClientSuppliedValues()
+    {
+        using var context = await SeededPatientAsync();
+        var controller = new AdmissionsController(context).WithUser("nurse@example.com");
+
+        var stale = new DateTime(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var admission = NewAdmission();
+        admission.LastEditedBy = "someone.else@example.com";
+        admission.LastEditedAt = stale;
+
+        await controller.AddAdmission(admission);
+
+        var saved = await SingleAdmissionAsync(context);
+        Assert.Equal("nurse@example.com", saved.LastEditedBy);
+        Assert.NotEqual(stale, saved.LastEditedAt);
+    }
+
+    [Fact]
+    public async Task UpdateAdmission_StampsAuditFieldsOverClientValuesAndMovesTheTimestampForward()
+    {
+        var stale = new DateTime(2025, 1, 10, 8, 0, 0, DateTimeKind.Utc);
+        using var context = await SeededAdmissionAsync(configure: admission =>
+        {
+            admission.LastEditedBy = "first.editor@example.com";
+            admission.LastEditedAt = stale;
+        });
+        var controller = new AdmissionsController(context).WithUser("doctor@example.com");
+
+        var update = NewUpdate();
+        update.LastEditedBy = "someone.else@example.com";
+        update.LastEditedAt = stale;
+
+        await controller.UpdateAdmission(1, update);
+
+        var saved = await ReloadAsync(context);
+        Assert.Equal("doctor@example.com", saved.LastEditedBy);
+        Assert.True(
+            saved.LastEditedAt > stale,
+            "every accepted write should move the edit timestamp forward");
+    }
+
+    [Fact]
+    public async Task AddAdmission_StampsTheAuditTimestampInUtcRatherThanHostLocalTime()
+    {
+        using var context = await SeededPatientAsync();
+        var controller = new AdmissionsController(context).WithUser();
+
+        var before = DateTime.UtcNow;
+        await controller.AddAdmission(NewAdmission());
+        var after = DateTime.UtcNow;
+
+        var saved = await SingleAdmissionAsync(context);
+        Assert.NotNull(saved.LastEditedAt);
+        Assert.InRange(saved.LastEditedAt!.Value, before, after);
+        Assert.Equal(DateTimeKind.Utc, saved.LastEditedAt!.Value.Kind);
+    }
+
+    [Fact]
+    public async Task DeleteAdmission_ForbidsWhenPrincipalHasNoUserName()
+    {
+        using var context = await SeededAdmissionAsync(contextUser: null);
+        await ClearHistoryAsync(context);
+
+        var controller = new AdmissionsController(context).WithUser(null);
+
+        Assert.IsType<ForbidResult>(await controller.DeleteAdmission(1));
+
+        Assert.Equal(1, await context.Admissions.CountAsync());
+        Assert.Empty(await context.EditHistory.ToListAsync());
+    }
+
+    [Fact]
+    public async Task DeleteAdmission_ChecksTheUserBeforeLookingTheAdmissionUp()
+    {
+        using var context = await SeededAdmissionAsync(contextUser: null);
+        var controller = new AdmissionsController(context).WithUser(null);
+
+        Assert.IsType<ForbidResult>(await controller.DeleteAdmission(404));
+    }
+
+    [Fact]
+    public async Task DeleteAdmission_AttributesTheRemovalToTheSignedInUser()
+    {
+        using var context = await SeededAdmissionAsync(contextUser: "nurse@example.com");
+        await ClearHistoryAsync(context);
+
+        var controller = new AdmissionsController(context).WithUser("nurse@example.com");
+
+        Assert.IsType<NoContentResult>(await controller.DeleteAdmission(1));
+
+        var entry = Assert.Single(await context.EditHistory.ToListAsync());
+        Assert.Equal(nameof(Admission), entry.EntityType);
+        Assert.Equal(EditHistory.ChangeTypes.Delete, entry.ChangeType);
+        Assert.Equal("1", entry.EntityId);
+        Assert.Equal("nurse@example.com", entry.ChangedBy);
+    }
+
+    // ------------------------------------------------------------------
+    // Fields the PUT deliberately does not copy from the request body
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task UpdateAdmission_IgnoresThePatientIdInTheRequestBody()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(TestDb.Patient(1), TestDb.Patient(2, lastName: "Hopper"));
+        context.Admissions.Add(TestDb.Admission(1, 1, new DateTime(2025, 1, 10)));
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var controller = new AdmissionsController(context).WithUser();
+        var update = NewUpdate();
+        update.PatientID = 2;
+
+        Assert.IsType<NoContentResult>(await controller.UpdateAdmission(1, update));
+
+        Assert.Equal(1, (await ReloadAsync(context)).PatientID);
+    }
+
+    [Fact]
+    public async Task UpdateAdmission_LeavesTransferBookkeepingFieldsAlone()
+    {
+        var finalDischarge = new DateTime(2025, 1, 15);
+        using var context = await SeededAdmissionAsync(configure: admission =>
+        {
+            admission.CountOfTransfers = 3;
+            admission.FinalDischargeDate = finalDischarge;
+        });
+        var controller = new AdmissionsController(context).WithUser();
+
+        var update = NewUpdate();
+        update.CountOfTransfers = 99;
+        update.FinalDischargeDate = new DateTime(2030, 1, 1);
+
+        await controller.UpdateAdmission(1, update);
+
+        var saved = await ReloadAsync(context);
+        Assert.Equal(3, saved.CountOfTransfers);
+        Assert.Equal(finalDischarge, saved.FinalDischargeDate);
+    }
+
+    [Fact]
+    public async Task UpdateAdmission_LeavesFieldsItDoesNotOwnAlone()
+    {
+        using var context = await SeededAdmissionAsync(configure: admission =>
+        {
+            admission.TotalERVisits = 2;
+            admission.TotalADMVisits = 4;
+            admission.TCMDueDate = new DateTime(2025, 1, 24);
+            admission.NextAdmissionDate = new DateTime(2025, 2, 1);
+        });
+        var controller = new AdmissionsController(context).WithUser();
+
+        var update = NewUpdate();
+        update.Status = "Done";
+        update.TotalERVisits = 100;
+        update.TotalADMVisits = 100;
+        update.TCMDueDate = new DateTime(2030, 1, 1);
+        update.NextAdmissionDate = new DateTime(2030, 1, 1);
+
+        await controller.UpdateAdmission(1, update);
+
+        var saved = await ReloadAsync(context);
+        Assert.Equal(Admission.StatusCurrent, saved.Status);
+        Assert.Equal(2, saved.TotalERVisits);
+        Assert.Equal(4, saved.TotalADMVisits);
+        Assert.Equal(new DateTime(2025, 1, 24), saved.TCMDueDate);
+        Assert.Equal(new DateTime(2025, 2, 1), saved.NextAdmissionDate);
+    }
+
+    [Fact]
+    public async Task UpdateAdmission_RecomputesDayAndMonthFromTheNewAdmissionDate()
+    {
+        using var context = await SeededAdmissionAsync();
+        var controller = new AdmissionsController(context).WithUser();
+
+        var update = NewUpdate(admissionDate: new DateTime(2025, 7, 4)); // a Friday
+        update.DayOfWeekAdmitted = "Caturday";
+        update.MonthAdmitted = "Smarch";
+
+        await controller.UpdateAdmission(1, update);
+
+        var saved = await ReloadAsync(context);
+        Assert.Equal("Friday", saved.DayOfWeekAdmitted);
+        Assert.Equal("July", saved.MonthAdmitted);
+    }
+
+    [Fact]
+    public async Task UpdateAdmission_RecomputesReadmissionFlagFromTheStoredDates()
+    {
+        using var context = await SeededAdmissionAsync(configure: admission =>
+        {
+            admission.FinalDischargeDate = new DateTime(2025, 1, 15);
+            admission.NextAdmissionDate = new DateTime(2025, 2, 1); // 17 days later
+            admission.UpdateCalculatedFields();
+        });
+        var controller = new AdmissionsController(context).WithUser();
+
+        var update = NewUpdate();
+        update.ReadmissionFlag = false;
+        update.FinalDischargeDate = null;
+        update.NextAdmissionDate = null;
+
+        await controller.UpdateAdmission(1, update);
+
+        Assert.True((await ReloadAsync(context)).ReadmissionFlag);
+    }
+
+    [Fact]
+    public async Task AddAdmission_TrustsBookkeepingFieldsFromTheRequestBody()
+    {
+        using var context = await SeededPatientAsync();
+        var controller = new AdmissionsController(context).WithUser();
+
+        var admission = NewAdmission();
+        admission.CountOfTransfers = 5;
+        admission.FinalDischargeDate = new DateTime(2025, 1, 20);
+        admission.Status = "Done";
+
+        await controller.AddAdmission(admission);
+
+        var saved = await SingleAdmissionAsync(context);
+        Assert.Equal(5, saved.CountOfTransfers);
+        Assert.Equal(new DateTime(2025, 1, 20), saved.FinalDischargeDate);
+        Assert.Equal(Admission.StatusCurrent, saved.Status);
+    }
+
+    // ------------------------------------------------------------------
+    // Fixtures
+    // ------------------------------------------------------------------
+
+    private static async Task<ArcaneSynergyContext> SeededPatientAsync(
+        string? contextUser = TestDb.DefaultUserName)
+    {
+        var context = TestDb.CreateContext(contextUser);
+        context.Patients.Add(TestDb.Patient(1));
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+        return context;
+    }
+
+    /// <summary>
+    /// Patient 1 with admission 1 already stored, and the change tracker
+    /// cleared so the controller reloads the row the way a real request would
+    /// rather than finding the seeded instance.
+    /// </summary>
+    private static async Task<ArcaneSynergyContext> SeededAdmissionAsync(
+        string? contextUser = TestDb.DefaultUserName,
+        Action<Admission>? configure = null)
+    {
+        var context = await SeededPatientAsync(contextUser);
+
+        var admission = TestDb.Admission(1, 1, new DateTime(2025, 1, 10));
+        configure?.Invoke(admission);
+
+        context.Admissions.Add(admission);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+        return context;
+    }
+
+    /// <summary>A POST body carrying only the fields a caller gets to set.</summary>
+    private static Admission NewAdmission(DateTime? admissionDate = null)
+    {
+        var date = admissionDate ?? new DateTime(2025, 3, 10);
+        return new Admission
+        {
+            PatientID = 1,
+            Type = "ADM",
+            AdmissionDate = date,
+            DateNotified = date,
+        };
+    }
+
+    /// <summary>The same body addressed at admission 1, for the PUT.</summary>
+    private static Admission NewUpdate(DateTime? admissionDate = null)
+    {
+        var update = NewAdmission(admissionDate);
+        update.AdmissionId = 1;
+        return update;
+    }
+
+    /// <summary>
+    /// Drops the history the seeding itself produced, so a test asserts only on
+    /// the entries its own call created.
+    /// </summary>
+    private static async Task ClearHistoryAsync(ArcaneSynergyContext context)
+    {
+        context.EditHistory.RemoveRange(context.EditHistory);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task<Admission> ReloadAsync(ArcaneSynergyContext context, int id = 1) =>
+        await context.Admissions.AsNoTracking().FirstAsync(a => a.AdmissionId == id);
+
+    private static async Task<Admission> SingleAdmissionAsync(ArcaneSynergyContext context) =>
+        await context.Admissions.AsNoTracking().SingleAsync();
 }
