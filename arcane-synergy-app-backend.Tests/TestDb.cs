@@ -36,6 +36,91 @@ internal static class TestDb
         public string? UserName { get; }
     }
 
+    /// <summary>
+    /// GapWorklist is a keyless view in production, and EF refuses to track a
+    /// keyless type, so tests cannot seed it through the ordinary context. This
+    /// context gives those rows the triple that already identifies a gap
+    /// everywhere else in the code, which is enough for the in-memory provider
+    /// to store and query them. Nothing else about the model changes.
+    /// </summary>
+    public static ArcaneSynergyContext CreateGapsContext(string? userName = null)
+    {
+        var options = new DbContextOptionsBuilder<ArcaneSynergyContext>()
+            .UseInMemoryDatabase($"test-gaps-{Guid.NewGuid()}")
+            .Options;
+
+        return new KeyedGapWorklistContext(options, new StubCurrentUserAccessor(userName));
+    }
+
+    private sealed class KeyedGapWorklistContext : ArcaneSynergyContext
+    {
+        public KeyedGapWorklistContext(
+            DbContextOptions<ArcaneSynergyContext> options,
+            ICurrentUserAccessor? currentUser)
+            : base(options, currentUser)
+        {
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<GapWorklistItem>()
+                .HasKey(g => new { g.Insurance, g.MemberId, g.MetricType });
+        }
+    }
+
+    public static GapWorklistItem Gap(
+        string memberId,
+        string insurance = "Aetna",
+        string metricType = "A1C",
+        string? name = null,
+        string? providerName = null,
+        string? groupName = null,
+        string? workItemType = null,
+        string? teamStatus = null,
+        DateOnly? statusDate = null,
+        DateOnly? dob = null,
+        DateOnly? lastSeenDate = null)
+    {
+        return new GapWorklistItem
+        {
+            Insurance = insurance,
+            MemberId = memberId,
+            MetricType = metricType,
+            Name = name,
+            ProviderName = providerName,
+            GroupName = groupName,
+            WorkItemType = workItemType,
+            TeamStatus = teamStatus,
+            StatusDate = statusDate,
+            DOB = dob ?? new DateOnly(1980, 1, 1),
+            FirstSeenDate = new DateOnly(2025, 1, 1),
+            LastSeenDate = lastSeenDate ?? new DateOnly(2025, 1, 1),
+        };
+    }
+
+    public static GapWorkStatus GapStatus(
+        string memberId,
+        string insurance = "Aetna",
+        string metricType = "A1C",
+        string teamStatus = "Pending",
+        DateOnly? statusDate = null,
+        DateTime? updatedAt = null,
+        string? updatedBy = null)
+    {
+        return new GapWorkStatus
+        {
+            Insurance = insurance,
+            MemberId = memberId,
+            MetricType = metricType,
+            TeamStatus = teamStatus,
+            StatusDate = statusDate ?? new DateOnly(2025, 1, 1),
+            UpdatedAt = updatedAt ?? new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            UpdatedBy = updatedBy ?? "previous.user@example.com",
+        };
+    }
+
     public static Patient Patient(
         int id,
         string firstName = "Ada",
