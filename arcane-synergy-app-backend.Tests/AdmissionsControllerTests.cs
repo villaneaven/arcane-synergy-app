@@ -142,6 +142,27 @@ public class AdmissionsControllerTests
     }
 
     [Fact]
+    public async Task GetAdmissions_FiltersByFacilityType()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1));
+        var hospital1 = TestDb.Admission(1, 1, new DateTime(2025, 1, 10));
+        hospital1.FacilityType = "HOSPITAL";
+        var hospital2 = TestDb.Admission(2, 1, new DateTime(2025, 1, 11));
+        hospital2.FacilityType = "HOSPITAL";
+        var snf = TestDb.Admission(3, 1, new DateTime(2025, 1, 12));
+        snf.FacilityType = "SNF";
+        context.Admissions.AddRange(hospital1, hospital2, snf);
+        await context.SaveChangesAsync();
+
+        var controller = new AdmissionsController(context);
+
+        Assert.Equal(2, (await controller.GetAdmissions(facilityType: "HOSPITAL")).OkJson().Int("totalCount"));
+        Assert.Equal(1, (await controller.GetAdmissions(facilityType: "SNF")).OkJson().Int("totalCount"));
+        Assert.Equal(3, (await controller.GetAdmissions()).OkJson().Int("totalCount"));
+    }
+
+    [Fact]
     public async Task GetAdmissions_SortsByRequestedColumnAndDirection()
     {
         using var context = TestDb.CreateContext();
