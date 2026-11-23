@@ -241,13 +241,14 @@ public class AdmissionsController : ControllerBase
         var dateSeenError = admission.ValidateDateSeen();
         if (dateSeenError != null) return BadRequest(dateSeenError);
 
-        admission.Notes =string.IsNullOrWhiteSpace(admission.Notes) ? null : admission.Notes.Trim();
+        admission.Notes = string.IsNullOrWhiteSpace(admission.Notes) ? null : admission.Notes.Trim();
         admission.LastEditedBy = editedBy;
         admission.LastEditedAt = DateTime.UtcNow;
         admission.UpdateCalculatedFields();
 
         _context.Admissions.Add(admission);
         await _context.SaveChangesAsync();
+        admission.ApplyPatientEngagement(ResolveToday(null));
 
         return CreatedAtAction(nameof(GetAdmission),
             new { id = admission.AdmissionId },
