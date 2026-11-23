@@ -823,6 +823,7 @@ public class AdmissionsControllerTests
         Assert.Equal(1, (await controller.GetAdmissions(status: "Current")).OkJson().Int("totalCount"));
         Assert.Equal(2, (await controller.GetAdmissions()).OkJson().Int("totalCount"));
     }
+    
     [Fact]
     public async Task AddAdmission_TrimsNotesWithoutReformattingTheirContents()
     {
