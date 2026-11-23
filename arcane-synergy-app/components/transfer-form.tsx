@@ -4,7 +4,7 @@ import * as React from "react";
 
 import { DatePickerInput } from "@/components/date-picker-input";
 import { DatePickerTimeInput } from "@/components/date-picker-time-input";
-import { validateDischargeNotBeforeAdmission } from "@/lib/admission-validation";
+import { validateDischargeDate } from "@/lib/admission-validation";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -103,9 +103,11 @@ export function TransferForm({
     initialValues?.notificationSource ?? "",
   );
 
-  const dischargeDateError = validateDischargeNotBeforeAdmission(
-    admissionDate,
+  const today = new Date();
+  const dischargeDateError = validateDischargeDate(
     dischargeDate,
+    today,
+    admissionDate,
   );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -176,6 +178,7 @@ export function TransferForm({
             value={dischargeDate}
             onChange={setDischargeDate}
             minDate={admissionDate}
+            maxDate={today}
             aria-invalid={!!dischargeDateError}
             aria-describedby={
               dischargeDateError ? "discharge-date-error" : undefined
