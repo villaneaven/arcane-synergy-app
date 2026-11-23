@@ -62,7 +62,26 @@ public class CalculatedFieldsTests
             DateSeen = seenDay.HasValue ? new DateTime(2025, 1, seenDay.Value) : null,
         };
 
-        Assert.Equal(expectedError, admission.ValidateDateSeen());
+        Assert.Equal(expectedError, admission.ValidateDateSeen(new DateOnly(2025, 1, 20)));
+    }
+
+    [Theory]
+    // seenDay is a day in Mar 2025; discharged Mar 10, "today" is Mar 20.
+    [InlineData(19, null)]                                       // yesterday
+    [InlineData(20, null)]                                       // today
+    [InlineData(21, "Date Seen must be today or earlier.")]      // tomorrow
+    public void Admission_ValidatesDateSeenNotInFuture(int seenDay, string? expectedError)
+    {
+        var admission = new Admission
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 3, 1),
+            DateNotified = new DateTime(2025, 3, 1),
+            DischargeDate = new DateTime(2025, 3, 10),
+            DateSeen = new DateTime(2025, 3, seenDay),
+        };
+
+        Assert.Equal(expectedError, admission.ValidateDateSeen(new DateOnly(2025, 3, 20)));
     }
 
     [Theory]
@@ -198,7 +217,7 @@ public class CalculatedFieldsTests
             DateSeen = new DateTime(2025, 1, 5, 9, 0, 0),
         };
 
-        Assert.Null(admission.ValidateDateSeen());
+        Assert.Null(admission.ValidateDateSeen(new DateOnly(2025, 1, 20)));
     }
 
     [Theory]
