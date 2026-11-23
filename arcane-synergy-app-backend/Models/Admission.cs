@@ -101,6 +101,20 @@ namespace arcane_synergy_app_backend.Models
             return null;
         }
 
+        public string? ValidateTimeOfAdmission(DateOnly today) =>
+            ValidateTimeOfAdmissionNotInFuture(TimeOfAdmission, today);
+
+        /// <summary>
+        /// Shared by admissions and transfers. Compared by the clinic's calendar day,
+        /// like Admission Date, so any time today is valid.
+        /// </summary>
+        public static string? ValidateTimeOfAdmissionNotInFuture(DateTime? timeOfAdmission, DateOnly today)
+        {
+            if (timeOfAdmission.HasValue && ClinicTime.DateFor(timeOfAdmission.Value) > today)
+                return "Time of Admission must be today or earlier.";
+            return null;
+        }
+
         public string? ValidateDateNotified(DateOnly today) =>
             ValidateDateNotifiedNotInFuture(DateNotified, today);
 

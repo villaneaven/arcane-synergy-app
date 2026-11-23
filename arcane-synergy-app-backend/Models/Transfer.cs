@@ -34,6 +34,9 @@ namespace arcane_synergy_app_backend.Models
         public string? ValidateAdmissionDate(DateOnly today) =>
             Admission.ValidateAdmissionNotInFuture(AdmissionDate, today);
 
+        public string? ValidateTimeOfAdmission(DateOnly today) =>
+            Admission.ValidateTimeOfAdmissionNotInFuture(TimeOfAdmission, today);
+
         public string? ValidateDateNotified(DateOnly today) =>
             Admission.ValidateDateNotifiedNotInFuture(DateNotified, today);
     }

@@ -239,6 +239,7 @@ public class AdmissionsController : ControllerBase
         if (editedBy == null) return Forbid();
 
         var dateError = admission.ValidateAdmissionDate(ClinicTime.Today)
+            ?? admission.ValidateTimeOfAdmission(ClinicTime.Today)
             ?? admission.ValidateDischargeDate(ClinicTime.Today) ?? admission.ValidateDateSeen(ClinicTime.Today)
             ?? admission.ValidateDateNotified(ClinicTime.Today);
         if (dateError != null) return BadRequest(dateError);
@@ -265,6 +266,7 @@ public class AdmissionsController : ControllerBase
             return BadRequest("AdmissionId mismatch");
 
         var dateError = admission.ValidateAdmissionDate(ClinicTime.Today)
+            ?? admission.ValidateTimeOfAdmission(ClinicTime.Today)
             ?? admission.ValidateDischargeDate(ClinicTime.Today) ?? admission.ValidateDateSeen(ClinicTime.Today)
             ?? admission.ValidateDateNotified(ClinicTime.Today);
         if (dateError != null) return BadRequest(dateError);
