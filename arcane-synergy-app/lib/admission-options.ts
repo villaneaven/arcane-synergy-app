@@ -1,5 +1,7 @@
 export const TYPE_OPTIONS = ["ADM", "ER", "OBS"] as const;
 
+export const STATUS_OPTIONS = ["Current", "Pending", "Completed"] as const;
+
 export const DX_OPTIONS = [
   "ABD PAIN",
   "ABNORMAL LABS",
