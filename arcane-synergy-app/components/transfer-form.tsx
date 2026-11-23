@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { DatePickerInput } from "@/components/date-picker-input";
 import { DatePickerTimeInput } from "@/components/date-picker-time-input";
+import { validateDischargeNotBeforeAdmission } from "@/lib/admission-validation";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -102,8 +103,14 @@ export function TransferForm({
     initialValues?.notificationSource ?? "",
   );
 
+  const dischargeDateError = validateDischargeNotBeforeAdmission(
+    admissionDate,
+    dischargeDate,
+  );
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (dischargeDateError) return;
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
@@ -168,7 +175,17 @@ export function TransferForm({
             name="discharge-date"
             value={dischargeDate}
             onChange={setDischargeDate}
+            minDate={admissionDate}
+            aria-invalid={!!dischargeDateError}
+            aria-describedby={
+              dischargeDateError ? "discharge-date-error" : undefined
+            }
           />
+          {dischargeDateError && (
+            <p id="discharge-date-error" className="text-sm text-destructive">
+              {dischargeDateError}
+            </p>
+          )}
         </div>
         <div className="grid gap-3">
           <Label htmlFor="is-final-discharge">Final Discharge</Label>
@@ -323,7 +340,7 @@ export function TransferForm({
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting || !!dischargeDateError}>
           {isSubmitting ? "Saving..." : "Save changes"}
         </Button>
       </div>
