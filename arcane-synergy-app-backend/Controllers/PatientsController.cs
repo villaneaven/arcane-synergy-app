@@ -123,12 +123,13 @@ public class PatientsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> AddPatient([FromBody] Patient patient)
     {
+        NormalizeMrnAndGroup(patient);
         patient.UpdateCalculatedFields();
 
-        if (!string.IsNullOrWhiteSpace(patient.MRN))
+        if (patient.MRN != null)
         {
-            var mrn = patient.MRN.Trim();
-            var group = (patient.Group ?? string.Empty).Trim();
+            var mrn = patient.MRN;
+            var group = patient.Group;
             bool duplicate = await _context.Patients
                 .AnyAsync(p => p.MRN == mrn && (p.Group ?? string.Empty) == group);
             if (duplicate)
@@ -159,10 +160,12 @@ public class PatientsController : ControllerBase
         var existing = await _context.Patients.FindAsync(id);
         if (existing == null) return NotFound();
 
-        if (!string.IsNullOrWhiteSpace(patient.MRN))
+        NormalizeMrnAndGroup(patient);
+
+        if (patient.MRN != null)
         {
-            var mrn = patient.MRN.Trim();
-            var group = (patient.Group ?? string.Empty).Trim();
+            var mrn = patient.MRN;
+            var group = patient.Group;
             bool duplicate = await _context.Patients
                 .AnyAsync(p => p.PatientID != id && p.MRN == mrn && (p.Group ?? string.Empty) == group);
             if (duplicate)
@@ -190,6 +193,18 @@ public class PatientsController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// The (MRN, Group) unique index only exempts NULL MRNs, so a blank MRN must
+    /// be stored as NULL or the second MRN-less patient in a group would collide
+    /// with the first. Trimming keeps the stored values identical to the ones
+    /// the duplicate check compares.
+    /// </summary>
+    private static void NormalizeMrnAndGroup(Patient patient)
+    {
+        patient.MRN = string.IsNullOrWhiteSpace(patient.MRN) ? null : patient.MRN.Trim();
+        patient.Group = (patient.Group ?? string.Empty).Trim();
     }
 
     private static bool IsMrnGroupUniqueViolation(DbUpdateException ex)

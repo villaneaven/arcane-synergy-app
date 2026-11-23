@@ -76,11 +76,15 @@ builder.Services.AddDbContext<ArcaneSynergyContext>(options =>
 
 var app = builder.Build();
 
-// Seed data after the app is built
-using (var scope = app.Services.CreateScope())
+if (app.Configuration.GetValue<bool>(DataSeeder.EnabledSetting))
 {
+    using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<ArcaneSynergyContext>();
-    DataSeeder.Seed(context);
+    var seeded = DataSeeder.Seed(context);
+    app.Logger.LogInformation(
+        "Demo data seeding added {PatientsAdded} patients and {AdmissionsAdded} admissions.",
+        seeded.PatientsAdded,
+        seeded.AdmissionsAdded);
 }
 
 // Configure the HTTP request pipeline.
@@ -101,3 +105,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }
