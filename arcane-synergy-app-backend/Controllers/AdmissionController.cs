@@ -1,6 +1,7 @@
 using arcane_synergy_app_backend.Data;
 using arcane_synergy_app_backend.Extensions;
 using arcane_synergy_app_backend.Models;
+using arcane_synergy_app_backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +34,8 @@ public class AdmissionsController : ControllerBase
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null,
         [FromQuery] string? sortBy = null,
-        [FromQuery] string? sortDir = "desc")
+        [FromQuery] string? sortDir = "desc",
+        [FromQuery] DateOnly? today = null)
     {
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -47,6 +49,7 @@ public class AdmissionsController : ControllerBase
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
+        ApplyPatientEngagement(admissions, today);
 
         return Ok(new
         {
@@ -67,18 +70,20 @@ public class AdmissionsController : ControllerBase
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null,
         [FromQuery] string? sortBy = null,
-        [FromQuery] string? sortDir = "desc")
+        [FromQuery] string? sortDir = "desc",
+        [FromQuery] DateOnly? today = null)
     {
         var query = BuildAdmissionsListQuery(search, admissionType, group, status, facilityType, startDate, endDate);
         query = ApplyAdmissionsSort(query, sortBy, sortDir);
 
         var admissions = await query.ToListAsync();
+        ApplyPatientEngagement(admissions, today);
 
         return Ok(admissions);
     }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetAdmission(int id)
+    public async Task<IActionResult> GetAdmission(int id, [FromQuery] DateOnly? today = null)
     {
         var admission = await _context.Admissions
             .AsNoTracking()
@@ -86,11 +91,13 @@ public class AdmissionsController : ControllerBase
             .Include(a => a.Transfers)
             .FirstOrDefaultAsync(a => a.AdmissionId == id);
 
-        return admission == null ? NotFound() : Ok(admission);
+        if (admission == null) return NotFound();
+        admission.ApplyPatientEngagement(ResolveToday(today));
+        return Ok(admission);
     }
 
     [HttpGet("patient/{patientId:int}")]
-    public async Task<IActionResult> GetAdmissionsByPatient(int patientId)
+    public async Task<IActionResult> GetAdmissionsByPatient(int patientId, [FromQuery] DateOnly? today = null)
     {
         var admissions = await _context.Admissions
             .AsNoTracking()
@@ -98,8 +105,20 @@ public class AdmissionsController : ControllerBase
             .Where(a => a.PatientID == patientId)
             .OrderByDescending(a => a.AdmissionDate)
             .ToListAsync();
+        ApplyPatientEngagement(admissions, today);
 
         return Ok(admissions);
+    }
+
+    // Defaults to today in the clinic's time zone. The optional `today` query parameter overrides it (used by tests and for viewing a past/future day).
+    private static DateTime ResolveToday(DateOnly? today) =>
+        (today ?? ClinicTime.Today).ToDateTime(TimeOnly.MinValue);
+
+    private static void ApplyPatientEngagement(IEnumerable<Admission> admissions, DateOnly? today)
+    {
+        var resolved = ResolveToday(today);
+        foreach (var admission in admissions)
+            admission.ApplyPatientEngagement(resolved);
     }
 
     [HttpGet("count")]
