@@ -10,6 +10,7 @@ import React, {
 import { useSession } from "next-auth/react";
 import type { SortingState } from "@tanstack/react-table";
 import { DataTable } from "./data-table";
+import { AdmissionQuickView } from "./admission-quick-view";
 import { Admission, createColumns } from "./columns";
 import { PAGE_SIZE_COOKIE, PAGE_SIZE_OPTIONS } from "./page-size";
 import { API_BASE_URL } from "@/lib/api";
@@ -269,35 +270,50 @@ export function AdmissionsTableWrapper({
   );
   const pageCount = Math.max(1, Math.ceil(totalCount / pageSize));
 
+  const [quickViewId, setQuickViewId] = useState<string | null>(null);
+  const quickViewAdmission =
+    data.find((admission) => admission.admissionId === quickViewId) ?? null;
+
   return (
-    <DataTable
-      columns={columns}
-      data={data}
-      pageIndex={pageIndex}
-      pageSize={pageSize}
-      pageCount={pageCount}
-      totalCount={totalCount}
-      isLoading={isLoading}
-      sorting={sorting}
-      onSortingChange={handleSortingChange}
-      searchValue={search}
-      onSearchChange={handleSearchChange}
-      onPageChange={setPageIndex}
-      onPageSizeChange={handlePageSizeChange}
-      pageSizeOptions={PAGE_SIZE_OPTIONS}
-      onAdmissionAdded={handleAdmissionAdded}
-      admissionType={admissionType}
-      onAdmissionTypeChange={handleAdmissionTypeChange}
-      group={group}
-      onGroupChange={handleGroupChange}
-      status={status}
-      onStatusChange={handleStatusChange}
-      facilityType={facilityType}
-      onFacilityTypeChange={handleFacilityTypeChange}
-      startDate={startDate}
-      onStartDateChange={handleStartDateChange}
-      endDate={endDate}
-      onEndDateChange={handleEndDateChange}
-    />
+    <>
+      <AdmissionQuickView
+        admission={quickViewAdmission}
+        open={quickViewId !== null}
+        onOpenChange={(open) => {
+          if (!open) setQuickViewId(null);
+        }}
+        onDataChange={handleAdmissionAdded}
+      />
+      <DataTable
+        onRowClick={(admission) => setQuickViewId(admission.admissionId)}
+        columns={columns}
+        data={data}
+        pageIndex={pageIndex}
+        pageSize={pageSize}
+        pageCount={pageCount}
+        totalCount={totalCount}
+        isLoading={isLoading}
+        sorting={sorting}
+        onSortingChange={handleSortingChange}
+        searchValue={search}
+        onSearchChange={handleSearchChange}
+        onPageChange={setPageIndex}
+        onPageSizeChange={handlePageSizeChange}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        onAdmissionAdded={handleAdmissionAdded}
+        admissionType={admissionType}
+        onAdmissionTypeChange={handleAdmissionTypeChange}
+        group={group}
+        onGroupChange={handleGroupChange}
+        status={status}
+        onStatusChange={handleStatusChange}
+        facilityType={facilityType}
+        onFacilityTypeChange={handleFacilityTypeChange}
+        startDate={startDate}
+        onStartDateChange={handleStartDateChange}
+        endDate={endDate}
+        onEndDateChange={handleEndDateChange}
+      />
+    </>
   );
 }

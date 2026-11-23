@@ -31,23 +31,21 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Columns3 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -60,29 +58,18 @@ import {
 import { ButtonLoading } from "@/components/button-loading";
 import { NewAdmissionDialog } from "@/components/new-admission-dialog";
 import { toast } from "sonner";
-import { DatePickerInput } from "@/components/date-picker-input";
-import {
-  FACILITY_TYPE_OPTIONS,
-  STATUS_OPTIONS,
-  TYPE_OPTIONS,
-} from "@/lib/admission-options";
-import { GROUP_OPTIONS } from "@/lib/patient-options";
 import { API_BASE_URL } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-const COLUMN_VISIBILITY_STORAGE_KEY = "admissions-table-column-visibility";
+import { AdmissionsFilters } from "./admissions-filters";
+import {
+  COLUMN_PRESETS,
+  getDefaultVisibility,
+  getPresetVisibility,
+  isPresetActive,
+} from "./column-presets";
 
-const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
-  totalERVisits: false,
-  totalADMVisits: false,
-  dayOfWeekAdmitted: false,
-  monthAdmitted: false,
-  tcmDueDate: false,
-  readmissionFlag: false,
-  nextAdmissionDate: false,
-  finalDischargeDate: false,
-  countOfTransfers: false,
-};
+const COLUMN_VISIBILITY_STORAGE_KEY = "admissions-table-column-visibility";
 
 function saveColumnVisibility(visibility: VisibilityState) {
   try {
@@ -180,6 +167,7 @@ interface DataTableProps<
   onStartDateChange: (date: Date | undefined) => void;
   endDate?: Date;
   onEndDateChange: (date: Date | undefined) => void;
+  onRowClick?: (row: TData) => void;
 }
 
 export function DataTable<
@@ -224,6 +212,7 @@ export function DataTable<
   onStartDateChange,
   endDate,
   onEndDateChange,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -249,15 +238,34 @@ export function DataTable<
     }
   };
 
+  const columnsWithCallbacks = React.useMemo(
+    () => (typeof columns === "function" ? columns(onAdmissionAdded) : columns),
+    [columns, onAdmissionAdded],
+  );
+
+  const hideableColumnIds = React.useMemo(
+    () =>
+      columnsWithCallbacks
+        .filter((column) => column.enableHiding !== false)
+        .map(
+          (column) =>
+            column.id ??
+            String((column as { accessorKey?: string }).accessorKey),
+        ),
+    [columnsWithCallbacks],
+  );
+
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
+    React.useState<VisibilityState>(() =>
+      getDefaultVisibility(hideableColumnIds),
+    );
 
   React.useEffect(() => {
     try {
       const saved = localStorage.getItem(COLUMN_VISIBILITY_STORAGE_KEY);
       if (saved) {
         setColumnVisibility({
-          ...DEFAULT_COLUMN_VISIBILITY,
+          ...getDefaultVisibility(hideableColumnIds),
           ...(JSON.parse(saved) as VisibilityState),
         });
       }
@@ -276,18 +284,20 @@ export function DataTable<
     });
   };
 
-  const resetColumnVisibility = () => {
-    setColumnVisibility(DEFAULT_COLUMN_VISIBILITY);
-    saveColumnVisibility(DEFAULT_COLUMN_VISIBILITY);
+  const applyVisibility = (visibility: VisibilityState) => {
+    setColumnVisibility(visibility);
+    saveColumnVisibility(visibility);
   };
 
   const [rowSelection, setRowSelection] = React.useState({});
 
-  // Pass the onAdmissionAdded callback to columns so they can refresh data
-  const columnsWithCallbacks = React.useMemo(
-    () => (typeof columns === "function" ? columns(onAdmissionAdded) : columns),
-    [columns, onAdmissionAdded],
-  );
+  const openRow = (row: TData) => {
+    if (onRowClick) {
+      onRowClick(row);
+    } else {
+      router.push(`/forms/admissions/${row.admissionId}`);
+    }
+  };
 
   const table = useReactTable({
     data,
@@ -691,210 +701,161 @@ export function DataTable<
 
   return (
     <div>
-      <div className="flex w-full flex-wrap items-center gap-4">
-        <Field className="w-full max-w-48">
-          <FieldLabel>Type of Admission</FieldLabel>
-          <Select value={admissionType} onValueChange={onAdmissionTypeChange}>
-            <SelectTrigger className="w-45">
-              <SelectValue placeholder="Select a type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Type</SelectLabel>
-                <SelectItem value="all">All Types</SelectItem>
-                {TYPE_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field className="w-full max-w-48">
-          <FieldLabel>Group</FieldLabel>
-          <Select value={group} onValueChange={onGroupChange}>
-            <SelectTrigger className="w-45">
-              <SelectValue placeholder="Select a group" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Group</SelectLabel>
-                <SelectItem value="all">All Groups</SelectItem>
-                {GROUP_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field className="w-full max-w-48">
-          <FieldLabel>Status</FieldLabel>
-          <Select value={status} onValueChange={onStatusChange}>
-            <SelectTrigger className="w-45">
-              <SelectValue placeholder="Select a status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Status</SelectLabel>
-                <SelectItem value="all">All Statuses</SelectItem>
-                {STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field className="w-full max-w-48">
-          <FieldLabel>Facility Type</FieldLabel>
-          <Select value={facilityType} onValueChange={onFacilityTypeChange}>
-            <SelectTrigger className="w-45">
-              <SelectValue placeholder="Select a facility type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Facility Type</SelectLabel>
-                <SelectItem value="all">All Facility Types</SelectItem>
-                {FACILITY_TYPE_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field className="w-full max-w-48">
-          <FieldLabel>Start Date</FieldLabel>
-          <DatePickerInput value={startDate} onChange={onStartDateChange} />
-        </Field>
-        <Field className="w-full max-w-48">
-          <FieldLabel>End Date</FieldLabel>
-          <DatePickerInput value={endDate} onChange={onEndDateChange} />
-        </Field>
-      </div>
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter names..."
-          value={searchValue}
-          onChange={(event) => onSearchChange(event.target.value)}
-          className="max-w-sm"
-        />
-        <div className="flex justify-end space-x-2 ml-auto">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline">Export</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent size="sm">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Export admissions</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Choose a file format to export the current table view.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="flex items-center gap-3 py-2">
-                <Checkbox
-                  id="include-transfers"
-                  checked={includeTransfers}
-                  onCheckedChange={(checked) => setIncludeTransfers(!!checked)}
-                />
-                <Label htmlFor="include-transfers" className="text-sm">
-                  Export associated transfers
-                </Label>
-              </div>
-              <AlertDialogAction
-                variant="outline"
-                onClick={handleExportCsv}
-                disabled={isExporting}
-              >
-                Export CSV
-              </AlertDialogAction>
-              <AlertDialogAction
-                onClick={handleExportExcel}
-                disabled={isExporting}
-              >
-                Export Excel
-              </AlertDialogAction>
-              <AlertDialogFooter className="pt-6">
-                <AlertDialogCancel variant="outline">Cancel</AlertDialogCancel>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          {isDeleting ? (
-            <ButtonLoading />
-          ) : (
+      <AdmissionsFilters
+        searchValue={searchValue}
+        onSearchChange={onSearchChange}
+        admissionType={admissionType}
+        onAdmissionTypeChange={onAdmissionTypeChange}
+        group={group}
+        onGroupChange={onGroupChange}
+        status={status}
+        onStatusChange={onStatusChange}
+        facilityType={facilityType}
+        onFacilityTypeChange={onFacilityTypeChange}
+        startDate={startDate}
+        endDate={endDate}
+        onDateRangeChange={(start, end) => {
+          onStartDateChange(start);
+          onEndDateChange(end);
+        }}
+        actions={
+          <>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  disabled={
-                    table.getSelectedRowModel().rows.length === 0 ||
-                    isDeleting ||
-                    isLoading
-                  }
-                >
-                  Delete
-                </Button>
+                <Button variant="outline">Export</Button>
               </AlertDialogTrigger>
               <AlertDialogContent size="sm">
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete admission(s)?</AlertDialogTitle>
+                  <AlertDialogTitle>Export admissions</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete the selected admission(s) and
-                    their associated transfer(s).
+                    Choose a file format to export the current table view.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
+                <div className="flex items-center gap-3 py-2">
+                  <Checkbox
+                    id="include-transfers"
+                    checked={includeTransfers}
+                    onCheckedChange={(checked) =>
+                      setIncludeTransfers(!!checked)
+                    }
+                  />
+                  <Label htmlFor="include-transfers" className="text-sm">
+                    Export associated transfers
+                  </Label>
+                </div>
+                <AlertDialogAction
+                  variant="outline"
+                  onClick={handleExportCsv}
+                  disabled={isExporting}
+                >
+                  Export CSV
+                </AlertDialogAction>
+                <AlertDialogAction
+                  onClick={handleExportExcel}
+                  disabled={isExporting}
+                >
+                  Export Excel
+                </AlertDialogAction>
+                <AlertDialogFooter className="pt-6">
                   <AlertDialogCancel variant="outline">
                     Cancel
                   </AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    onClick={handleDelete}
-                  >
-                    Delete
-                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          )}
-          <NewAdmissionDialog onAdmissionAdded={onAdmissionAdded} />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                      onSelect={(e) => e.preventDefault()}
+            {isDeleting ? (
+              <ButtonLoading />
+            ) : (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    disabled={
+                      table.getSelectedRowModel().rows.length === 0 ||
+                      isDeleting ||
+                      isLoading
+                    }
+                  >
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent size="sm">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete admission(s)?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete the selected admission(s) and
+                      their associated transfer(s).
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel variant="outline">
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      onClick={handleDelete}
                     >
-                      {column.columnDef.meta?.label ?? column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={resetColumnVisibility}>
-                Reset to default
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <NewAdmissionDialog onAdmissionAdded={onAdmissionAdded} />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Columns3 className="size-4" />
+                  Columns
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="max-h-[70vh] overflow-y-auto"
+              >
+                <DropdownMenuLabel>Views</DropdownMenuLabel>
+                {COLUMN_PRESETS.map((preset) => (
+                  <DropdownMenuCheckboxItem
+                    key={preset.id}
+                    checked={isPresetActive(
+                      preset,
+                      hideableColumnIds,
+                      columnVisibility,
+                    )}
+                    onCheckedChange={() =>
+                      applyVisibility(
+                        getPresetVisibility(preset, hideableColumnIds),
+                      )
+                    }
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    {preset.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Columns</DropdownMenuLabel>
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        {column.columnDef.meta?.label ?? column.id}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        }
+      />
       <div className="overflow-hidden rounded-md border">
         <Table containerClassName="max-h-[70vh]">
           <TableHeader>
@@ -936,6 +897,7 @@ export function DataTable<
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  tabIndex={0}
                   onClick={(e: React.MouseEvent) => {
                     const target = e.target as HTMLElement | null;
                     if (!target || !e.currentTarget.contains(target)) {
@@ -947,11 +909,14 @@ export function DataTable<
                       return;
                     }
 
-                    router.push(
-                      `/forms/admissions/${row.original.admissionId}`,
-                    );
+                    openRow(row.original);
                   }}
-                  className="group cursor-pointer"
+                  onKeyDown={(e: React.KeyboardEvent) => {
+                    if (e.key === "Enter" && e.target === e.currentTarget) {
+                      openRow(row.original);
+                    }
+                  }}
+                  className="group focus-visible:outline-ring cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell

@@ -34,9 +34,11 @@ type Admission = {
 export function EditAdmissionDialog({
   admission,
   onAdmissionUpdated,
+  trigger,
 }: {
   admission: Admission;
   onAdmissionUpdated?: () => void;
+  trigger?: React.ReactElement;
 }) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const { data: session } = useSession();
@@ -98,13 +100,15 @@ export function EditAdmissionDialog({
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
-        <DropdownMenuItem
-          onSelect={(event) => {
-            event.preventDefault();
-          }}
-        >
-          Edit Admission
-        </DropdownMenuItem>
+        {trigger ?? (
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+            }}
+          >
+            Edit Admission
+          </DropdownMenuItem>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-106 max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-6">

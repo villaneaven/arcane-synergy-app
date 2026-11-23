@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { MoreHorizontal, ArrowUpDown } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,6 +17,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Patient } from "../patients/columns";
 import { EditAdmissionDialog } from "@/components/edit-admission-dialog";
+import {
+  FlagBadge,
+  SortableHeader,
+  Stacked,
+  StatusBadge,
+  TypeBadge,
+  daysBetween,
+  formatDate,
+  formatDateTime,
+  formatStayLength,
+  formatTime,
+  orEmpty,
+} from "./cell-format";
 
 export type Admission = {
   admissionId: string;
@@ -50,70 +63,6 @@ export type Admission = {
   transfers: string | undefined;
 };
 
-function toDate(value: string | undefined | null) {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function formatDate(value: string | undefined | null) {
-  const date = toDate(value);
-  if (!date) return null;
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-}
-
-function formatTime(value: string | undefined | null) {
-  const date = toDate(value);
-  if (!date) return null;
-  return date.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatDateTime(value: string | undefined | null) {
-  const date = toDate(value);
-  if (!date) return null;
-  return date.toLocaleString("en-US", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function daysBetween(start: string | undefined, end: string | undefined) {
-  const from = toDate(start);
-  const to = toDate(end);
-  if (!from || !to) return null;
-  const fromDay = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
-  const toDay = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
-  return Math.round((toDay - fromDay) / 86_400_000);
-}
-
-function Stacked({
-  primary,
-  secondary,
-}: {
-  primary: React.ReactNode;
-  secondary?: (string | null | undefined)[];
-}) {
-  const details = (secondary ?? []).filter(Boolean).join(" · ");
-  return (
-    <div className="flex flex-col leading-tight">
-      <span>{primary ?? "N/A"}</span>
-      {details ? (
-        <span className="text-muted-foreground text-xs">{details}</span>
-      ) : null}
-    </div>
-  );
-}
-
 export const createColumns = (
   onDataChange?: () => void,
 ): ColumnDef<Admission>[] => [
@@ -143,24 +92,15 @@ export const createColumns = (
   {
     id: "patientFullName",
     accessorFn: (row) => row.patient?.fullName ?? "",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="cursor-pointer"
-        >
-          Patient
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: ({ column }) => <SortableHeader column={column} label="Patient" />,
     cell: ({ row }) => {
       const patient = row.original.patient;
       return (
         <Stacked
           primary={
-            <span className="font-medium">{patient?.fullName || "N/A"}</span>
+            patient?.fullName ? (
+              <span className="font-medium">{patient.fullName}</span>
+            ) : null
           }
           secondary={[formatDate(patient?.dob), patient?.group]}
         />
@@ -183,12 +123,13 @@ export const createColumns = (
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => row.original.status || "N/A",
+    cell: ({ row }) => <StatusBadge status={row.original.status} />,
     meta: { label: "Status" },
   },
   {
     accessorKey: "type",
-    header: "Type",
+    header: ({ column }) => <SortableHeader column={column} label="Type" />,
+    cell: ({ row }) => <TypeBadge type={row.original.type} />,
     meta: { label: "Type" },
   },
   {
@@ -197,7 +138,7 @@ export const createColumns = (
     header: "Facility",
     cell: ({ row }) => (
       <Stacked
-        primary={row.original.facility || "N/A"}
+        primary={row.original.facility}
         secondary={[row.original.facilityType]}
       />
     ),
@@ -210,20 +151,25 @@ export const createColumns = (
     },
   },
   {
-    id: "stay",
+    // Shows the whole stay; sorts by admission date.
+    id: "admissionDate",
     accessorFn: (row) => row.admissionDate,
-    header: "Admitted → Discharged",
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Admitted → Discharged" descFirst />
+    ),
     cell: ({ row }) => {
       const { admissionDate, dischargeDate } = row.original;
-      const days = daysBetween(admissionDate, dischargeDate);
       return (
         <Stacked
-          primary={`${formatDate(admissionDate) ?? "N/A"} → ${
-            formatDate(dischargeDate) ?? "N/A"
-          }`}
+          primary={
+            <>
+              {orEmpty(formatDate(admissionDate))} →{" "}
+              {orEmpty(formatDate(dischargeDate))}
+            </>
+          }
           secondary={[
             formatTime(admissionDate),
-            days === null ? null : `${days} ${days === 1 ? "day" : "days"}`,
+            formatStayLength(daysBetween(admissionDate, dischargeDate)),
           ]}
         />
       );
@@ -245,7 +191,7 @@ export const createColumns = (
     header: "DX",
     cell: ({ row }) => {
       const dx = row.original.dx;
-      if (!dx) return "N/A";
+      if (!dx) return orEmpty(dx);
       return (
         <div className="max-w-48 truncate" title={dx}>
           {dx}
@@ -255,12 +201,15 @@ export const createColumns = (
     meta: { label: "DX" },
   },
   {
-    id: "notification",
-    accessorFn: (row) => row.notificationSource ?? "",
-    header: "Notified",
+    // Shows source and date; sorts by date notified.
+    id: "dateNotified",
+    accessorFn: (row) => row.dateNotified,
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Notified" descFirst />
+    ),
     cell: ({ row }) => (
       <Stacked
-        primary={row.original.notificationSource || "N/A"}
+        primary={row.original.notificationSource}
         secondary={[formatDate(row.original.dateNotified)]}
       />
     ),
@@ -278,7 +227,7 @@ export const createColumns = (
   {
     accessorKey: "dischargeTo",
     header: "Discharge To",
-    cell: ({ row }) => row.original.dischargeTo || "N/A",
+    cell: ({ row }) => orEmpty(row.original.dischargeTo),
     meta: { label: "Discharge To" },
   },
   {
@@ -287,7 +236,7 @@ export const createColumns = (
     header: "Seen",
     cell: ({ row }) => (
       <Stacked
-        primary={formatDate(row.original.dateSeen) ?? "N/A"}
+        primary={formatDate(row.original.dateSeen)}
         secondary={[row.original.seenBy]}
       />
     ),
@@ -312,19 +261,19 @@ export const createColumns = (
   {
     accessorKey: "dayOfWeekAdmitted",
     header: "Day of Week Admitted",
-    cell: ({ row }) => row.original.dayOfWeekAdmitted || "N/A",
+    cell: ({ row }) => orEmpty(row.original.dayOfWeekAdmitted),
     meta: { label: "Day of Week Admitted" },
   },
   {
     accessorKey: "monthAdmitted",
     header: "Month Admitted",
-    cell: ({ row }) => row.original.monthAdmitted || "N/A",
+    cell: ({ row }) => orEmpty(row.original.monthAdmitted),
     meta: { label: "Month Admitted" },
   },
   {
     accessorKey: "tcmDueDate",
     header: "TCM Due Date",
-    cell: ({ row }) => formatDate(row.original.tcmDueDate) ?? "N/A",
+    cell: ({ row }) => orEmpty(formatDate(row.original.tcmDueDate)),
     meta: { label: "TCM Due Date" },
   },
   {
@@ -332,26 +281,26 @@ export const createColumns = (
     header: () => <div className="text-right">Patient Engagement</div>,
     cell: ({ row }) => {
       const days = row.getValue<number | null>("patientEngagement");
-      return <div className="text-right tabular-nums">{days ?? ""}</div>;
+      return <div className="text-right tabular-nums">{orEmpty(days)}</div>;
     },
     meta: { label: "Patient Engagement" },
   },
   {
     accessorKey: "readmissionFlag",
     header: "Readmission Flag",
-    cell: ({ row }) => (row.original.readmissionFlag ? "Yes" : "No"),
+    cell: ({ row }) => <FlagBadge flagged={row.original.readmissionFlag} />,
     meta: { label: "Readmission Flag" },
   },
   {
     accessorKey: "nextAdmissionDate",
     header: "Next Admission Date",
-    cell: ({ row }) => formatDate(row.original.nextAdmissionDate) ?? "N/A",
+    cell: ({ row }) => orEmpty(formatDate(row.original.nextAdmissionDate)),
     meta: { label: "Next Admission Date" },
   },
   {
     accessorKey: "finalDischargeDate",
     header: "Final Discharge Date",
-    cell: ({ row }) => formatDate(row.original.finalDischargeDate) ?? "N/A",
+    cell: ({ row }) => orEmpty(formatDate(row.original.finalDischargeDate)),
     meta: { label: "Final Discharge Date" },
   },
   {
@@ -364,7 +313,7 @@ export const createColumns = (
     header: "Notes",
     cell: ({ row }) => {
       const notes = row.original.notes;
-      if (!notes) return "N/A";
+      if (!notes) return orEmpty(notes);
       return (
         <div className="max-w-64 truncate" title={notes}>
           {notes}
@@ -379,7 +328,7 @@ export const createColumns = (
     header: "Last Edited",
     cell: ({ row }) => (
       <Stacked
-        primary={row.original.lastEditedBy || "N/A"}
+        primary={row.original.lastEditedBy}
         secondary={[formatDateTime(row.original.lastEditedAt)]}
       />
     ),
@@ -406,18 +355,11 @@ export const createColumns = (
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() =>
-                navigator.clipboard.writeText(admission.admissionId)
-              }
-            >
-              Copy admission ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <EditAdmissionDialog
               admission={admission}
               onAdmissionUpdated={onDataChange}
             />
+            <DropdownMenuSeparator />
             <DropdownMenuItem asChild className="cursor-pointer">
               <Link href={`/forms/patients/${admission.patientID}`}>
                 View patient
