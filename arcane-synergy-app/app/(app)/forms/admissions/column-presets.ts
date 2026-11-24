@@ -83,8 +83,11 @@ export function getPresetVisibility(
   );
 }
 
-export function getDefaultVisibility(hideableColumnIds: string[]) {
-  const preset = COLUMN_PRESETS.find((p) => p.id === DEFAULT_PRESET_ID)!;
+export function getDefaultVisibility(
+  hideableColumnIds: string[],
+  presets: ColumnPreset[] = COLUMN_PRESETS,
+) {
+  const preset = presets.find((p) => p.id === DEFAULT_PRESET_ID)!;
   return getPresetVisibility(preset, hideableColumnIds);
 }
 

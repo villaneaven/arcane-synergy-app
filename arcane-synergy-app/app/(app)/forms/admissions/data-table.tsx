@@ -8,7 +8,6 @@ import {
   ColumnDef,
   OnChangeFn,
   SortingState,
-  VisibilityState,
   flexRender,
   getCoreRowModel,
   useReactTable,
@@ -59,7 +58,6 @@ import { ButtonLoading } from "@/components/button-loading";
 import { NewAdmissionDialog } from "@/components/new-admission-dialog";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/lib/api";
-import { cn } from "@/lib/utils";
 
 import { AdmissionsFilters } from "./admissions-filters";
 import {
@@ -68,60 +66,14 @@ import {
   getPresetVisibility,
   isPresetActive,
 } from "./column-presets";
+import {
+  getCellClassName,
+  getHeadClassName,
+  isInteractiveTarget,
+} from "./table-pinning";
+import { useSavedColumnVisibility } from "./use-saved-column-visibility";
 
 const COLUMN_VISIBILITY_STORAGE_KEY = "admissions-table-column-visibility";
-
-function saveColumnVisibility(visibility: VisibilityState) {
-  try {
-    localStorage.setItem(
-      COLUMN_VISIBILITY_STORAGE_KEY,
-      JSON.stringify(visibility),
-    );
-  } catch {
-    // Storage can be unavailable (private mode, blocked site data).
-  }
-}
-
-const PINNED_CELL_BG =
-  "bg-background group-hover:bg-[color-mix(in_oklab,var(--muted)_50%,var(--background))] group-data-[state=selected]:bg-muted";
-
-const HEAD_CLASSES = {
-  default:
-    "sticky top-0 z-20 bg-background shadow-[inset_0_-1px_0_var(--border)]",
-  select:
-    "sticky top-0 left-0 z-30 w-10 min-w-10 bg-background shadow-[inset_0_-1px_0_var(--border)]",
-  left: "sticky top-0 left-10 z-30 bg-background shadow-[inset_-1px_0_0_var(--border),inset_0_-1px_0_var(--border)]",
-  right:
-    "sticky top-0 right-0 z-30 bg-background shadow-[inset_1px_0_0_var(--border),inset_0_-1px_0_var(--border)]",
-};
-
-const CELL_CLASSES = {
-  select: cn("sticky left-0 z-10 w-10 min-w-10", PINNED_CELL_BG),
-  left: cn(
-    "sticky left-10 z-10 shadow-[inset_-1px_0_0_var(--border)]",
-    PINNED_CELL_BG,
-  ),
-  right: cn(
-    "sticky right-0 z-10 shadow-[inset_1px_0_0_var(--border)]",
-    PINNED_CELL_BG,
-  ),
-};
-
-function getPinKey(columnId: string, pin: "left" | "right" | undefined) {
-  if (!pin) return undefined;
-  if (pin === "right") return "right" as const;
-  return columnId === "select" ? ("select" as const) : ("left" as const);
-}
-
-function getHeadClassName(columnId: string, pin?: "left" | "right") {
-  const key = getPinKey(columnId, pin);
-  return key ? HEAD_CLASSES[key] : HEAD_CLASSES.default;
-}
-
-function getCellClassName(columnId: string, pin?: "left" | "right") {
-  const key = getPinKey(columnId, pin);
-  return key ? CELL_CLASSES[key] : undefined;
-}
 
 interface DataTableProps<
   TData extends {
@@ -255,39 +207,14 @@ export function DataTable<
     [columnsWithCallbacks],
   );
 
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>(() =>
-      getDefaultVisibility(hideableColumnIds),
-    );
-
-  React.useEffect(() => {
-    try {
-      const saved = localStorage.getItem(COLUMN_VISIBILITY_STORAGE_KEY);
-      if (saved) {
-        setColumnVisibility({
-          ...getDefaultVisibility(hideableColumnIds),
-          ...(JSON.parse(saved) as VisibilityState),
-        });
-      }
-    } catch {
-      // Ignore unreadable or malformed saved state and keep the defaults.
-    }
-  }, []);
-
-  const handleColumnVisibilityChange: OnChangeFn<VisibilityState> = (
-    updater,
-  ) => {
-    setColumnVisibility((current) => {
-      const next = typeof updater === "function" ? updater(current) : updater;
-      saveColumnVisibility(next);
-      return next;
-    });
-  };
-
-  const applyVisibility = (visibility: VisibilityState) => {
-    setColumnVisibility(visibility);
-    saveColumnVisibility(visibility);
-  };
+  const {
+    visibility: columnVisibility,
+    onVisibilityChange: handleColumnVisibilityChange,
+    applyVisibility,
+  } = useSavedColumnVisibility(
+    COLUMN_VISIBILITY_STORAGE_KEY,
+    getDefaultVisibility(hideableColumnIds),
+  );
 
   const [rowSelection, setRowSelection] = React.useState({});
 
@@ -899,16 +826,8 @@ export function DataTable<
                   data-state={row.getIsSelected() && "selected"}
                   tabIndex={0}
                   onClick={(e: React.MouseEvent) => {
-                    const target = e.target as HTMLElement | null;
-                    if (!target || !e.currentTarget.contains(target)) {
-                      return;
-                    }
-                    if (
-                      target.closest("button, a, [role=menuitem], input, label")
-                    ) {
-                      return;
-                    }
-
+                    if (!e.currentTarget.contains(e.target as Node)) return;
+                    if (isInteractiveTarget(e.target)) return;
                     openRow(row.original);
                   }}
                   onKeyDown={(e: React.KeyboardEvent) => {
