@@ -14,6 +14,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Admission } from "../columns";
+import {
+  FinalDischargeBadge,
+  SortableHeader,
+  Stacked,
+  TypeBadge,
+  daysBetween,
+  formatDate,
+  formatDateTime,
+  formatStayLength,
+  formatTime,
+  orEmpty,
+} from "../cell-format";
 import { EditTransferDialog } from "@/components/edit-transfer-dialog";
 import { MoveTransferToAdmissionDialog } from "@/components/move-transfer-to-admission-dialog";
 
@@ -61,152 +73,123 @@ export const createColumns = (
     ),
     enableSorting: false,
     enableHiding: false,
+    meta: { pin: "left" },
   },
   {
-    accessorKey: "admissionDate",
-    header: "Admission Date",
+    // Shows the whole stay; sorts by admission date.
+    id: "admissionDate",
+    accessorFn: (row) => row.admissionDate,
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Admitted → Discharged" />
+    ),
     cell: ({ row }) => {
-      const date = new Date(row.getValue("admissionDate"));
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      });
+      const { admissionDate, dischargeDate } = row.original;
+      return (
+        <Stacked
+          primary={
+            <span className="font-medium">
+              {orEmpty(formatDate(admissionDate))} →{" "}
+              {orEmpty(formatDate(dischargeDate))}
+            </span>
+          }
+          secondary={[
+            formatTime(admissionDate),
+            formatStayLength(daysBetween(admissionDate, dischargeDate)),
+          ]}
+        />
+      );
     },
+    enableHiding: false,
+    meta: { label: "Admitted → Discharged", pin: "left" },
   },
   {
-    accessorKey: "dischargeDate",
-    header: "Discharge Date",
-    cell: ({ row }) => {
-      const dischargeDate = row.getValue("dischargeDate");
-      if (!dischargeDate) return "N/A";
-      const date = new Date(dischargeDate as string);
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      });
-    },
+    accessorKey: "type",
+    header: ({ column }) => <SortableHeader column={column} label="Type" />,
+    cell: ({ row }) => <TypeBadge type={row.original.type} />,
+    meta: { label: "Type" },
+  },
+  {
+    id: "facility",
+    accessorFn: (row) => row.facility ?? "",
+    header: ({ column }) => <SortableHeader column={column} label="Facility" />,
+    cell: ({ row }) => (
+      <Stacked
+        primary={row.original.facility}
+        secondary={[row.original.facilityType]}
+      />
+    ),
+    meta: { label: "Facility" },
   },
   {
     accessorKey: "isFinalDischarge",
     header: "Final Discharge",
-    cell: ({ row }) => {
-      const isFinalDischarge = row.getValue("isFinalDischarge");
-      return isFinalDischarge ? "Yes" : "No";
-    },
-  },
-  {
-    accessorKey: "facilityType",
-    header: "Facility Type",
-    cell: ({ row }) => {
-      const facilityType = row.getValue("facilityType");
-      if (!facilityType) return "N/A";
-      return facilityType;
-    },
-  },
-  {
-    accessorKey: "facility",
-    header: "Facility",
-    cell: ({ row }) => {
-      const facility = row.getValue("facility");
-      if (!facility) return "N/A";
-      return facility;
-    },
-  },
-  {
-    accessorKey: "type",
-    header: "Type",
-  },
-  {
-    accessorKey: "timeOfAdmission",
-    header: "Time of Admission",
-    cell: ({ row }) => {
-      const admissionDate = row.getValue("admissionDate");
-      if (!admissionDate) return "N/A";
-      const date = new Date(admissionDate as string);
-      return date.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    },
+    cell: ({ row }) => (
+      <FinalDischargeBadge final={row.original.isFinalDischarge} />
+    ),
+    meta: { label: "Final Discharge" },
   },
   {
     accessorKey: "dx",
     header: "DX",
     cell: ({ row }) => {
-      const dx = row.getValue("dx");
-      if (!dx) return "N/A";
-      return dx;
+      const dx = row.original.dx;
+      if (!dx) return orEmpty(dx);
+      return (
+        <div className="max-w-48 truncate" title={dx}>
+          {dx}
+        </div>
+      );
     },
+    meta: { label: "DX" },
   },
   {
-    accessorKey: "notificationSource",
-    header: "Notification Source",
-    cell: ({ row }) => {
-      const notificationSource = row.getValue("notificationSource");
-      if (!notificationSource) return "N/A";
-      return notificationSource;
-    },
-  },
-  {
-    accessorKey: "dateNotified",
-    header: "Date Notified",
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("dateNotified"));
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      });
-    },
+    // Shows source and date; sorts by date notified.
+    id: "dateNotified",
+    accessorFn: (row) => row.dateNotified,
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Notified" descFirst />
+    ),
+    cell: ({ row }) => (
+      <Stacked
+        primary={row.original.notificationSource}
+        secondary={[formatDate(row.original.dateNotified)]}
+      />
+    ),
+    meta: { label: "Notified (source & date)" },
   },
   {
     accessorKey: "dischargeTo",
     header: "Discharge To",
-    cell: ({ row }) => {
-      const dischargeTo = row.getValue("dischargeTo");
-      if (!dischargeTo) return "N/A";
-      return dischargeTo;
-    },
+    cell: ({ row }) => orEmpty(row.original.dischargeTo),
+    meta: { label: "Discharge To" },
   },
   {
     accessorKey: "notes",
     header: "Notes",
     cell: ({ row }) => {
-      const notes = row.getValue("notes") as string | undefined;
-      if (!notes) return "N/A";
+      const notes = row.original.notes;
+      if (!notes) return orEmpty(notes);
       return (
         <div className="max-w-64 truncate" title={notes}>
           {notes}
         </div>
       );
     },
+    meta: { label: "Notes" },
   },
   {
-    accessorKey: "lastEditedBy",
-    header: "Last Edited By",
-    cell: ({ row }) => {
-      const lastEditedBy = row.getValue("lastEditedBy");
-      if (!lastEditedBy) return "N/A";
-      return lastEditedBy;
-    },
-  },
-  {
-    accessorKey: "lastEditedAt",
-    header: "Last Edited At",
-    cell: ({ row }) => {
-      const lastEditedAt = row.getValue("lastEditedAt");
-      if (!lastEditedAt) return "N/A";
-      const date = new Date(lastEditedAt as string);
-      return date.toLocaleString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    },
+    id: "lastEdited",
+    accessorFn: (row) => row.lastEditedAt ?? "",
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Last Edited" descFirst />
+    ),
+    cell: ({ row }) => (
+      <Stacked
+        primary={row.original.lastEditedBy}
+        secondary={[formatDateTime(row.original.lastEditedAt)]}
+      />
+    ),
+    meta: { label: "Last Edited (by & when)" },
   },
   {
     id: "actions",
@@ -241,5 +224,7 @@ export const createColumns = (
         </DropdownMenu>
       );
     },
+    enableHiding: false,
+    meta: { pin: "right" },
   },
 ];

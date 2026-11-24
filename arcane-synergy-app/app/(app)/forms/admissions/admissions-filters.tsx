@@ -192,7 +192,7 @@ function DateRangeFilter({
   );
 }
 
-function FilterChip({
+export function FilterChip({
   label,
   value,
   onRemove,
