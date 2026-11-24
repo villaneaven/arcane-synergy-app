@@ -8,11 +8,11 @@ import {
   ColumnDef,
   OnChangeFn,
   SortingState,
-  VisibilityState,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { Columns3 } from "lucide-react";
 
 import {
   AlertDialog,
@@ -42,6 +42,8 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -53,6 +55,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { API_BASE_URL } from "@/lib/api";
+
+import {
+  getDefaultVisibility,
+  getPresetVisibility,
+  isPresetActive,
+} from "../admissions/column-presets";
+import {
+  getCellClassName,
+  getHeadClassName,
+  isInteractiveTarget,
+} from "../admissions/table-pinning";
+import { useSavedColumnVisibility } from "../admissions/use-saved-column-visibility";
+import { PATIENT_COLUMN_PRESETS } from "./column-presets";
+import { PatientsFilters } from "./patients-filters";
+
+const COLUMN_VISIBILITY_STORAGE_KEY = "patients-table-column-visibility";
 
 interface DataTableProps<TData extends { patientID: string }, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -66,6 +84,12 @@ interface DataTableProps<TData extends { patientID: string }, TValue> {
   onSortingChange: OnChangeFn<SortingState>;
   searchValue: string;
   onSearchChange: (value: string) => void;
+  group: string;
+  onGroupChange: (value: string) => void;
+  insurance: string;
+  onInsuranceChange: (value: string) => void;
+  clinic: string;
+  onClinicChange: (value: string) => void;
   onPageChange: (pageIndex: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   pageSizeOptions: number[];
@@ -84,6 +108,12 @@ export function DataTable<TData extends { patientID: string }, TValue>({
   onSortingChange,
   searchValue,
   onSearchChange,
+  group,
+  onGroupChange,
+  insurance,
+  onInsuranceChange,
+  clinic,
+  onClinicChange,
   onPageChange,
   onPageSizeChange,
   pageSizeOptions,
@@ -93,11 +123,27 @@ export function DataTable<TData extends { patientID: string }, TValue>({
   const router = useRouter();
   const [isDeleting, setIsDeleting] = React.useState(false);
 
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({
-      firstName: false,
-      lastName: false,
-    });
+  const hideableColumnIds = React.useMemo(
+    () =>
+      columns
+        .filter((column) => column.enableHiding !== false)
+        .map(
+          (column) =>
+            column.id ??
+            String((column as { accessorKey?: string }).accessorKey),
+        ),
+    [columns],
+  );
+
+  const {
+    visibility: columnVisibility,
+    onVisibilityChange: handleColumnVisibilityChange,
+    applyVisibility,
+  } = useSavedColumnVisibility(
+    COLUMN_VISIBILITY_STORAGE_KEY,
+    getDefaultVisibility(hideableColumnIds, PATIENT_COLUMN_PRESETS),
+  );
+
   const [rowSelection, setRowSelection] = React.useState({});
   const [pageInput, setPageInput] = React.useState(String(pageIndex + 1));
 
@@ -118,6 +164,10 @@ export function DataTable<TData extends { patientID: string }, TValue>({
     }
   };
 
+  const openRow = (row: TData) => {
+    router.push(`/forms/patients/${row.patientID}`);
+  };
+
   const table = useReactTable({
     data,
     columns,
@@ -128,7 +178,7 @@ export function DataTable<TData extends { patientID: string }, TValue>({
     getRowId: (row) => row.patientID,
     getCoreRowModel: getCoreRowModel(),
     onSortingChange,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: handleColumnVisibilityChange,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: (updater) => {
       const current = { pageIndex, pageSize };
@@ -142,6 +192,12 @@ export function DataTable<TData extends { patientID: string }, TValue>({
       pagination: { pageIndex, pageSize },
     },
   });
+
+  const hasSearchOrFilters =
+    searchValue.trim() !== "" ||
+    group !== "all" ||
+    insurance !== "all" ||
+    clinic !== "all";
 
   const handleDelete = async () => {
     const selectedRowIds = table
@@ -187,98 +243,129 @@ export function DataTable<TData extends { patientID: string }, TValue>({
 
   return (
     <div>
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter names..."
-          value={searchValue}
-          onChange={(event) => onSearchChange(event.target.value)}
-          className="max-w-sm"
-        />
-        <div className="flex justify-end space-x-2 ml-auto">
-          {isDeleting ? (
-            <ButtonLoading />
-          ) : (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  disabled={
-                    table.getSelectedRowModel().rows.length === 0 ||
-                    isDeleting ||
-                    isLoading
-                  }
-                >
-                  Delete
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent size="sm">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete patient(s)?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete the selected patient(s) and
-                    their associated admission(s) and transfer(s).
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel variant="outline">
-                    Cancel
-                  </AlertDialogCancel>
-                  <AlertDialogAction
+      <PatientsFilters
+        searchValue={searchValue}
+        onSearchChange={onSearchChange}
+        group={group}
+        onGroupChange={onGroupChange}
+        insurance={insurance}
+        onInsuranceChange={onInsuranceChange}
+        clinic={clinic}
+        onClinicChange={onClinicChange}
+        actions={
+          <>
+            {isDeleting ? (
+              <ButtonLoading />
+            ) : (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
                     variant="destructive"
-                    onClick={handleDelete}
+                    disabled={
+                      table.getSelectedRowModel().rows.length === 0 ||
+                      isDeleting ||
+                      isLoading
+                    }
                   >
                     Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-          <NewPatientDialog onPatientAdded={onPatientAdded} />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent size="sm">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete patient(s)?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete the selected patient(s) and
+                      their associated admission(s) and transfer(s).
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel variant="outline">
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      onClick={handleDelete}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <NewPatientDialog onPatientAdded={onPatientAdded} />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Columns3 className="size-4" />
+                  Columns
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="max-h-[70vh] overflow-y-auto"
+              >
+                <DropdownMenuLabel>Views</DropdownMenuLabel>
+                {PATIENT_COLUMN_PRESETS.map((preset) => (
+                  <DropdownMenuCheckboxItem
+                    key={preset.id}
+                    checked={isPresetActive(
+                      preset,
+                      hideableColumnIds,
+                      columnVisibility,
+                    )}
+                    onCheckedChange={() =>
+                      applyVisibility(
+                        getPresetVisibility(preset, hideableColumnIds),
+                      )
+                    }
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    {preset.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Columns</DropdownMenuLabel>
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => (
                     <DropdownMenuCheckboxItem
                       key={column.id}
-                      className="capitalize"
                       checked={column.getIsVisible()}
                       onCheckedChange={(value) =>
                         column.toggleVisibility(!!value)
                       }
+                      onSelect={(e) => e.preventDefault()}
                     >
-                      {column.id}
+                      {column.columnDef.meta?.label ?? column.id}
                     </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        }
+      />
       <div className="overflow-hidden rounded-md border">
-        <Table>
+        <Table containerClassName="max-h-[70vh]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </TableHead>
-                  );
-                })}
+              <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className={getHeadClassName(
+                      header.column.id,
+                      header.column.columnDef.meta?.pin,
+                    )}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
@@ -297,23 +384,27 @@ export function DataTable<TData extends { patientID: string }, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  tabIndex={0}
                   onClick={(e: React.MouseEvent) => {
-                    const target = e.target as HTMLElement | null;
-                    if (!target || !e.currentTarget.contains(target)) {
-                      return;
-                    }
-                    if (
-                      target.closest("button, a, [role=menuitem], input, label")
-                    ) {
-                      return;
-                    }
-
-                    router.push(`/forms/patients/${row.original.patientID}`);
+                    if (!e.currentTarget.contains(e.target as Node)) return;
+                    if (isInteractiveTarget(e.target)) return;
+                    openRow(row.original);
                   }}
-                  className="cursor-pointer"
+                  onKeyDown={(e: React.KeyboardEvent) => {
+                    if (e.key === "Enter" && e.target === e.currentTarget) {
+                      openRow(row.original);
+                    }
+                  }}
+                  className="group focus-visible:outline-ring cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      className={getCellClassName(
+                        cell.column.id,
+                        cell.column.columnDef.meta?.pin,
+                      )}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
@@ -325,10 +416,12 @@ export function DataTable<TData extends { patientID: string }, TValue>({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
+                  colSpan={table.getVisibleLeafColumns().length}
+                  className="text-muted-foreground h-24 text-center"
                 >
-                  No results.
+                  {hasSearchOrFilters
+                    ? "No patients match your search or filters."
+                    : "No patients yet."}
                 </TableCell>
               </TableRow>
             )}
@@ -342,7 +435,10 @@ export function DataTable<TData extends { patientID: string }, TValue>({
           row(s)
         </div>
         <div className="hidden items-center gap-2 lg:flex">
-          <Label htmlFor="rows-per-page" className="text-sm font-medium">
+          <Label
+            htmlFor="patients-rows-per-page"
+            className="text-sm font-medium"
+          >
             Rows per page
           </Label>
           <Select
@@ -351,7 +447,11 @@ export function DataTable<TData extends { patientID: string }, TValue>({
               onPageSizeChange(Number(value));
             }}
           >
-            <SelectTrigger size="sm" className="w-20" id="rows-per-page">
+            <SelectTrigger
+              size="sm"
+              className="w-20"
+              id="patients-rows-per-page"
+            >
               <SelectValue placeholder={pageSize} />
             </SelectTrigger>
             <SelectContent side="top">

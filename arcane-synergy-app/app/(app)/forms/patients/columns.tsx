@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { MoreHorizontal, ArrowUpDown } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,6 +15,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EditPatientDialog } from "@/components/edit-patient-dialog";
+import {
+  SortableHeader,
+  Stacked,
+  formatDate,
+  orEmpty,
+  toDate,
+} from "../admissions/cell-format";
 
 export type Patient = {
   patientID: string;
@@ -29,6 +36,24 @@ export type Patient = {
   fullName: string;
   version: string;
 };
+
+/** Age in whole years on `today`, or null when the date can't be read. */
+export function ageOn(dob: string | undefined | null, today = new Date()) {
+  const birth = toDate(dob);
+  if (!birth) return null;
+  let age = today.getFullYear() - birth.getFullYear();
+  const hadBirthday =
+    today.getMonth() > birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() &&
+      today.getDate() >= birth.getDate());
+  if (!hadBirthday) age -= 1;
+  return age >= 0 ? age : null;
+}
+
+function formatAge(dob: string | undefined | null) {
+  const age = ageOn(dob);
+  return age === null ? null : `${age} yrs`;
+}
 
 export const createColumns = (
   onDataChange?: () => void,
@@ -54,61 +79,83 @@ export const createColumns = (
     ),
     enableSorting: false,
     enableHiding: false,
-  },
-  {
-    accessorKey: "firstName",
-    header: "First Name",
-  },
-  {
-    accessorKey: "lastName",
-    header: "Last Name",
+    meta: { pin: "left" },
   },
   {
     accessorKey: "fullName",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="cursor-pointer"
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: ({ column }) => <SortableHeader column={column} label="Name" />,
+    cell: ({ row }) =>
+      row.original.fullName ? (
+        <span className="font-medium">{row.original.fullName}</span>
+      ) : (
+        orEmpty(null)
+      ),
+    enableHiding: false,
+    meta: { label: "Name", pin: "left" },
+  },
+  {
+    accessorKey: "firstName",
+    header: ({ column }) => (
+      <SortableHeader column={column} label="First Name" />
+    ),
+    cell: ({ row }) => orEmpty(row.original.firstName),
+    meta: { label: "First Name" },
+  },
+  {
+    accessorKey: "lastName",
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Last Name" />
+    ),
+    cell: ({ row }) => orEmpty(row.original.lastName),
+    meta: { label: "Last Name" },
   },
   {
     accessorKey: "dob",
-    header: "DOB",
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("dob"));
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      });
-    },
+    header: ({ column }) => <SortableHeader column={column} label="DOB" />,
+    cell: ({ row }) => (
+      <Stacked
+        primary={formatDate(row.original.dob)}
+        secondary={[formatAge(row.original.dob)]}
+      />
+    ),
+    meta: { label: "DOB (& age)" },
   },
   {
     accessorKey: "mrn",
-    header: "MRN",
+    header: ({ column }) => <SortableHeader column={column} label="MRN" />,
+    cell: ({ row }) =>
+      row.original.mrn ? (
+        <span className="tabular-nums">{row.original.mrn}</span>
+      ) : (
+        orEmpty(null)
+      ),
+    meta: { label: "MRN" },
   },
   {
     accessorKey: "group",
-    header: "Group",
+    header: ({ column }) => <SortableHeader column={column} label="Group" />,
+    cell: ({ row }) => orEmpty(row.original.group),
+    meta: { label: "Group" },
   },
   {
     accessorKey: "insurance",
-    header: "Insurance",
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Insurance" />
+    ),
+    cell: ({ row }) => orEmpty(row.original.insurance),
+    meta: { label: "Insurance" },
   },
   {
     accessorKey: "pcp",
-    header: "PCP",
+    header: ({ column }) => <SortableHeader column={column} label="PCP" />,
+    cell: ({ row }) => orEmpty(row.original.pcp),
+    meta: { label: "PCP" },
   },
   {
     accessorKey: "clinic",
-    header: "Clinic",
+    header: ({ column }) => <SortableHeader column={column} label="Clinic" />,
+    cell: ({ row }) => orEmpty(row.original.clinic),
+    meta: { label: "Clinic" },
   },
   {
     id: "actions",
@@ -118,20 +165,12 @@ export const createColumns = (
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0 cursor-pointer">
+            <Button variant="ghost" className="h-8 w-8 p-0">
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(patient.patientID)}
-              className="cursor-pointer"
-            >
-              Copy patient ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <EditPatientDialog
               patient={patient}
               onPatientUpdated={onDataChange}
@@ -145,5 +184,7 @@ export const createColumns = (
         </DropdownMenu>
       );
     },
+    enableHiding: false,
+    meta: { pin: "right" },
   },
 ];
