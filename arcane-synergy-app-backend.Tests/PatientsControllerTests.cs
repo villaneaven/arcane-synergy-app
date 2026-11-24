@@ -50,6 +50,33 @@ public class PatientsControllerTests
     }
 
     [Fact]
+    public async Task GetPatients_FiltersByGroupInsuranceAndClinic()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(
+            TestDb.Patient(1, group: "DMC", insurance: "AETNA", clinic: "EMC"),
+            TestDb.Patient(2, group: "DMC", insurance: "HUMANA", clinic: "VFC"),
+            TestDb.Patient(3, group: "PJP", insurance: "AETNA", clinic: "EMC"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        int[] Ids(JsonNode payload) =>
+            payload.Array("items").Select(p => p!.Int("PatientID")).OrderBy(id => id).ToArray();
+
+        Assert.Equal(new[] { 1, 2 }, Ids((await controller.GetPatients(group: "DMC")).OkJson()));
+        Assert.Equal(new[] { 1, 3 }, Ids((await controller.GetPatients(insurance: "AETNA")).OkJson()));
+        Assert.Equal(new[] { 2 }, Ids((await controller.GetPatients(clinic: "VFC")).OkJson()));
+
+        // Filters combine.
+        Assert.Equal(new[] { 1 }, Ids((await controller.GetPatients(group: "DMC", insurance: "AETNA")).OkJson()));
+        Assert.Equal(0, (await controller.GetPatients(group: "PJP", clinic: "VFC")).OkJson().Int("totalCount"));
+
+        // Blank values are ignored.
+        Assert.Equal(3, (await controller.GetPatients(group: " ", insurance: "", clinic: null)).OkJson().Int("totalCount"));
+    }
+
+    [Fact]
     public async Task GetPatients_RejectsPageOffsetBeyondIntRange()
     {
         using var context = TestDb.CreateContext();

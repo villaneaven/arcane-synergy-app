@@ -25,7 +25,10 @@ public class PatientsController : ControllerBase
         [FromQuery] int pageSize = 25,
         [FromQuery] string? search = null,
         [FromQuery] string? sortBy = null,
-        [FromQuery] string? sortDir = "asc")
+        [FromQuery] string? sortDir = "asc",
+        [FromQuery] string? group = null,
+        [FromQuery] string? insurance = null,
+        [FromQuery] string? clinic = null)
     {
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -40,6 +43,24 @@ public class PatientsController : ControllerBase
                 p.LastName.StartsWith(term) ||
                 (p.FullName != null && p.FullName.StartsWith(term)) ||
                 (p.MRN != null && p.MRN.StartsWith(term)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(group))
+        {
+            var value = group.Trim();
+            query = query.Where(p => p.Group == value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(insurance))
+        {
+            var value = insurance.Trim();
+            query = query.Where(p => p.Insurance == value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(clinic))
+        {
+            var value = clinic.Trim();
+            query = query.Where(p => p.Clinic == value);
         }
 
         bool descending = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
