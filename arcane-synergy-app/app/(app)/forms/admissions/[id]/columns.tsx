@@ -205,13 +205,6 @@ export const createColumns = (
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(transfer.transferId)}
-            >
-              Copy transfer ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <EditTransferDialog
               transfer={transfer}
               onTransferUpdated={onDataChange}
