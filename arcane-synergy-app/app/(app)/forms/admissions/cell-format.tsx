@@ -135,6 +135,20 @@ export function FlagBadge({ flagged }: { flagged: boolean }) {
   );
 }
 
+export function FinalDischargeBadge({ final }: { final: boolean }) {
+  if (!final) return <span className="text-muted-foreground">No</span>;
+  return (
+    <span
+      className={cn(
+        BADGE_BASE,
+        "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+      )}
+    >
+      Final
+    </span>
+  );
+}
+
 export function SortableHeader<TData>({
   column,
   label,

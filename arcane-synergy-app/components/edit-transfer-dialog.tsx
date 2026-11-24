@@ -34,9 +34,12 @@ type Transfer = {
 export function EditTransferDialog({
   transfer,
   onTransferUpdated,
+  trigger,
 }: {
   transfer: Transfer;
   onTransferUpdated?: () => void;
+  /** Element that opens the dialog; defaults to a dropdown menu item. */
+  trigger?: React.ReactElement;
 }) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const { data: session } = useSession();
@@ -107,13 +110,15 @@ export function EditTransferDialog({
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
-        <DropdownMenuItem
-          onSelect={(event) => {
-            event.preventDefault();
-          }}
-        >
-          Edit Transfer
-        </DropdownMenuItem>
+        {trigger ?? (
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+            }}
+          >
+            Edit Transfer
+          </DropdownMenuItem>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-106 max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-6">
