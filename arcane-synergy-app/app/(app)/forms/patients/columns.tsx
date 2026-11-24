@@ -171,7 +171,6 @@ export const createColumns = (
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <EditPatientDialog
               patient={patient}
               onPatientUpdated={onDataChange}
