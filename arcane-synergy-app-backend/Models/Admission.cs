@@ -86,11 +86,14 @@ namespace arcane_synergy_app_backend.Models
             return null;
         }
 
-        public string? ValidateDateSeen()
+        /// <summary>Compared by calendar day.</summary>
+        public string? ValidateDateSeen(DateOnly today)
         {
             if (!DateSeen.HasValue) return null;
             if (!DischargeDate.HasValue)
                 return "Date Seen requires a Discharge Date.";
+            if (DateOnly.FromDateTime(DateSeen.Value) > today)
+                return "Date Seen must be today or earlier.";
             if (DateSeen.Value.Date < DischargeDate.Value.Date)
                 return "Date Seen must be on or after the Discharge Date.";
             return null;
