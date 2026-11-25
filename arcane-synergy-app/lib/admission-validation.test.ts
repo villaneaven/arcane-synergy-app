@@ -8,6 +8,7 @@ import {
   DISCHARGE_BEFORE_ADMISSION,
   DATE_SEEN_REQUIRES_DISCHARGE,
   DISCHARGE_DATE_IN_FUTURE,
+  INVALID_DATE,
   validateAdmissionDate,
   validateDateNotified,
   validateDateSeen,
@@ -159,5 +160,30 @@ describe("validateDateSeen", () => {
     expect(validateDateSeen(day(5), day(21), day(20, 9))).toBe(
       DATE_SEEN_IN_FUTURE,
     );
+  });
+});
+
+describe("invalid dates", () => {
+  const invalid = new Date(NaN);
+  const today = day(20, 9);
+
+  it("rejects an invalid Admission Date", () => {
+    expect(validateAdmissionDate(invalid, today)).toBe(INVALID_DATE);
+  });
+
+  it("rejects an invalid Date Notified", () => {
+    expect(validateDateNotified(invalid, today)).toBe(INVALID_DATE);
+  });
+
+  it("rejects an invalid Discharge Date", () => {
+    expect(validateDischargeDate(invalid, today, day(1))).toBe(INVALID_DATE);
+  });
+
+  it("rejects an invalid Date Seen", () => {
+    expect(validateDateSeen(day(5), invalid, today)).toBe(INVALID_DATE);
+  });
+
+  it("doesn't add a Date Seen error when only the Discharge Date is invalid", () => {
+    expect(validateDateSeen(invalid, day(5), today)).toBeNull();
   });
 });

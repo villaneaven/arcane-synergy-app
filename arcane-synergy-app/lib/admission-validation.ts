@@ -13,6 +13,12 @@ export const DISCHARGE_DATE_IN_FUTURE =
 export const DISCHARGE_BEFORE_ADMISSION =
   "Discharge Date must be on or after the Admission Date.";
 
+export const INVALID_DATE = "Enter a valid date as MM/DD/YYYY.";
+
+function isInvalidDate(date: Date | undefined) {
+  return !!date && isNaN(date.getTime());
+}
+
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
@@ -29,6 +35,7 @@ export function validateDischargeDate(
   admissionDate?: Date,
 ): string | null {
   if (!dischargeDate) return null;
+  if (isInvalidDate(dischargeDate)) return INVALID_DATE;
   if (startOfDay(dischargeDate) > startOfDay(today))
     return DISCHARGE_DATE_IN_FUTURE;
   return validateDischargeNotBeforeAdmission(admissionDate, dischargeDate);
@@ -64,6 +71,7 @@ export function validateAdmissionDate(
   admissionDate: Date | undefined,
   today: Date = new Date(),
 ): string | null {
+  if (isInvalidDate(admissionDate)) return INVALID_DATE;
   if (admissionDate && startOfDay(admissionDate) > startOfDay(today))
     return ADMISSION_DATE_IN_FUTURE;
   return null;
@@ -78,6 +86,7 @@ export function validateDateNotified(
   dateNotified: Date | undefined,
   today: Date = new Date(),
 ): string | null {
+  if (isInvalidDate(dateNotified)) return INVALID_DATE;
   if (dateNotified && startOfDay(dateNotified) > startOfDay(today))
     return DATE_NOTIFIED_IN_FUTURE;
   return null;
@@ -95,6 +104,7 @@ export function validateDateSeen(
   today: Date = new Date(),
 ): string | null {
   if (!dateSeen) return null;
+  if (isInvalidDate(dateSeen)) return INVALID_DATE;
   if (!dischargeDate) return DATE_SEEN_REQUIRES_DISCHARGE;
   if (startOfDay(dateSeen) > startOfDay(today)) return DATE_SEEN_IN_FUTURE;
   if (startOfDay(dateSeen) < startOfDay(dischargeDate))
