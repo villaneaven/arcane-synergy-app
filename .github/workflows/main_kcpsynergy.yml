@@ -91,3 +91,6 @@ jobs:
           slot-name: "Production"
           startup-command: "npm start"
           package: ./deploy-package
+          # Wipe wwwroot before deploying so stale prerendered pages
+          # (e.g. old .next/server/app/*.html) can't survive a deploy.
+          clean: true
