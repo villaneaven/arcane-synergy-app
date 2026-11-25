@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/popover";
 import { API_BASE_URL } from "@/lib/api";
 
-export const SEARCH_DEBOUNCE_MS = 500;
+export const SEARCH_DEBOUNCE_MS = 300;
 const MAX_RESULTS = 10;
 
 export type PatientOption = {
@@ -127,18 +127,23 @@ export function PatientSearchInput({
   const current = response?.key === requestKey ? response : null;
   const isLoading =
     trimmedQuery !== "" && (trimmedQuery !== debouncedQuery || !current);
-  const results = !isLoading ? (current?.results ?? null) : null;
+  const results = isLoading
+    ? (response?.results ?? null)
+    : (current?.results ?? null);
   const hasError = !isLoading && current !== null && current.results === null;
+  const isStale = isLoading && results !== null;
   const showPopover = open && trimmedQuery !== "";
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     setOpen(true);
+    if (!e.target.value.trim()) setResponse(null);
   };
 
   const handleSelectPatient = (patient: PatientOption) => {
     setSearchQuery("");
     setDebouncedQuery("");
+    setResponse(null);
     setOpen(false);
     onChange(patient);
   };
@@ -215,28 +220,11 @@ export function PatientSearchInput({
           if (anchorRef.current?.contains(e.target as Node)) e.preventDefault();
         }}
       >
-        {isLoading ? (
-          <p className="text-muted-foreground p-4 text-center text-sm">
-            Searching…
-          </p>
-        ) : hasError ? (
-          <div className="flex flex-col items-center gap-2 p-4 text-center text-sm">
-            <p role="alert">Couldn&apos;t search patients.</p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setAttempt((n) => n + 1)}
-            >
-              Try again
-            </Button>
-          </div>
-        ) : results && results.length === 0 ? (
-          <p className="text-muted-foreground p-4 text-center text-sm">
-            No patients match &ldquo;{trimmedQuery}&rdquo;.
-          </p>
-        ) : results ? (
-          <div className="max-h-64 overflow-y-auto">
+        {results && results.length > 0 ? (
+          <div
+            className={`max-h-64 overflow-y-auto transition-opacity ${isStale ? "opacity-60" : ""}`}
+            aria-busy={isStale}
+          >
             {results.map((patient) => (
               <button
                 key={patient.patientID}
@@ -255,6 +243,26 @@ export function PatientSearchInput({
               </button>
             ))}
           </div>
+        ) : isLoading ? (
+          <p className="text-muted-foreground p-4 text-center text-sm">
+            Searching…
+          </p>
+        ) : hasError ? (
+          <div className="flex flex-col items-center gap-2 p-4 text-center text-sm">
+            <p role="alert">Couldn&apos;t search patients.</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setAttempt((n) => n + 1)}
+            >
+              Try again
+            </Button>
+          </div>
+        ) : results ? (
+          <p className="text-muted-foreground p-4 text-center text-sm">
+            No patients match &ldquo;{trimmedQuery}&rdquo;.
+          </p>
         ) : null}
       </PopoverContent>
     </Popover>
