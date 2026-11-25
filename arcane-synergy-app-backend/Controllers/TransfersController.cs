@@ -101,6 +101,7 @@ public class TransfersController : ControllerBase
 		if (editedBy == null) return Forbid();
 
 		var dateError = transfer.ValidateAdmissionDate(ClinicTime.Today)
+			?? transfer.ValidateTimeOfAdmission(ClinicTime.Today)
 			?? transfer.ValidateDischargeDate(ClinicTime.Today)
 			?? transfer.ValidateDateNotified(ClinicTime.Today);
 		if (dateError != null) return BadRequest(dateError);
@@ -149,6 +150,7 @@ public class TransfersController : ControllerBase
             return BadRequest("TransferId mismatch");
 
 		var dateError = transfer.ValidateAdmissionDate(ClinicTime.Today)
+			?? transfer.ValidateTimeOfAdmission(ClinicTime.Today)
 			?? transfer.ValidateDischargeDate(ClinicTime.Today)
 			?? transfer.ValidateDateNotified(ClinicTime.Today);
 		if (dateError != null) return BadRequest(dateError);
