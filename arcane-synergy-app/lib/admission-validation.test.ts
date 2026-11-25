@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   DATE_SEEN_BEFORE_DISCHARGE,
+  DATE_NOTIFIED_IN_FUTURE,
   DATE_SEEN_IN_FUTURE,
   DISCHARGE_BEFORE_ADMISSION,
   DATE_SEEN_REQUIRES_DISCHARGE,
   DISCHARGE_DATE_IN_FUTURE,
+  validateDateNotified,
   validateDateSeen,
   validateDischargeDate,
   validateDischargeNotBeforeAdmission,
@@ -71,6 +73,26 @@ describe("validateDischargeNotBeforeAdmission", () => {
 
   it("accepts a Discharge Date after the Admission Date", () => {
     expect(validateDischargeNotBeforeAdmission(day(5), day(7))).toBeNull();
+  });
+});
+
+describe("validateDateNotified", () => {
+  const today = day(20, 9);
+
+  it("is valid when no Date Notified is set", () => {
+    expect(validateDateNotified(undefined, today)).toBeNull();
+  });
+
+  it("accepts a Date Notified before today", () => {
+    expect(validateDateNotified(day(19), today)).toBeNull();
+  });
+
+  it("accepts today even if its time is later", () => {
+    expect(validateDateNotified(day(20, 23), today)).toBeNull();
+  });
+
+  it("rejects a Date Notified after today", () => {
+    expect(validateDateNotified(day(21), today)).toBe(DATE_NOTIFIED_IN_FUTURE);
   });
 });
 
