@@ -204,6 +204,40 @@ public class CalculatedFieldsTests
         Assert.Equal(expectedError, transfer.ValidateDischargeDate(new DateOnly(2025, 3, 20)));
     }
 
+    [Theory]
+    // notifiedDay is a day in Mar 2025; "today" is Mar 20.
+    [InlineData(19, null)]                                       // yesterday
+    [InlineData(20, null)]                                       // today
+    [InlineData(21, "Date Notified must be today or earlier.")]  // tomorrow
+    public void Admission_ValidatesDateNotifiedNotInFuture(int notifiedDay, string? expectedError)
+    {
+        var admission = new Admission
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 3, 1),
+            DateNotified = new DateTime(2025, 3, notifiedDay),
+        };
+
+        Assert.Equal(expectedError, admission.ValidateDateNotified(new DateOnly(2025, 3, 20)));
+    }
+
+    [Theory]
+    // notifiedDay is a day in Mar 2025; "today" is Mar 20.
+    [InlineData(19, null)]                                       // yesterday
+    [InlineData(20, null)]                                       // today
+    [InlineData(21, "Date Notified must be today or earlier.")]  // tomorrow
+    public void Transfer_ValidatesDateNotifiedNotInFuture(int notifiedDay, string? expectedError)
+    {
+        var transfer = new Transfer
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 3, 1),
+            DateNotified = new DateTime(2025, 3, notifiedDay),
+        };
+
+        Assert.Equal(expectedError, transfer.ValidateDateNotified(new DateOnly(2025, 3, 20)));
+    }
+
     [Fact]
     public void Admission_DateSeenOnDischargeDayIsValidRegardlessOfTime()
     {
