@@ -4,7 +4,10 @@ import * as React from "react";
 
 import { DatePickerInput } from "@/components/date-picker-input";
 import { DatePickerTimeInput } from "@/components/date-picker-time-input";
-import { PatientSearchInput } from "@/components/patient-search-input";
+import {
+  PatientSearchInput,
+  type PatientOption,
+} from "@/components/patient-search-input";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,7 +66,7 @@ export function AdmissionForm({
   }) => Promise<void>;
   onCancel?: () => void;
   initialValues?: {
-    patientID?: string;
+    patient?: PatientOption | null;
     facilityType?: string;
     facility?: string;
     type?: string;
@@ -79,10 +82,8 @@ export function AdmissionForm({
   };
 }) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [patientID, setPatientID] = React.useState<number | undefined>(
-    initialValues?.patientID
-      ? parseInt(initialValues.patientID, 10)
-      : undefined,
+  const [patient, setPatient] = React.useState<PatientOption | null>(
+    initialValues?.patient ?? null,
   );
   const [facilityType, setFacilityType] = React.useState<string>(
     initialValues?.facilityType ?? "",
@@ -160,7 +161,7 @@ export function AdmissionForm({
       seenBy?: string;
       notes?: string;
     } = {
-      patientID: patientID?.toString() || "",
+      patientID: patient?.patientID.toString() ?? "",
       facilityType: facilityType,
       facility: facility,
       type: type,
@@ -179,7 +180,7 @@ export function AdmissionForm({
       await onSubmit(admissionData);
 
       // Reset form state
-      setPatientID(undefined);
+      setPatient(null);
       setAdmissionDate(undefined);
       setNotificationDate(undefined);
       setDischargeDate(undefined);
@@ -199,8 +200,8 @@ export function AdmissionForm({
           <PatientSearchInput
             id="patient"
             name="patient"
-            value={patientID}
-            onChange={setPatientID}
+            value={patient}
+            onChange={setPatient}
             required
           />
         </div>
