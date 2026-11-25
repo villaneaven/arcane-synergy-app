@@ -1,9 +1,14 @@
 "use client";
 
-import { Column, ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
 
-import { Button } from "@/components/ui/button";
+import {
+  SortableHeader,
+  Stacked,
+  TypeBadge,
+  orEmpty,
+} from "../admissions/cell-format";
+import { ageOn } from "../patients/columns";
 import { TeamStatusCell } from "./team-status-cell";
 
 export type Gap = {
@@ -57,6 +62,8 @@ export const DEFAULT_GAP_FILTERS: GapFilters = {
   teamStatus: "all",
 };
 
+export const NO_TEAM_STATUS = "none";
+
 export const providersForGroup = (
   options: GapFilterOptions,
   groupName: string,
@@ -69,104 +76,161 @@ export const gapKey = (
   gap: Pick<Gap, "insurance" | "memberId" | "metricType">,
 ) => `${gap.insurance}|${gap.memberId}|${gap.metricType}`;
 
-export const COLUMN_LABELS: Record<string, string> = {
-  name: "Name",
-  dob: "DOB",
-  insurance: "Insurance",
-  memberId: "Member ID",
-  metricType: "Metric Type",
-  providerName: "Provider",
-  providerNpi: "Provider NPI",
-  groupName: "Group Name",
-  phone: "Phone",
-  rosterDate: "Roster Date",
-  workItemType: "Work Item Type",
-  sourceReviewStatus: "Source Review Status",
-  firstSeenDate: "First Seen",
-  lastSeenDate: "Last Seen",
-  teamStatus: "Team Status",
-  statusDate: "Status Date",
-  updatedBy: "Updated By",
-};
-
-export const HIDDEN_BY_DEFAULT = [
-  "providerNpi",
-  "rosterDate",
-  "sourceReviewStatus",
-  "firstSeenDate",
-];
-
-function formatDate(value: string | null) {
-  if (!value) return "";
+export function formatGapDate(value: string | null | undefined) {
+  if (!value) return null;
   const [year, month, day] = value.slice(0, 10).split("-");
+  if (!year || !month || !day) return null;
   return `${month}/${day}/${year}`;
 }
 
-function sortableHeader(label: string) {
-  const SortableHeader = ({ column }: { column: Column<Gap, unknown> }) => (
-    <Button
-      variant="ghost"
-      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      className="cursor-pointer -ml-3"
-    >
-      {label}
-      <ArrowUpDown className="ml-2 h-4 w-4" />
-    </Button>
-  );
-  return SortableHeader;
+function formatGapAge(dob: string | null) {
+  if (!dob) return null;
+  const age = ageOn(`${dob.slice(0, 10)}T00:00:00`);
+  return age === null ? null : `${age} yrs`;
 }
-
-const dateCell =
-  (key: keyof Gap) =>
-  ({ row }: { row: { original: Gap } }) =>
-    formatDate(row.original[key]);
 
 export const createColumns = (
   onStatusSaved: (gap: Gap, update: GapStatusUpdate) => void,
 ): ColumnDef<Gap>[] => [
-  { accessorKey: "name", header: sortableHeader("Name") },
-  { accessorKey: "dob", header: sortableHeader("DOB"), cell: dateCell("dob") },
-  { accessorKey: "insurance", header: sortableHeader("Insurance") },
-  { accessorKey: "memberId", header: sortableHeader("Member ID") },
-  { accessorKey: "metricType", header: sortableHeader("Metric Type") },
-  { accessorKey: "providerName", header: sortableHeader("Provider") },
-  { accessorKey: "providerNpi", header: "Provider NPI", enableSorting: false },
-  { accessorKey: "groupName", header: sortableHeader("Group Name") },
-  { accessorKey: "phone", header: "Phone", enableSorting: false },
   {
-    accessorKey: "rosterDate",
-    header: "Roster Date",
-    enableSorting: false,
-    cell: dateCell("rosterDate"),
+    accessorKey: "name",
+    header: ({ column }) => <SortableHeader column={column} label="Member" />,
+    cell: ({ row }) => (
+      <Stacked
+        primary={
+          row.original.name ? (
+            <span className="font-medium">{row.original.name}</span>
+          ) : null
+        }
+        secondary={[
+          formatGapDate(row.original.dob),
+          formatGapAge(row.original.dob),
+        ]}
+      />
+    ),
+    enableHiding: false,
+    meta: { label: "Member", pin: "left" },
   },
-  { accessorKey: "workItemType", header: sortableHeader("Work Item Type") },
+  {
+    accessorKey: "metricType",
+    header: ({ column }) => <SortableHeader column={column} label="Metric" />,
+    cell: ({ row }) => <TypeBadge type={row.original.metricType} />,
+    meta: { label: "Metric" },
+  },
+  {
+    // Shows insurance and member ID; sorts by insurance.
+    accessorKey: "insurance",
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Insurance" />
+    ),
+    cell: ({ row }) => (
+      <Stacked
+        primary={row.original.insurance}
+        secondary={[row.original.memberId && `ID ${row.original.memberId}`]}
+      />
+    ),
+    meta: { label: "Insurance (& member ID)" },
+  },
+  {
+    // Shows provider and group; sorts by provider.
+    accessorKey: "providerName",
+    header: ({ column }) => <SortableHeader column={column} label="Provider" />,
+    cell: ({ row }) => (
+      <Stacked
+        primary={row.original.providerName}
+        secondary={[row.original.groupName]}
+      />
+    ),
+    meta: { label: "Provider (& group)" },
+  },
+  {
+    accessorKey: "providerNpi",
+    header: "Provider NPI",
+    enableSorting: false,
+    cell: ({ row }) => (
+      <span className="tabular-nums">{orEmpty(row.original.providerNpi)}</span>
+    ),
+    meta: { label: "Provider NPI" },
+  },
+  {
+    accessorKey: "phone",
+    header: "Phone",
+    enableSorting: false,
+    cell: ({ row }) =>
+      row.original.phone ? (
+        <a
+          href={`tel:${row.original.phone}`}
+          className="tabular-nums whitespace-nowrap underline-offset-4 hover:underline"
+        >
+          {row.original.phone}
+        </a>
+      ) : (
+        orEmpty(null)
+      ),
+    meta: { label: "Phone" },
+  },
+  {
+    accessorKey: "workItemType",
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Work Item Type" />
+    ),
+    cell: ({ row }) => orEmpty(row.original.workItemType),
+    meta: { label: "Work Item Type" },
+  },
   {
     accessorKey: "sourceReviewStatus",
     header: "Source Review Status",
     enableSorting: false,
+    cell: ({ row }) => orEmpty(row.original.sourceReviewStatus),
+    meta: { label: "Source Review Status" },
   },
   {
-    accessorKey: "firstSeenDate",
-    header: "First Seen",
+    accessorKey: "rosterDate",
+    header: "Roster Date",
     enableSorting: false,
-    cell: dateCell("firstSeenDate"),
+    cell: ({ row }) => orEmpty(formatGapDate(row.original.rosterDate)),
+    meta: { label: "Roster Date" },
   },
   {
+    // Shows when the gap was last and first on a roster; sorts by last seen.
     accessorKey: "lastSeenDate",
-    header: sortableHeader("Last Seen"),
-    cell: dateCell("lastSeenDate"),
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Last Seen" descFirst />
+    ),
+    cell: ({ row }) => {
+      const firstSeen = formatGapDate(row.original.firstSeenDate);
+      return (
+        <Stacked
+          primary={formatGapDate(row.original.lastSeenDate)}
+          secondary={[firstSeen && `First ${firstSeen}`]}
+        />
+      );
+    },
+    meta: { label: "Last Seen (& first seen)" },
+  },
+  {
+    // Shows when and by whom the team status was set; sorts by status date.
+    accessorKey: "statusDate",
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Status Updated" descFirst />
+    ),
+    cell: ({ row }) => (
+      <Stacked
+        primary={formatGapDate(row.original.statusDate)}
+        secondary={[row.original.updatedBy]}
+      />
+    ),
+    meta: { label: "Status Updated (date & by)" },
   },
   {
     accessorKey: "teamStatus",
-    header: sortableHeader("Team Status"),
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Team Status" />
+    ),
     cell: ({ row }) => (
       <TeamStatusCell gap={row.original} onSaved={onStatusSaved} />
     ),
+    enableHiding: false,
+    meta: { label: "Team Status", pin: "right" },
   },
-  {
-    accessorKey: "statusDate",
-    header: sortableHeader("Status Date"),
-    cell: dateCell("statusDate"),
-  },
-  { accessorKey: "updatedBy", header: "Updated By", enableSorting: false },
 ];
