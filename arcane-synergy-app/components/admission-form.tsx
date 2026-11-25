@@ -122,7 +122,7 @@ export function AdmissionForm({
     today,
     admissionDate,
   );
-  const dateSeenError = validateDateSeen(dischargeDate, dateSeen);
+  const dateSeenError = validateDateSeen(dischargeDate, dateSeen, today);
   const hasDateError = !!dischargeDateError || !!dateSeenError;
 
   const handleDischargeDateChange = (date: Date | undefined) => {
@@ -360,6 +360,7 @@ export function AdmissionForm({
             onChange={setDateSeen}
             disabled={!dischargeDate && !dateSeen}
             minDate={dischargeDate}
+            maxDate={today}
             aria-invalid={!!dateSeenError}
             aria-describedby={dateSeenError ? "date-seen-error" : undefined}
           />

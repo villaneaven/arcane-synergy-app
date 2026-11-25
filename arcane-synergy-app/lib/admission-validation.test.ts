@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   DATE_SEEN_BEFORE_DISCHARGE,
+  DATE_SEEN_IN_FUTURE,
   DISCHARGE_BEFORE_ADMISSION,
   DATE_SEEN_REQUIRES_DISCHARGE,
   DISCHARGE_DATE_IN_FUTURE,
@@ -102,5 +103,15 @@ describe("validateDateSeen", () => {
 
   it("accepts a Date Seen after the Discharge Date", () => {
     expect(validateDateSeen(day(5), day(7))).toBeNull();
+  });
+
+  it("accepts a Date Seen of today even if its time is later", () => {
+    expect(validateDateSeen(day(5), day(20, 23), day(20, 9))).toBeNull();
+  });
+
+  it("rejects a Date Seen after today", () => {
+    expect(validateDateSeen(day(5), day(21), day(20, 9))).toBe(
+      DATE_SEEN_IN_FUTURE,
+    );
   });
 });
