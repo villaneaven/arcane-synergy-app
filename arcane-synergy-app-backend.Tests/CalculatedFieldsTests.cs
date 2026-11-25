@@ -205,6 +205,41 @@ public class CalculatedFieldsTests
     }
 
     [Theory]
+    // UTC admission times; "today" at the clinic (America/Chicago, CDT) is Mar 20 2025.
+    [InlineData(19, 12, null)]                                        // yesterday
+    [InlineData(20, 12, null)]                                        // today
+    [InlineData(21, 2, null)]                                         // 9 PM Mar 20 at the clinic
+    [InlineData(21, 12, "Admission Date must be today or earlier.")]  // tomorrow
+    public void Admission_ValidatesAdmissionDateNotInFuture(int day, int utcHour, string? expectedError)
+    {
+        var admission = new Admission
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 3, day, utcHour, 0, 0, DateTimeKind.Utc),
+            DateNotified = new DateTime(2025, 3, 1),
+        };
+
+        Assert.Equal(expectedError, admission.ValidateAdmissionDate(new DateOnly(2025, 3, 20)));
+    }
+
+    [Theory]
+    // UTC admission times; "today" at the clinic (America/Chicago, CDT) is Mar 20 2025.
+    [InlineData(20, 12, null)]                                        // today
+    [InlineData(21, 2, null)]                                         // 9 PM Mar 20 at the clinic
+    [InlineData(21, 12, "Admission Date must be today or earlier.")]  // tomorrow
+    public void Transfer_ValidatesAdmissionDateNotInFuture(int day, int utcHour, string? expectedError)
+    {
+        var transfer = new Transfer
+        {
+            Type = "ADM",
+            AdmissionDate = new DateTime(2025, 3, day, utcHour, 0, 0, DateTimeKind.Utc),
+            DateNotified = new DateTime(2025, 3, 1),
+        };
+
+        Assert.Equal(expectedError, transfer.ValidateAdmissionDate(new DateOnly(2025, 3, 20)));
+    }
+
+    [Theory]
     // notifiedDay is a day in Mar 2025; "today" is Mar 20.
     [InlineData(19, null)]                                       // yesterday
     [InlineData(20, null)]                                       // today
