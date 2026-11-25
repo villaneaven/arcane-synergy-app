@@ -5,22 +5,19 @@ import {
   ColumnDef,
   OnChangeFn,
   SortingState,
-  VisibilityState,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { Columns3 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -29,6 +26,8 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -39,56 +38,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import {
-  COLUMN_LABELS,
+  getDefaultVisibility,
+  getPresetVisibility,
+  isPresetActive,
+} from "../admissions/column-presets";
+import {
+  getCellClassName,
+  getHeadClassName,
+} from "../admissions/table-pinning";
+import { useSavedColumnVisibility } from "../admissions/use-saved-column-visibility";
+import { GAP_COLUMN_PRESETS } from "./column-presets";
+import {
+  DEFAULT_GAP_FILTERS,
   Gap,
   GapFilterOptions,
   GapFilters,
-  HIDDEN_BY_DEFAULT,
   gapKey,
-  providersForGroup,
 } from "./columns";
+import { GapsFilters } from "./gaps-filters";
 
-interface FilterSelectProps {
-  label: string;
-  allLabel: string;
-  value: string;
-  options: { value: string; label: string }[];
-  onChange: (value: string) => void;
-}
-
-function FilterSelect({
-  label,
-  allLabel,
-  value,
-  options,
-  onChange,
-}: FilterSelectProps) {
-  return (
-    <Field className="w-full max-w-48">
-      <FieldLabel>{label}</FieldLabel>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-45">
-          <SelectValue placeholder={allLabel} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            <SelectLabel>{label}</SelectLabel>
-            <SelectItem value="all">{allLabel}</SelectItem>
-            {options.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    </Field>
-  );
-}
-
-const toOptions = (values: string[]) =>
-  values.map((value) => ({ value, label: value }));
+const COLUMN_VISIBILITY_STORAGE_KEY = "gaps-table-column-visibility";
+const PIN_OPTIONS = { noSelectColumn: true };
 
 interface DataTableProps<TValue> {
   columns: ColumnDef<Gap, TValue>[];
@@ -129,10 +101,27 @@ export function DataTable<TValue>({
   onPageSizeChange,
   pageSizeOptions,
 }: DataTableProps<TValue>) {
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>(() =>
-      Object.fromEntries(HIDDEN_BY_DEFAULT.map((id) => [id, false])),
-    );
+  const hideableColumnIds = React.useMemo(
+    () =>
+      columns
+        .filter((column) => column.enableHiding !== false)
+        .map(
+          (column) =>
+            column.id ??
+            String((column as { accessorKey?: string }).accessorKey),
+        ),
+    [columns],
+  );
+
+  const {
+    visibility: columnVisibility,
+    onVisibilityChange: handleColumnVisibilityChange,
+    applyVisibility,
+  } = useSavedColumnVisibility(
+    COLUMN_VISIBILITY_STORAGE_KEY,
+    getDefaultVisibility(hideableColumnIds, GAP_COLUMN_PRESETS),
+  );
+
   const [pageInput, setPageInput] = React.useState(String(pageIndex + 1));
 
   React.useEffect(() => {
@@ -162,7 +151,7 @@ export function DataTable<TValue>({
     getRowId: gapKey,
     getCoreRowModel: getCoreRowModel(),
     onSortingChange,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: handleColumnVisibilityChange,
     onPaginationChange: (updater) => {
       const current = { pageIndex, pageSize };
       const next = typeof updater === "function" ? updater(current) : updater;
@@ -175,65 +164,53 @@ export function DataTable<TValue>({
     },
   });
 
+  const hasSearchOrFilters =
+    searchValue.trim() !== "" ||
+    (Object.keys(filters) as (keyof GapFilters)[]).some(
+      (key) => filters[key] !== DEFAULT_GAP_FILTERS[key],
+    );
+
   return (
     <div>
-      <div className="flex w-full flex-wrap items-center gap-4">
-        <FilterSelect
-          label="Insurance"
-          allLabel="All Insurances"
-          value={filters.insurance}
-          options={toOptions(filterOptions.insurances)}
-          onChange={(value) => onFilterChange("insurance", value)}
-        />
-        <FilterSelect
-          label="Group"
-          allLabel="All Groups"
-          value={filters.groupName}
-          options={toOptions(filterOptions.groups)}
-          onChange={(value) => onFilterChange("groupName", value)}
-        />
-        <FilterSelect
-          label="Provider"
-          allLabel="All Providers"
-          value={filters.providerName}
-          options={toOptions(
-            providersForGroup(filterOptions, filters.groupName),
-          )}
-          onChange={(value) => onFilterChange("providerName", value)}
-        />
-        <FilterSelect
-          label="Metric Type"
-          allLabel="All Metric Types"
-          value={filters.metricType}
-          options={toOptions(filterOptions.metricTypes)}
-          onChange={(value) => onFilterChange("metricType", value)}
-        />
-        <FilterSelect
-          label="Status"
-          allLabel="All Statuses"
-          value={filters.teamStatus}
-          options={[
-            ...toOptions(filterOptions.teamStatuses),
-            { value: "none", label: "No Status" },
-          ]}
-          onChange={(value) => onFilterChange("teamStatus", value)}
-        />
-      </div>
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Search name, member ID, metric, provider..."
-          value={searchValue}
-          onChange={(event) => onSearchChange(event.target.value)}
-          className="max-w-sm"
-        />
-        <div className="flex justify-end space-x-2 ml-auto">
+      <GapsFilters
+        searchValue={searchValue}
+        onSearchChange={onSearchChange}
+        filters={filters}
+        filterOptions={filterOptions}
+        onFilterChange={onFilterChange}
+        actions={
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
+              <Button variant="outline">
+                <Columns3 className="size-4" />
                 Columns
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent
+              align="end"
+              className="max-h-[70vh] overflow-y-auto"
+            >
+              <DropdownMenuLabel>Views</DropdownMenuLabel>
+              {GAP_COLUMN_PRESETS.map((preset) => (
+                <DropdownMenuCheckboxItem
+                  key={preset.id}
+                  checked={isPresetActive(
+                    preset,
+                    hideableColumnIds,
+                    columnVisibility,
+                  )}
+                  onCheckedChange={() =>
+                    applyVisibility(
+                      getPresetVisibility(preset, hideableColumnIds),
+                    )
+                  }
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {preset.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Columns</DropdownMenuLabel>
               {table
                 .getAllColumns()
                 .filter((column) => column.getCanHide())
@@ -244,21 +221,29 @@ export function DataTable<TValue>({
                     onCheckedChange={(value) =>
                       column.toggleVisibility(!!value)
                     }
+                    onSelect={(e) => e.preventDefault()}
                   >
-                    {COLUMN_LABELS[column.id] ?? column.id}
+                    {column.columnDef.meta?.label ?? column.id}
                   </DropdownMenuCheckboxItem>
                 ))}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-      </div>
+        }
+      />
       <div className="overflow-hidden rounded-md border">
-        <Table>
+        <Table containerClassName="max-h-[70vh]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead
+                    key={header.id}
+                    className={getHeadClassName(
+                      header.column.id,
+                      header.column.columnDef.meta?.pin,
+                      PIN_OPTIONS,
+                    )}
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -282,9 +267,16 @@ export function DataTable<TValue>({
               </TableRow>
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow key={row.id} className="group">
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      className={getCellClassName(
+                        cell.column.id,
+                        cell.column.columnDef.meta?.pin,
+                        PIN_OPTIONS,
+                      )}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
@@ -297,9 +289,11 @@ export function DataTable<TValue>({
               <TableRow>
                 <TableCell
                   colSpan={table.getVisibleLeafColumns().length}
-                  className="h-24 text-center"
+                  className="text-muted-foreground h-24 text-center"
                 >
-                  No results.
+                  {hasSearchOrFilters
+                    ? "No gaps match your search or filters."
+                    : "No open gaps."}
                 </TableCell>
               </TableRow>
             )}
@@ -311,7 +305,7 @@ export function DataTable<TValue>({
           {totalCount} total gap(s)
         </div>
         <div className="hidden items-center gap-2 lg:flex">
-          <Label htmlFor="rows-per-page" className="text-sm font-medium">
+          <Label htmlFor="gaps-rows-per-page" className="text-sm font-medium">
             Rows per page
           </Label>
           <Select
@@ -320,7 +314,7 @@ export function DataTable<TValue>({
               onPageSizeChange(Number(value));
             }}
           >
-            <SelectTrigger size="sm" className="w-20" id="rows-per-page">
+            <SelectTrigger size="sm" className="w-20" id="gaps-rows-per-page">
               <SelectValue placeholder={pageSize} />
             </SelectTrigger>
             <SelectContent side="top">

@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
-  COLUMN_LABELS,
   DEFAULT_GAP_FILTERS,
-  HIDDEN_BY_DEFAULT,
+  createColumns,
+  formatGapDate,
   gapKey,
   providersForGroup,
   type GapFilterOptions,
 } from "@/app/(app)/forms/gaps/columns";
+import { GAP_COLUMN_PRESETS } from "@/app/(app)/forms/gaps/column-presets";
 
 const OPTIONS = {
   providers: ["Dr. A", "Dr. B", "Dr. C"],
@@ -55,9 +56,37 @@ describe("gap table defaults", () => {
     expect(Object.values(DEFAULT_GAP_FILTERS).every((v) => v === "all")).toBe(true);
   });
 
-  it("only hides columns that have a label in the column picker", () => {
-    for (const column of HIDDEN_BY_DEFAULT) {
-      expect(COLUMN_LABELS).toHaveProperty(column);
+  const columns = createColumns(() => {});
+  const hideable = columns.filter((c) => c.enableHiding !== false);
+  const idOf = (column: (typeof columns)[number]) =>
+    column.id ?? (column as { accessorKey?: string }).accessorKey;
+
+  it("labels every hideable column for the Columns menu", () => {
+    for (const column of hideable) {
+      expect(column.meta?.label).toBeTruthy();
     }
+  });
+
+  it("only names hideable columns in the views", () => {
+    const ids = new Set(hideable.map(idOf));
+    for (const preset of GAP_COLUMN_PRESETS) {
+      if (preset.columns === "all") continue;
+      for (const id of preset.columns) {
+        expect(ids.has(id)).toBe(true);
+      }
+    }
+  });
+});
+
+describe("formatGapDate", () => {
+  it("formats a date-only value without shifting the day", () => {
+    expect(formatGapDate("2026-01-01")).toBe("01/01/2026");
+    expect(formatGapDate("2026-11-24T00:00:00")).toBe("11/24/2026");
+  });
+
+  it("returns null for missing or unreadable values", () => {
+    expect(formatGapDate(null)).toBeNull();
+    expect(formatGapDate("")).toBeNull();
+    expect(formatGapDate("soon")).toBeNull();
   });
 });
