@@ -2,11 +2,20 @@
 using arcane_synergy_app_backend.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace arcane_synergy_app_backend.Data
 {
     public class ArcaneSynergyContext : DbContext
     {
+        private static readonly ValueConverter<DateTime, DateTime> UtcDateTimeConverter = new(
+            v => v,
+            v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+        private static readonly ValueConverter<DateTime?, DateTime?> UtcNullableDateTimeConverter = new(
+            v => v,
+            v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
+
         private readonly ICurrentUserAccessor? _currentUser;
 
         /// <summary>
@@ -71,17 +80,16 @@ namespace arcane_synergy_app_backend.Data
             modelBuilder.Entity<Admission>()
                 .HasIndex(a => a.Type);
 
-            modelBuilder.Entity<Admission>()
-                .Property(a => a.LastEditedAt)
-                .HasConversion(
-                    v => v,
-                    v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
-
-            modelBuilder.Entity<Transfer>()
-                .Property(t => t.LastEditedAt)
-                .HasConversion(
-                    v => v,
-                    v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
+            foreach (var entity in new[] { typeof(Admission), typeof(Transfer) })
+            {
+                foreach (var property in modelBuilder.Entity(entity).Metadata.GetProperties())
+                {
+                    if (property.ClrType == typeof(DateTime))
+                        property.SetValueConverter(UtcDateTimeConverter);
+                    else if (property.ClrType == typeof(DateTime?))
+                        property.SetValueConverter(UtcNullableDateTimeConverter);
+                }
+            }
 
             modelBuilder.Entity<EditHistory>(e =>
             {

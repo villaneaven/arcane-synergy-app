@@ -19,6 +19,22 @@ interface DatePickerInputProps {
   "aria-describedby"?: string;
 }
 
+function formatTime(date: Date | undefined) {
+  if (!date) return "";
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+/** The given day at the given "HH:mm" time (midnight when the time is empty). */
+function withTime(date: Date | undefined, time: string) {
+  if (!date) return undefined;
+  const [hours, minutes] = time ? time.split(":").map(Number) : [0, 0];
+  const next = new Date(date);
+  next.setHours(hours, minutes, 0, 0);
+  return next;
+}
+
 export function DatePickerTimeInput({
   value,
   onChange,
@@ -32,23 +48,21 @@ export function DatePickerTimeInput({
   "aria-invalid": ariaInvalid,
   "aria-describedby": ariaDescribedBy,
 }: DatePickerInputProps) {
-  const [date, setDate] = React.useState<Date | undefined>(value);
-
-  const formatTime = (date: Date | undefined) => {
-    if (!date) return "";
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-    return `${hours}:${minutes}`;
-  };
-
   const [time, setTime] = React.useState(formatTime(value));
+  // The last date this component reported, so a value change coming back from
+  // the parent doesn't overwrite the time box while the user is typing.
+  const lastEmitted = React.useRef(value);
 
   React.useEffect(() => {
-    if (value) {
-      setDate(value);
-      setTime(formatTime(value));
-    }
+    if (value?.getTime() === lastEmitted.current?.getTime()) return;
+    lastEmitted.current = value;
+    setTime(formatTime(value));
   }, [value]);
+
+  const emit = (next: Date | undefined) => {
+    lastEmitted.current = next;
+    onChange?.(next);
+  };
 
   return (
     <FieldGroup className="mx-auto flex-row">
@@ -60,13 +74,8 @@ export function DatePickerTimeInput({
         <DatePickerInput
           id={id}
           name={name}
-          value={date}
-          onChange={(newDate) => {
-            setDate(newDate);
-            if (onChange) {
-              onChange(newDate);
-            }
-          }}
+          value={value}
+          onChange={(newDate) => emit(withTime(newDate, time))}
           required={required}
           minDate={minDate}
           maxDate={maxDate}
@@ -82,7 +91,10 @@ export function DatePickerTimeInput({
           type="time"
           id={id ? `${id}-time` : "time-picker-optional"}
           value={time}
-          onChange={(e) => setTime(e.target.value)}
+          onChange={(e) => {
+            setTime(e.target.value);
+            if (value) emit(withTime(value, e.target.value));
+          }}
           className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
           required={timeRequired}
         />

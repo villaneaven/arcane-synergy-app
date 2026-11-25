@@ -63,8 +63,9 @@ export function DatePickerInput({
   const [value, setValue] = React.useState(formatDate(date));
 
   React.useEffect(() => {
-    if (controlledValue !== date) {
-      setDate(controlledValue);
+    if (controlledValue === date) return;
+    setDate(controlledValue);
+    if (formatDate(controlledValue) !== formatDate(date)) {
       setValue(formatDate(controlledValue));
       setMonth(controlledValue);
     }
