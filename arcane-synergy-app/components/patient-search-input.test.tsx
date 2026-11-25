@@ -212,6 +212,32 @@ describe("PatientSearchInput search", () => {
     expect(screen.queryByText("Stale Person")).not.toBeInTheDocument();
   });
 
+  it("keeps the last results on screen while the next search runs", async () => {
+    const next = deferred();
+    fetchMock
+      .mockResolvedValueOnce(ok([{ patientID: 1, fullName: "Smith, Ann" }]))
+      .mockReturnValueOnce(next.promise);
+    render(<PatientSearchInput value={null} onChange={() => {}} />);
+
+    await type("Smi");
+    await flush();
+    expect(screen.getByText("Smith, Ann")).toBeInTheDocument();
+
+    // Typing more: the old list stays (dimmed) instead of "Searching…".
+    fireEvent.change(getInput(), { target: { value: "Smith, B" } });
+    expect(screen.getByText("Smith, Ann")).toBeInTheDocument();
+    expect(screen.queryByText("Searching…")).not.toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS);
+    });
+    next.resolve(ok([{ patientID: 2, fullName: "Smith, Bob" }]));
+    await flush();
+
+    expect(screen.getByText("Smith, Bob")).toBeInTheDocument();
+    expect(screen.queryByText("Smith, Ann")).not.toBeInTheDocument();
+  });
+
   it("says when nothing matches", async () => {
     fetchMock.mockResolvedValue(ok([]));
     render(<PatientSearchInput value={null} onChange={() => {}} />);
