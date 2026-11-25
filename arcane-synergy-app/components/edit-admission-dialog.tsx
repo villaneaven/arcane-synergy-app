@@ -12,11 +12,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { AdmissionForm } from "@/components/admission-form";
+import { toPatientOption } from "@/components/patient-search-input";
 import { API_BASE_URL } from "@/lib/api";
 
 type Admission = {
   admissionId: string;
   patientID: string;
+  patient?: {
+    patientID: number | string;
+    fullName?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    mrn?: string | null;
+  } | null;
   facilityType?: string;
   facility?: string;
   type: string;
@@ -118,7 +126,11 @@ export function EditAdmissionDialog({
           onSubmit={handleSubmit}
           onCancel={() => setDialogOpen(false)}
           initialValues={{
-            patientID: admission.patientID,
+            patient: toPatientOption(
+              admission.patient
+                ? { ...admission.patient, patientID: admission.patientID }
+                : null,
+            ),
             facilityType: admission.facilityType ?? undefined,
             facility: admission.facility ?? undefined,
             type: admission.type,

@@ -25,9 +25,10 @@ export function SearchHome() {
         </header>
         <div className="flex items-center justify-center w-full px-20">
           <PatientSearchInput
-            onChange={(patientID) =>
-              router.push(`/forms/patients/${patientID}`)
-            }
+            value={null}
+            onChange={(patient) => {
+              if (patient) router.push(`/forms/patients/${patient.patientID}`);
+            }}
           />
         </div>
       </main>
