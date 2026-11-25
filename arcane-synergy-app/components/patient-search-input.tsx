@@ -8,10 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Popover,
+  PopoverAnchor,
   PopoverContent,
-  PopoverTrigger,
 } from "@/components/ui/popover";
 import { API_BASE_URL } from "@/lib/api";
+
+export const SEARCH_DEBOUNCE_MS = 300;
+const MAX_RESULTS = 10;
 
 export type PatientOption = {
   patientID: number;
@@ -51,6 +54,8 @@ interface PatientSearchInputProps {
   required?: boolean;
 }
 
+type SearchResponse = { key: string; results: PatientOption[] | null };
+
 export function PatientSearchInput({
   value,
   onChange,
@@ -59,11 +64,15 @@ export function PatientSearchInput({
   required,
 }: PatientSearchInputProps) {
   const { data: session } = useSession();
+  const accessToken = (session as { access_token?: string } | null)
+    ?.access_token;
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const anchorRef = React.useRef<HTMLDivElement>(null);
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [results, setResults] = React.useState<PatientOption[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [debouncedQuery, setDebouncedQuery] = React.useState("");
+  const [attempt, setAttempt] = React.useState(0);
+  const [response, setResponse] = React.useState<SearchResponse | null>(null);
 
   React.useEffect(() => {
     inputRef.current?.setCustomValidity(
@@ -71,76 +80,70 @@ export function PatientSearchInput({
     );
   }, [required, value]);
 
-  const searchPatients = React.useCallback(
-    async (query: string) => {
-      if (!query.trim()) {
-        setResults([]);
-        return;
-      }
+  React.useEffect(() => {
+    const timeout = setTimeout(
+      () => setDebouncedQuery(searchQuery.trim()),
+      SEARCH_DEBOUNCE_MS,
+    );
+    return () => clearTimeout(timeout);
+  }, [searchQuery]);
 
-      setIsLoading(true);
+  const requestKey = `${attempt}:${debouncedQuery}`;
+
+  React.useEffect(() => {
+    if (!debouncedQuery || !accessToken) return;
+
+    const controller = new AbortController();
+    const key = `${attempt}:${debouncedQuery}`;
+
+    (async () => {
       try {
-        const accessToken = (session as { access_token?: string })
-          ?.access_token;
-        const response = await fetch(
-          `${API_BASE_URL}/api/Patients/search?query=${encodeURIComponent(query)}`,
+        const res = await fetch(
+          `${API_BASE_URL}/api/Patients/search?query=${encodeURIComponent(debouncedQuery)}`,
           {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
+            headers: { Authorization: `Bearer ${accessToken}` },
+            signal: controller.signal,
           },
         );
+        if (!res.ok) throw new Error(`Patient search failed: ${res.status}`);
 
-        if (!response.ok) {
-          throw new Error("Failed to search patients");
-        }
-
-        const data: Parameters<typeof toPatientOption>[0][] =
-          await response.json();
-        setResults(
-          data
-            .map(toPatientOption)
-            .filter((p): p is PatientOption => p !== null)
-            .slice(0, 10),
-        );
+        const data: Parameters<typeof toPatientOption>[0][] = await res.json();
+        const results = data
+          .map(toPatientOption)
+          .filter((p): p is PatientOption => p !== null)
+          .slice(0, MAX_RESULTS);
+        if (!controller.signal.aborted) setResponse({ key, results });
       } catch (error) {
+        if (controller.signal.aborted) return;
         console.error("Error searching patients:", error);
-        setResults([]);
-      } finally {
-        setIsLoading(false);
+        setResponse({ key, results: null });
       }
-    },
-    [session],
-  );
+    })();
 
-  const timeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined);
-  React.useEffect(() => () => clearTimeout(timeoutRef.current), []);
-  const debouncedSearch = React.useCallback(
-    (query: string) => {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        searchPatients(query);
-      }, 500);
-    },
-    [searchPatients],
-  );
+    return () => controller.abort();
+  }, [debouncedQuery, accessToken, attempt]);
+
+  const trimmedQuery = searchQuery.trim();
+  const current = response?.key === requestKey ? response : null;
+  const isLoading =
+    trimmedQuery !== "" && (trimmedQuery !== debouncedQuery || !current);
+  const results = isLoading
+    ? (response?.results ?? null)
+    : (current?.results ?? null);
+  const hasError = !isLoading && current !== null && current.results === null;
+  const isStale = isLoading && results !== null;
+  const showPopover = open && trimmedQuery !== "";
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
+    setSearchQuery(e.target.value);
     setOpen(true);
-    if (query.trim()) {
-      debouncedSearch(query);
-    } else {
-      clearTimeout(timeoutRef.current);
-      setResults([]);
-    }
+    if (!e.target.value.trim()) setResponse(null);
   };
 
   const handleSelectPatient = (patient: PatientOption) => {
-    clearTimeout(timeoutRef.current);
     setSearchQuery("");
-    setResults([]);
+    setDebouncedQuery("");
+    setResponse(null);
     setOpen(false);
     onChange(patient);
   };
@@ -184,10 +187,10 @@ export function PatientSearchInput({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={showPopover} onOpenChange={setOpen}>
       {hiddenInput}
-      <PopoverTrigger asChild>
-        <div className="relative w-full">
+      <PopoverAnchor asChild>
+        <div ref={anchorRef} className="relative w-full">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             ref={inputRef}
@@ -198,27 +201,30 @@ export function PatientSearchInput({
             className="pl-9"
             value={searchQuery}
             onChange={handleInputChange}
+            onFocus={() => setOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setOpen(false);
+            }}
             required={required}
-            onFocus={() => {
-              setOpen(true);
-              inputRef.current?.focus();
-            }}
-            onBlur={() => {
-              if (results.length > 0 || isLoading) {
-                setTimeout(() => inputRef.current?.focus(), 0);
-              } else {
-                setOpen(false);
-              }
-            }}
           />
           {isLoading && (
             <Spinner className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
           )}
         </div>
-      </PopoverTrigger>
-      {results.length > 0 && (
-        <PopoverContent className="w-96 p-0" align="center">
-          <div className="max-h-64 overflow-y-auto">
+      </PopoverAnchor>
+      <PopoverContent
+        className="w-96 p-0"
+        align="center"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          if (anchorRef.current?.contains(e.target as Node)) e.preventDefault();
+        }}
+      >
+        {results && results.length > 0 ? (
+          <div
+            className={`max-h-64 overflow-y-auto transition-opacity ${isStale ? "opacity-60" : ""}`}
+            aria-busy={isStale}
+          >
             {results.map((patient) => (
               <button
                 key={patient.patientID}
@@ -237,8 +243,28 @@ export function PatientSearchInput({
               </button>
             ))}
           </div>
-        </PopoverContent>
-      )}
+        ) : isLoading ? (
+          <p className="text-muted-foreground p-4 text-center text-sm">
+            Searching…
+          </p>
+        ) : hasError ? (
+          <div className="flex flex-col items-center gap-2 p-4 text-center text-sm">
+            <p role="alert">Couldn&apos;t search patients.</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setAttempt((n) => n + 1)}
+            >
+              Try again
+            </Button>
+          </div>
+        ) : results ? (
+          <p className="text-muted-foreground p-4 text-center text-sm">
+            No patients match &ldquo;{trimmedQuery}&rdquo;.
+          </p>
+        ) : null}
+      </PopoverContent>
     </Popover>
   );
 }
