@@ -27,6 +27,7 @@ import {
   TYPE_OPTIONS,
 } from "@/lib/admission-options";
 import {
+  validateAdmissionDate,
   validateDateNotified,
   validateDateSeen,
   validateDischargeDate,
@@ -125,8 +126,12 @@ export function AdmissionForm({
   );
   const dateSeenError = validateDateSeen(dischargeDate, dateSeen, today);
   const dateNotifiedError = validateDateNotified(notificationDate, today);
+  const admissionDateError = validateAdmissionDate(admissionDate, today);
   const hasDateError =
-    !!dischargeDateError || !!dateSeenError || !!dateNotifiedError;
+    !!admissionDateError ||
+    !!dischargeDateError ||
+    !!dateSeenError ||
+    !!dateNotifiedError;
 
   const handleDischargeDateChange = (date: Date | undefined) => {
     setDischargeDate(date);
@@ -274,8 +279,18 @@ export function AdmissionForm({
             name="admission-date"
             value={admissionDate}
             onChange={setAdmissionDate}
+            maxDate={today}
             required
+            aria-invalid={!!admissionDateError}
+            aria-describedby={
+              admissionDateError ? "admission-date-error" : undefined
+            }
           />
+          {admissionDateError && (
+            <p id="admission-date-error" className="text-sm text-destructive">
+              {admissionDateError}
+            </p>
+          )}
         </div>
         <div className="grid gap-3">
           <Label htmlFor="dx">DX</Label>

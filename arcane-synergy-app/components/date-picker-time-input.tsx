@@ -13,6 +13,10 @@ interface DatePickerInputProps {
   name?: string;
   required?: boolean;
   timeRequired?: boolean;
+  minDate?: Date;
+  maxDate?: Date;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
 }
 
 export function DatePickerTimeInput({
@@ -23,6 +27,10 @@ export function DatePickerTimeInput({
   label,
   required,
   timeRequired,
+  minDate,
+  maxDate,
+  "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
 }: DatePickerInputProps) {
   const [date, setDate] = React.useState<Date | undefined>(value);
 
@@ -60,6 +68,10 @@ export function DatePickerTimeInput({
             }
           }}
           required={required}
+          minDate={minDate}
+          maxDate={maxDate}
+          aria-invalid={ariaInvalid}
+          aria-describedby={ariaDescribedBy}
         />
       </Field>
       <Field className="w-32">

@@ -3,6 +3,8 @@ export const DATE_SEEN_REQUIRES_DISCHARGE =
 export const DATE_SEEN_BEFORE_DISCHARGE =
   "Date Seen must be on or after the Discharge Date.";
 export const DATE_SEEN_IN_FUTURE = "Date Seen must be today or earlier.";
+export const ADMISSION_DATE_IN_FUTURE =
+  "Admission Date must be today or earlier.";
 export const DATE_NOTIFIED_IN_FUTURE =
   "Date Notified must be today or earlier.";
 
@@ -49,6 +51,21 @@ export function validateDischargeNotBeforeAdmission(
     startOfDay(dischargeDate) < startOfDay(admissionDate)
   )
     return DISCHARGE_BEFORE_ADMISSION;
+  return null;
+}
+
+/**
+ * Admission Date can't be after today (compared by calendar day, so a later
+ * time today is valid). Shared by admissions and transfers; mirrors
+ * Admission.ValidateAdmissionNotInFuture on the backend. Returns an error
+ * message, or null when valid or unset.
+ */
+export function validateAdmissionDate(
+  admissionDate: Date | undefined,
+  today: Date = new Date(),
+): string | null {
+  if (admissionDate && startOfDay(admissionDate) > startOfDay(today))
+    return ADMISSION_DATE_IN_FUTURE;
   return null;
 }
 

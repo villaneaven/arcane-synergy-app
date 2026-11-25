@@ -5,6 +5,7 @@ import * as React from "react";
 import { DatePickerInput } from "@/components/date-picker-input";
 import { DatePickerTimeInput } from "@/components/date-picker-time-input";
 import {
+  validateAdmissionDate,
   validateDateNotified,
   validateDischargeDate,
 } from "@/lib/admission-validation";
@@ -113,7 +114,9 @@ export function TransferForm({
     admissionDate,
   );
   const dateNotifiedError = validateDateNotified(notificationDate, today);
-  const hasDateError = !!dischargeDateError || !!dateNotifiedError;
+  const admissionDateError = validateAdmissionDate(admissionDate, today);
+  const hasDateError =
+    !!admissionDateError || !!dischargeDateError || !!dateNotifiedError;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -172,8 +175,18 @@ export function TransferForm({
             name="admission-date"
             value={admissionDate}
             onChange={setAdmissionDate}
+            maxDate={today}
             required
+            aria-invalid={!!admissionDateError}
+            aria-describedby={
+              admissionDateError ? "admission-date-error" : undefined
+            }
           />
+          {admissionDateError && (
+            <p id="admission-date-error" className="text-sm text-destructive">
+              {admissionDateError}
+            </p>
+          )}
         </div>
         <div className="grid gap-3">
           <Label htmlFor="discharge-date">Discharge Date</Label>
