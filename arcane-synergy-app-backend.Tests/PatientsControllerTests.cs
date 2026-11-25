@@ -104,6 +104,32 @@ public class PatientsControllerTests
     }
 
     [Fact]
+    public async Task SearchPatients_ReturnsSummaryRowsWithAFullNameEvenWhenItWasNeverCalculated()
+    {
+        using var context = TestDb.CreateContext();
+        var legacy = TestDb.Patient(1, firstName: "Ada", lastName: "Lovelace", mrn: "MRN-1");
+        legacy.FullName = null;
+        context.Patients.AddRange(
+            legacy,
+            TestDb.Patient(2, firstName: "Adele", lastName: "Goldberg", mrn: "MRN-2"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        var results = (await controller.SearchPatients("Ad"))
+            .OkValue<IEnumerable<PatientsController.PatientSearchResult>>()
+            .ToList();
+
+        Assert.Equal(
+            new[]
+            {
+                new PatientsController.PatientSearchResult(2, "Goldberg, Adele", new DateTime(1980, 1, 1), "MRN-2"),
+                new PatientsController.PatientSearchResult(1, "Lovelace, Ada", new DateTime(1980, 1, 1), "MRN-1"),
+            },
+            results);
+    }
+
+    [Fact]
     public async Task AddPatient_SetsFullNameAndReturnsCreated()
     {
         using var context = TestDb.CreateContext();

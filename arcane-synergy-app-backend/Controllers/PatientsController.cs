@@ -108,12 +108,14 @@ public class PatientsController : ControllerBase
             .FirstOrDefaultAsync(p => p.PatientID == id);
         return patient == null ? NotFound() : Ok(patient);
     }
+    
+    public record PatientSearchResult(int PatientID, string FullName, DateTime DOB, string? MRN);
 
     [HttpGet("search")]
     public async Task<IActionResult> SearchPatients([FromQuery] string query)
     {
         if (string.IsNullOrWhiteSpace(query))
-            return Ok(Array.Empty<object>());
+            return Ok(Array.Empty<PatientSearchResult>());
 
         query = query.Trim();
 
@@ -128,13 +130,11 @@ public class PatientsController : ControllerBase
             .OrderBy(p => p.LastName)
             .ThenBy(p => p.FirstName)
             .Take(10)
-            .Select(p => new
-            {
+            .Select(p => new PatientSearchResult(
                 p.PatientID,
-                p.FullName,
+                p.FullName ?? p.LastName + ", " + p.FirstName,
                 p.DOB,
-                p.MRN
-            })
+                p.MRN))
             .ToListAsync();
 
         return Ok(patients);
