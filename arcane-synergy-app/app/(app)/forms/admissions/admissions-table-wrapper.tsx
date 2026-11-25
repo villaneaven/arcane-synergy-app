@@ -28,6 +28,54 @@ interface AdmissionsResponse {
   pageSize: number;
 }
 
+/*
+Persisted per browser tab so returning from an admission's transfers page (via the back link or browser Back) restores the page, filters and sort.
+*/
+const LIST_STATE_STORAGE_KEY = "admissions-list-state";
+
+interface SavedListState {
+  pageIndex: number;
+  sorting: SortingState;
+  search: string;
+  admissionType: string;
+  group: string;
+  status: string;
+  facilityType: string;
+  startDate: string | null;
+  endDate: string | null;
+}
+
+function readSavedListState(): SavedListState | null {
+  try {
+    const raw = sessionStorage.getItem(LIST_STATE_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as SavedListState) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSavedListState(state: SavedListState) {
+  try {
+    sessionStorage.setItem(LIST_STATE_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Storage unavailable (private mode, quota); state just won't persist.
+  }
+}
+
+function isDefaultListState(state: SavedListState) {
+  return (
+    state.pageIndex === 0 &&
+    state.sorting.length === 0 &&
+    state.search === "" &&
+    state.admissionType === "all" &&
+    state.group === "all" &&
+    state.status === "all" &&
+    state.facilityType === "all" &&
+    state.startDate === null &&
+    state.endDate === null
+  );
+}
+
 export function AdmissionsTableWrapper({
   initialData,
   initialTotalCount,
@@ -47,8 +95,10 @@ export function AdmissionsTableWrapper({
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasRestored, setHasRestored] = useState(false);
 
   const isFirstRender = useRef(true);
+  const needsRestoreFetch = useRef(false);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
@@ -127,10 +177,54 @@ export function AdmissionsTableWrapper({
   );
 
   useEffect(() => {
+    const saved = readSavedListState();
+    if (saved && !isDefaultListState(saved)) {
+      setPageIndex(saved.pageIndex);
+      setSorting(saved.sorting);
+      setSearch(saved.search);
+      setAdmissionType(saved.admissionType);
+      setGroup(saved.group);
+      setStatus(saved.status);
+      setFacilityType(saved.facilityType);
+      setStartDate(saved.startDate ? new Date(saved.startDate) : undefined);
+      setEndDate(saved.endDate ? new Date(saved.endDate) : undefined);
+      needsRestoreFetch.current = true;
+    }
+    setHasRestored(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasRestored) return;
+    writeSavedListState({
+      pageIndex,
+      sorting,
+      search,
+      admissionType,
+      group,
+      status,
+      facilityType,
+      startDate: startDate ? startDate.toISOString() : null,
+      endDate: endDate ? endDate.toISOString() : null,
+    });
+  }, [
+    hasRestored,
+    pageIndex,
+    sorting,
+    search,
+    admissionType,
+    group,
+    status,
+    facilityType,
+    startDate,
+    endDate,
+  ]);
+
+  useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
+    if (needsRestoreFetch.current) return;
     clearTimeout(searchDebounceRef.current);
     fetchAdmissions(
       pageIndex,
@@ -155,6 +249,28 @@ export function AdmissionsTableWrapper({
     startDate,
     endDate,
   ]);
+
+  // Fetch the restored page once the session token is available; the session
+  // may still be loading on mount, so this re-runs when fetchAdmissions changes.
+  // Declared after the effect above so that effect sees the flag still set.
+  useEffect(() => {
+    if (!hasRestored || !needsRestoreFetch.current) return;
+    const accessToken = (session as { access_token?: string })?.access_token;
+    if (!accessToken) return;
+    needsRestoreFetch.current = false;
+    fetchAdmissions(
+      pageIndex,
+      pageSize,
+      sorting,
+      search,
+      admissionType,
+      group,
+      status,
+      facilityType,
+      startDate,
+      endDate,
+    );
+  }, [hasRestored, session, fetchAdmissions]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((old: SortingState) => SortingState)) => {

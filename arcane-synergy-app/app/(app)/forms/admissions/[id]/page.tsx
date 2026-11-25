@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Transfer } from "./columns";
 import { TransferTableWrapper } from "./transfer-table-wrapper";
 import { getAccessToken } from "@/lib/auth";
@@ -29,6 +32,12 @@ export default async function Transfers({
 
   return (
     <div className="block px-8 py-4 justify-center bg-background font-sans dark:bg-black">
+      <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2">
+        <Link href="/forms/admissions">
+          <ArrowLeft />
+          Back to Admissions
+        </Link>
+      </Button>
       <TransferTableWrapper initialData={data} admissionId={id} />
     </div>
   );
