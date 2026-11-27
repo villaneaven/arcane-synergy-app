@@ -3,6 +3,18 @@
 import * as React from "react";
 import type { OnChangeFn, VisibilityState } from "@tanstack/react-table";
 
+import { useHydrated } from "@/hooks/use-hydrated";
+
+function load(storageKey: string): VisibilityState | null {
+  try {
+    const saved = localStorage.getItem(storageKey);
+    return saved ? (JSON.parse(saved) as VisibilityState) : null;
+  } catch {
+    // Ignore unreadable or malformed saved state and keep the defaults.
+    return null;
+  }
+}
+
 function save(storageKey: string, visibility: VisibilityState) {
   try {
     localStorage.setItem(storageKey, JSON.stringify(visibility));
@@ -22,22 +34,14 @@ export function useSavedColumnVisibility(
   defaults: VisibilityState,
 ) {
   const [visibility, setVisibility] = React.useState(defaults);
+  const hydrated = useHydrated();
+  const [restoredKey, setRestoredKey] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        setVisibility({
-          ...defaults,
-          ...(JSON.parse(saved) as VisibilityState),
-        });
-      }
-    } catch {
-      // Ignore unreadable or malformed saved state and keep the defaults.
-    }
-    // Restore once on mount; defaults are only the starting point.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storageKey]);
+  if (hydrated && restoredKey !== storageKey) {
+    setRestoredKey(storageKey);
+    const saved = load(storageKey);
+    if (saved) setVisibility({ ...defaults, ...saved });
+  }
 
   const onVisibilityChange: OnChangeFn<VisibilityState> = (updater) => {
     setVisibility((current) => {
