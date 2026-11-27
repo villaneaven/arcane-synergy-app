@@ -2,16 +2,13 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+This project uses **npm** (see `packageManager` in `package.json`). Don't use pnpm, yarn or bun here: their installs don't match `package-lock.json` and can leave `node_modules` broken.
+
+First, install dependencies and run the development server:
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
