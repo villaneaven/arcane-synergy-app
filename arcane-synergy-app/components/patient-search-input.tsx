@@ -19,6 +19,7 @@ export type PatientOption = {
   patientID: number;
   fullName: string;
   mrn?: string | null;
+  dob?: string | null;
 };
 
 export function toPatientOption(
@@ -29,6 +30,7 @@ export function toPatientOption(
         firstName?: string | null;
         lastName?: string | null;
         mrn?: string | null;
+        dob?: string | null;
       }
     | null
     | undefined,
@@ -40,7 +42,19 @@ export function toPatientOption(
     patient.fullName?.trim() ||
     [patient.firstName, patient.lastName].filter(Boolean).join(" ").trim() ||
     `Patient #${patientID}`;
-  return { patientID, fullName, mrn: patient.mrn ?? null };
+  return {
+    patientID,
+    fullName,
+    mrn: patient.mrn ?? null,
+    dob: patient.dob ?? null,
+  };
+}
+
+export function formatDob(value: string | null | undefined): string | null {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+  const [, year, month, day] = match;
+  return `${month}/${day}/${year}`;
 }
 
 interface PatientSearchInputProps {
@@ -244,6 +258,11 @@ export function PatientSearchInput({
               >
                 <div>
                   <div className="font-semibold">{patient.fullName}</div>
+                  {formatDob(patient.dob) ? (
+                    <div className="text-xs text-gray-500">
+                      DOB: {formatDob(patient.dob)}
+                    </div>
+                  ) : null}
                   {patient.mrn ? (
                     <div className="text-xs text-gray-500">
                       MRN: {patient.mrn}

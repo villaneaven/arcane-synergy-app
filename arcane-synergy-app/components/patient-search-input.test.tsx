@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import {
   PatientSearchInput,
   SEARCH_DEBOUNCE_MS,
+  formatDob,
   toPatientOption,
   type PatientOption,
 } from "@/components/patient-search-input";
@@ -21,18 +22,42 @@ const jane: PatientOption = {
   patientID: 42,
   fullName: "Jane Doe",
   mrn: "MRN-001",
+  dob: "1980-01-01T00:00:00",
 };
 
 describe("toPatientOption", () => {
-  it("keeps the ID, name and MRN", () => {
+  it("keeps the ID, name, MRN and DOB", () => {
     expect(
       toPatientOption({
         patientID: "42",
         fullName: "Jane Doe",
         mrn: "MRN-001",
+        dob: "1980-01-01T00:00:00",
       }),
     ).toEqual(jane);
   });
+
+  it("sets a missing DOB to null", () => {
+    expect(toPatientOption({ patientID: 7 })?.dob).toBeNull();
+  });
+});
+
+describe("formatDob", () => {
+  it.each([
+    ["1980-01-01T00:00:00", "01/01/1980"],
+    // A UTC midnight must not slip to Dec 31 in US time zones.
+    ["1980-01-01T00:00:00Z", "01/01/1980"],
+    ["2001-12-31", "12/31/2001"],
+  ])("formats %s as %s", (input, expected) => {
+    expect(formatDob(input)).toBe(expected);
+  });
+
+  it.each([null, undefined, "", "not a date"])("returns null for %j", (input) => {
+    expect(formatDob(input)).toBeNull();
+  });
+});
+
+describe("toPatientOption names", () => {
 
   it("builds a name from first and last when fullName is missing", () => {
     expect(
@@ -191,13 +216,22 @@ describe("PatientSearchInput search", () => {
 
   it("shows results and picks one", async () => {
     fetchMock.mockResolvedValue(
-      ok([{ patientID: 42, fullName: "Jane Doe", mrn: "MRN-001" }]),
+      ok([
+        {
+          patientID: 42,
+          fullName: "Jane Doe",
+          mrn: "MRN-001",
+          dob: "1980-01-01T00:00:00",
+        },
+      ]),
     );
     const onChange = vi.fn();
     render(<PatientSearchInput value={null} onChange={onChange} />);
 
     await type("Jane");
     await flush();
+    expect(screen.getByText("DOB: 01/01/1980")).toBeInTheDocument();
+    expect(screen.getByText("MRN: MRN-001")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Jane Doe"));
 
     expect(onChange).toHaveBeenCalledWith(jane);
