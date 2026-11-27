@@ -237,7 +237,7 @@ export function PatientSearchInput({
         </div>
       </PopoverAnchor>
       <PopoverContent
-        className="w-96 p-0"
+        className="w-(--radix-popover-trigger-width) p-0"
         align="center"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onInteractOutside={(e) => {
