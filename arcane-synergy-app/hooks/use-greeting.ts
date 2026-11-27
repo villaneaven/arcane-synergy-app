@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+import { useHydrated } from "@/hooks/use-hydrated";
 
 const TIME_GREETINGS = {
   morning: ["Good morning", "Rise and shine", "Morning"],
@@ -28,13 +30,13 @@ function getGreetingPool() {
   return [...timeGreetings, ...CASUAL_GREETINGS];
 }
 
+function pickGreeting() {
+  const pool = getGreetingPool();
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 export function useGreeting() {
-  const [greeting, setGreeting] = useState(CASUAL_GREETINGS[0]);
-
-  useEffect(() => {
-    const pool = getGreetingPool();
-    setGreeting(pool[Math.floor(Math.random() * pool.length)]);
-  }, []);
-
-  return greeting;
+  const [greeting] = useState(pickGreeting);
+  const hydrated = useHydrated();
+  return hydrated ? greeting : CASUAL_GREETINGS[0];
 }

@@ -127,14 +127,13 @@ export function DatePickerInput({
     pendingCaret.current = null;
   }, [value]);
 
-  React.useEffect(() => {
-    if (controlledValue === date) return;
+  if (controlledValue !== date) {
     setDate(controlledValue);
     if (dateKey(controlledValue) !== dateKey(date)) {
       setValue(formatDate(controlledValue));
       setMonth(isValidDate(controlledValue) ? controlledValue : undefined);
     }
-  }, [controlledValue, date]);
+  }
 
   const handleDateChange = (newDate: Date | undefined) => {
     setDate(newDate);
