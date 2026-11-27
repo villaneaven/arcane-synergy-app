@@ -108,36 +108,58 @@ public class PatientsController : ControllerBase
             .FirstOrDefaultAsync(p => p.PatientID == id);
         return patient == null ? NotFound() : Ok(patient);
     }
+    
+    public record PatientSearchResult(int PatientID, string FullName, DateTime DOB, string? MRN);
 
+    public record PatientSearchResponse(IReadOnlyList<PatientSearchResult> Items, bool HasMore);
+
+    public const int MaxSearchResults = 10;
+
+    private const int MaxSearchTerms = 5;
+    private static readonly char[] SearchTermSeparators = [' ', ','];
+
+    /// <summary>
+    /// Every word in the query must match the start of the patient's first
+    /// name, last name (or a later word in it, e.g. "Cruz" in "De La Cruz"),
+    /// or MRN. So "Ada Lovelace", "Lovelace Ada" and "Lovelace, A" all find
+    /// the same patient, and each extra word narrows the list.
+    /// </summary>
     [HttpGet("search")]
     public async Task<IActionResult> SearchPatients([FromQuery] string query)
     {
-        if (string.IsNullOrWhiteSpace(query))
-            return Ok(Array.Empty<object>());
+        var terms = (query ?? "")
+            .Split(SearchTermSeparators, StringSplitOptions.RemoveEmptyEntries)
+            .Take(MaxSearchTerms)
+            .ToList();
 
-        query = query.Trim();
+        if (terms.Count == 0)
+            return Ok(new PatientSearchResponse([], false));
 
-        var patients = await _context.Patients
-            .AsNoTracking()
-            .Where(p =>
-                p.FirstName.StartsWith(query) ||
-                p.LastName.StartsWith(query) ||
-                (p.FullName != null && p.FullName.StartsWith(query)) ||
-                (p.MRN != null && p.MRN.StartsWith(query))
-            )
+        var patients = _context.Patients.AsNoTracking();
+        foreach (var term in terms)
+        {
+            patients = patients.Where(p =>
+                p.FirstName.StartsWith(term) ||
+                p.LastName.StartsWith(term) ||
+                p.LastName.Contains(" " + term) ||
+                p.LastName.Contains("-" + term) ||
+                (p.MRN != null && p.MRN.StartsWith(term)));
+        }
+
+        // One extra row tells us whether the list was cut off.
+        var rows = await patients
             .OrderBy(p => p.LastName)
             .ThenBy(p => p.FirstName)
-            .Take(10)
-            .Select(p => new
-            {
+            .Take(MaxSearchResults + 1)
+            .Select(p => new PatientSearchResult(
                 p.PatientID,
-                p.FullName,
+                p.FullName ?? p.LastName + ", " + p.FirstName,
                 p.DOB,
-                p.MRN
-            })
+                p.MRN))
             .ToListAsync();
 
-        return Ok(patients);
+        var hasMore = rows.Count > MaxSearchResults;
+        return Ok(new PatientSearchResponse(rows.Take(MaxSearchResults).ToList(), hasMore));
     }
 
 

@@ -14,12 +14,12 @@ import {
 import { API_BASE_URL } from "@/lib/api";
 
 export const SEARCH_DEBOUNCE_MS = 300;
-const MAX_RESULTS = 10;
 
 export type PatientOption = {
   patientID: number;
   fullName: string;
   mrn?: string | null;
+  dob?: string | null;
 };
 
 export function toPatientOption(
@@ -30,6 +30,7 @@ export function toPatientOption(
         firstName?: string | null;
         lastName?: string | null;
         mrn?: string | null;
+        dob?: string | null;
       }
     | null
     | undefined,
@@ -41,7 +42,19 @@ export function toPatientOption(
     patient.fullName?.trim() ||
     [patient.firstName, patient.lastName].filter(Boolean).join(" ").trim() ||
     `Patient #${patientID}`;
-  return { patientID, fullName, mrn: patient.mrn ?? null };
+  return {
+    patientID,
+    fullName,
+    mrn: patient.mrn ?? null,
+    dob: patient.dob ?? null,
+  };
+}
+
+export function formatDob(value: string | null | undefined): string | null {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+  const [, year, month, day] = match;
+  return `${month}/${day}/${year}`;
 }
 
 interface PatientSearchInputProps {
@@ -54,7 +67,16 @@ interface PatientSearchInputProps {
   required?: boolean;
 }
 
-type SearchResponse = { key: string; results: PatientOption[] | null };
+type SearchResponse = {
+  key: string;
+  results: PatientOption[] | null;
+  hasMore: boolean;
+};
+
+type SearchPayload = {
+  items: Parameters<typeof toPatientOption>[0][];
+  hasMore: boolean;
+};
 
 export function PatientSearchInput({
   value,
@@ -107,16 +129,17 @@ export function PatientSearchInput({
         );
         if (!res.ok) throw new Error(`Patient search failed: ${res.status}`);
 
-        const data: Parameters<typeof toPatientOption>[0][] = await res.json();
-        const results = data
+        const data: SearchPayload = await res.json();
+        const results = data.items
           .map(toPatientOption)
-          .filter((p): p is PatientOption => p !== null)
-          .slice(0, MAX_RESULTS);
-        if (!controller.signal.aborted) setResponse({ key, results });
+          .filter((p): p is PatientOption => p !== null);
+        if (!controller.signal.aborted) {
+          setResponse({ key, results, hasMore: data.hasMore });
+        }
       } catch (error) {
         if (controller.signal.aborted) return;
         console.error("Error searching patients:", error);
-        setResponse({ key, results: null });
+        setResponse({ key, results: null, hasMore: false });
       }
     })();
 
@@ -132,6 +155,7 @@ export function PatientSearchInput({
     : (current?.results ?? null);
   const hasError = !isLoading && current !== null && current.results === null;
   const isStale = isLoading && results !== null;
+  const hasMore = !isLoading && current?.hasMore === true;
   const showPopover = open && trimmedQuery !== "";
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -234,6 +258,11 @@ export function PatientSearchInput({
               >
                 <div>
                   <div className="font-semibold">{patient.fullName}</div>
+                  {formatDob(patient.dob) ? (
+                    <div className="text-xs text-gray-500">
+                      DOB: {formatDob(patient.dob)}
+                    </div>
+                  ) : null}
                   {patient.mrn ? (
                     <div className="text-xs text-gray-500">
                       MRN: {patient.mrn}
@@ -242,6 +271,12 @@ export function PatientSearchInput({
                 </div>
               </button>
             ))}
+            {hasMore ? (
+              <p className="text-muted-foreground border-t px-4 py-2 text-xs">
+                Showing the first {results.length} matches. Keep typing to
+                narrow it down, e.g. first and last name.
+              </p>
+            ) : null}
           </div>
         ) : isLoading ? (
           <p className="text-muted-foreground p-4 text-center text-sm">
