@@ -99,8 +99,94 @@ public class PatientsControllerTests
 
         var controller = new PatientsController(context);
 
-        Assert.Empty((await controller.SearchPatients("   ")).OkJson().AsArray());
-        Assert.Equal(10, (await controller.SearchPatients("Shared")).OkJson().AsArray().Count);
+        var blank = (await controller.SearchPatients("   ")).OkJson();
+        Assert.Empty(blank.Array("Items"));
+        Assert.False(blank["HasMore"]!.GetValue<bool>());
+
+        var capped = (await controller.SearchPatients("Shared")).OkJson();
+        Assert.Equal(10, capped.Array("Items").Count);
+        Assert.True(capped["HasMore"]!.GetValue<bool>());
+    }
+
+    [Fact]
+    public async Task SearchPatients_HasMoreIsFalseWhenEveryMatchFits()
+    {
+        using var context = TestDb.CreateContext();
+        for (var i = 1; i <= PatientsController.MaxSearchResults; i++)
+        {
+            context.Patients.Add(TestDb.Patient(i, firstName: $"Pat{i:D2}", lastName: "Shared"));
+        }
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        var payload = (await controller.SearchPatients("Shared")).OkJson();
+        Assert.Equal(PatientsController.MaxSearchResults, payload.Array("Items").Count);
+        Assert.False(payload["HasMore"]!.GetValue<bool>());
+    }
+
+    [Theory]
+    [InlineData("Ada Lovelace")]
+    [InlineData("Lovelace Ada")]
+    [InlineData("Lovelace, Ada")]
+    [InlineData("Lovelace,A")]
+    [InlineData("  Love   Ad ")]
+    [InlineData("MRN-1 Lovelace")]
+    public async Task SearchPatients_MatchesEveryWordAgainstNameOrMrnInAnyOrder(string query)
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(
+            TestDb.Patient(1, firstName: "Ada", lastName: "Lovelace", mrn: "MRN-1"),
+            TestDb.Patient(2, firstName: "Ada", lastName: "Byron", mrn: "MRN-2"),
+            TestDb.Patient(3, firstName: "Grace", lastName: "Lovelace", mrn: "MRN-3"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        var ids = (await controller.SearchPatients(query)).OkJson()
+            .Array("Items").Select(r => r!.Int("PatientID")).ToArray();
+
+        Assert.Equal(new[] { 1 }, ids);
+    }
+
+    [Theory]
+    [InlineData("Cruz")]
+    [InlineData("Juan De La Cruz")]
+    [InlineData("Smith")]
+    [InlineData("Ana Jones-Smith")]
+    public async Task SearchPatients_MatchesLaterWordsInCompoundLastNames(string query)
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.AddRange(
+            TestDb.Patient(1, firstName: "Juan", lastName: "De La Cruz"),
+            TestDb.Patient(2, firstName: "Ana", lastName: "Jones-Smith"),
+            TestDb.Patient(3, firstName: "Cruzita", lastName: "Mendez"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        var ids = (await controller.SearchPatients(query)).OkJson()
+            .Array("Items").Select(r => r!.Int("PatientID")).ToArray();
+
+        var expected = query switch
+        {
+            "Cruz" => new[] { 1, 3 },
+            "Juan De La Cruz" => new[] { 1 },
+            _ => new[] { 2 },
+        };
+        Assert.Equal(expected, ids);
+    }
+
+    [Fact]
+    public async Task SearchPatients_FindsNothingWhenAnyWordMatchesNoField()
+    {
+        using var context = TestDb.CreateContext();
+        context.Patients.Add(TestDb.Patient(1, firstName: "Ada", lastName: "Lovelace"));
+        await context.SaveChangesAsync();
+
+        var controller = new PatientsController(context);
+
+        Assert.Empty((await controller.SearchPatients("Ada Hopper")).OkJson().Array("Items"));
     }
 
     [Fact]
@@ -117,8 +203,8 @@ public class PatientsControllerTests
         var controller = new PatientsController(context);
 
         var results = (await controller.SearchPatients("Ad"))
-            .OkValue<IEnumerable<PatientsController.PatientSearchResult>>()
-            .ToList();
+            .OkValue<PatientsController.PatientSearchResponse>()
+            .Items;
 
         Assert.Equal(
             new[]
@@ -407,7 +493,7 @@ public class PatientsControllerTests
 
         var controller = new PatientsController(context);
 
-        var results = (await controller.SearchPatients("  Hop ")).OkJson().AsArray();
+        var results = (await controller.SearchPatients("  Hop ")).OkJson().Array("Items");
 
         Assert.Equal(new[] { 2, 1 }, results.Select(r => r!.Int("PatientID")).ToArray());
 

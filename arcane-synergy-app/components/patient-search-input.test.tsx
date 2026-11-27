@@ -26,14 +26,22 @@ const jane: PatientOption = {
 describe("toPatientOption", () => {
   it("keeps the ID, name and MRN", () => {
     expect(
-      toPatientOption({ patientID: "42", fullName: "Jane Doe", mrn: "MRN-001" }),
+      toPatientOption({
+        patientID: "42",
+        fullName: "Jane Doe",
+        mrn: "MRN-001",
+      }),
     ).toEqual(jane);
   });
 
   it("builds a name from first and last when fullName is missing", () => {
     expect(
-      toPatientOption({ patientID: 7, fullName: null, firstName: "Ann", lastName: "Lee" })
-        ?.fullName,
+      toPatientOption({
+        patientID: 7,
+        fullName: null,
+        firstName: "Ann",
+        lastName: "Lee",
+      })?.fullName,
     ).toBe("Ann Lee");
   });
 
@@ -41,12 +49,15 @@ describe("toPatientOption", () => {
     expect(toPatientOption({ patientID: 7 })?.fullName).toBe("Patient #7");
   });
 
-  it.each([null, undefined, { patientID: "" }, { patientID: "abc" }, { patientID: 0 }])(
-    "returns null for %j",
-    (input) => {
-      expect(toPatientOption(input)).toBeNull();
-    },
-  );
+  it.each([
+    null,
+    undefined,
+    { patientID: "" },
+    { patientID: "abc" },
+    { patientID: 0 },
+  ])("returns null for %j", (input) => {
+    expect(toPatientOption(input)).toBeNull();
+  });
 });
 
 describe("PatientSearchInput", () => {
@@ -97,9 +108,7 @@ describe("PatientSearchInput", () => {
     rerender(<PatientSearchInput value={null} onChange={() => {}} />);
 
     expect(screen.queryByText("Jane Doe")).not.toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText(/search patients/i),
-    ).toHaveValue("");
+    expect(screen.getByPlaceholderText(/search patients/i)).toHaveValue("");
   });
 
   it("is invalid when required and typed text was never picked from the list", () => {
@@ -126,10 +135,10 @@ describe("PatientSearchInput", () => {
 describe("PatientSearchInput search", () => {
   const fetchMock = vi.fn();
 
-  const ok = (data: unknown) => ({
+  const ok = (items: unknown[], hasMore = false) => ({
     ok: true,
     status: 200,
-    json: async () => data,
+    json: async () => ({ items, hasMore }),
   });
 
   /** A fetch result the test resolves by hand, to control response order. */
@@ -246,6 +255,37 @@ describe("PatientSearchInput search", () => {
     await flush();
 
     expect(screen.getByText(/no patients match/i)).toHaveTextContent("Zzz");
+  });
+
+  it("asks for a narrower search when the list was cut off", async () => {
+    fetchMock.mockResolvedValue(
+      ok(
+        [
+          { patientID: 1, fullName: "Smith, Ann" },
+          { patientID: 2, fullName: "Smith, Bob" },
+        ],
+        true,
+      ),
+    );
+    render(<PatientSearchInput value={null} onChange={() => {}} />);
+
+    await type("Smith");
+    await flush();
+
+    expect(
+      screen.getByText(/showing the first 2 matches/i),
+    ).toBeInTheDocument();
+  });
+
+  it("has no cut-off note when every match fits", async () => {
+    fetchMock.mockResolvedValue(ok([{ patientID: 1, fullName: "Smith, Ann" }]));
+    render(<PatientSearchInput value={null} onChange={() => {}} />);
+
+    await type("Smith");
+    await flush();
+
+    expect(screen.getByText("Smith, Ann")).toBeInTheDocument();
+    expect(screen.queryByText(/showing the first/i)).not.toBeInTheDocument();
   });
 
   it("shows an error and retries", async () => {
