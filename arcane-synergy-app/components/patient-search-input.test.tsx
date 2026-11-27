@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import {
   PatientSearchInput,
   SEARCH_DEBOUNCE_MS,
+  formatDob,
   toPatientOption,
   type PatientOption,
 } from "@/components/patient-search-input";
@@ -21,19 +22,51 @@ const jane: PatientOption = {
   patientID: 42,
   fullName: "Jane Doe",
   mrn: "MRN-001",
+  dob: "1980-01-01T00:00:00",
 };
 
 describe("toPatientOption", () => {
-  it("keeps the ID, name and MRN", () => {
+  it("keeps the ID, name, MRN and DOB", () => {
     expect(
-      toPatientOption({ patientID: "42", fullName: "Jane Doe", mrn: "MRN-001" }),
+      toPatientOption({
+        patientID: "42",
+        fullName: "Jane Doe",
+        mrn: "MRN-001",
+        dob: "1980-01-01T00:00:00",
+      }),
     ).toEqual(jane);
   });
 
+  it("sets a missing DOB to null", () => {
+    expect(toPatientOption({ patientID: 7 })?.dob).toBeNull();
+  });
+});
+
+describe("formatDob", () => {
+  it.each([
+    ["1980-01-01T00:00:00", "01/01/1980"],
+    // A UTC midnight must not slip to Dec 31 in US time zones.
+    ["1980-01-01T00:00:00Z", "01/01/1980"],
+    ["2001-12-31", "12/31/2001"],
+  ])("formats %s as %s", (input, expected) => {
+    expect(formatDob(input)).toBe(expected);
+  });
+
+  it.each([null, undefined, "", "not a date"])("returns null for %j", (input) => {
+    expect(formatDob(input)).toBeNull();
+  });
+});
+
+describe("toPatientOption names", () => {
+
   it("builds a name from first and last when fullName is missing", () => {
     expect(
-      toPatientOption({ patientID: 7, fullName: null, firstName: "Ann", lastName: "Lee" })
-        ?.fullName,
+      toPatientOption({
+        patientID: 7,
+        fullName: null,
+        firstName: "Ann",
+        lastName: "Lee",
+      })?.fullName,
     ).toBe("Ann Lee");
   });
 
@@ -41,12 +74,15 @@ describe("toPatientOption", () => {
     expect(toPatientOption({ patientID: 7 })?.fullName).toBe("Patient #7");
   });
 
-  it.each([null, undefined, { patientID: "" }, { patientID: "abc" }, { patientID: 0 }])(
-    "returns null for %j",
-    (input) => {
-      expect(toPatientOption(input)).toBeNull();
-    },
-  );
+  it.each([
+    null,
+    undefined,
+    { patientID: "" },
+    { patientID: "abc" },
+    { patientID: 0 },
+  ])("returns null for %j", (input) => {
+    expect(toPatientOption(input)).toBeNull();
+  });
 });
 
 describe("PatientSearchInput", () => {
@@ -97,9 +133,7 @@ describe("PatientSearchInput", () => {
     rerender(<PatientSearchInput value={null} onChange={() => {}} />);
 
     expect(screen.queryByText("Jane Doe")).not.toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText(/search patients/i),
-    ).toHaveValue("");
+    expect(screen.getByPlaceholderText(/search patients/i)).toHaveValue("");
   });
 
   it("is invalid when required and typed text was never picked from the list", () => {
@@ -126,10 +160,10 @@ describe("PatientSearchInput", () => {
 describe("PatientSearchInput search", () => {
   const fetchMock = vi.fn();
 
-  const ok = (data: unknown) => ({
+  const ok = (items: unknown[], hasMore = false) => ({
     ok: true,
     status: 200,
-    json: async () => data,
+    json: async () => ({ items, hasMore }),
   });
 
   /** A fetch result the test resolves by hand, to control response order. */
@@ -182,13 +216,22 @@ describe("PatientSearchInput search", () => {
 
   it("shows results and picks one", async () => {
     fetchMock.mockResolvedValue(
-      ok([{ patientID: 42, fullName: "Jane Doe", mrn: "MRN-001" }]),
+      ok([
+        {
+          patientID: 42,
+          fullName: "Jane Doe",
+          mrn: "MRN-001",
+          dob: "1980-01-01T00:00:00",
+        },
+      ]),
     );
     const onChange = vi.fn();
     render(<PatientSearchInput value={null} onChange={onChange} />);
 
     await type("Jane");
     await flush();
+    expect(screen.getByText("DOB: 01/01/1980")).toBeInTheDocument();
+    expect(screen.getByText("MRN: MRN-001")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Jane Doe"));
 
     expect(onChange).toHaveBeenCalledWith(jane);
@@ -212,6 +255,32 @@ describe("PatientSearchInput search", () => {
     expect(screen.queryByText("Stale Person")).not.toBeInTheDocument();
   });
 
+  it("keeps the last results on screen while the next search runs", async () => {
+    const next = deferred();
+    fetchMock
+      .mockResolvedValueOnce(ok([{ patientID: 1, fullName: "Smith, Ann" }]))
+      .mockReturnValueOnce(next.promise);
+    render(<PatientSearchInput value={null} onChange={() => {}} />);
+
+    await type("Smi");
+    await flush();
+    expect(screen.getByText("Smith, Ann")).toBeInTheDocument();
+
+    // Typing more: the old list stays (dimmed) instead of "Searching…".
+    fireEvent.change(getInput(), { target: { value: "Smith, B" } });
+    expect(screen.getByText("Smith, Ann")).toBeInTheDocument();
+    expect(screen.queryByText("Searching…")).not.toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS);
+    });
+    next.resolve(ok([{ patientID: 2, fullName: "Smith, Bob" }]));
+    await flush();
+
+    expect(screen.getByText("Smith, Bob")).toBeInTheDocument();
+    expect(screen.queryByText("Smith, Ann")).not.toBeInTheDocument();
+  });
+
   it("says when nothing matches", async () => {
     fetchMock.mockResolvedValue(ok([]));
     render(<PatientSearchInput value={null} onChange={() => {}} />);
@@ -220,6 +289,37 @@ describe("PatientSearchInput search", () => {
     await flush();
 
     expect(screen.getByText(/no patients match/i)).toHaveTextContent("Zzz");
+  });
+
+  it("asks for a narrower search when the list was cut off", async () => {
+    fetchMock.mockResolvedValue(
+      ok(
+        [
+          { patientID: 1, fullName: "Smith, Ann" },
+          { patientID: 2, fullName: "Smith, Bob" },
+        ],
+        true,
+      ),
+    );
+    render(<PatientSearchInput value={null} onChange={() => {}} />);
+
+    await type("Smith");
+    await flush();
+
+    expect(
+      screen.getByText(/showing the first 2 matches/i),
+    ).toBeInTheDocument();
+  });
+
+  it("has no cut-off note when every match fits", async () => {
+    fetchMock.mockResolvedValue(ok([{ patientID: 1, fullName: "Smith, Ann" }]));
+    render(<PatientSearchInput value={null} onChange={() => {}} />);
+
+    await type("Smith");
+    await flush();
+
+    expect(screen.getByText("Smith, Ann")).toBeInTheDocument();
+    expect(screen.queryByText(/showing the first/i)).not.toBeInTheDocument();
   });
 
   it("shows an error and retries", async () => {
